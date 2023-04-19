@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,25 +36,25 @@ class Chopper:
         self._mask = None
 
     @property
-    def omega(self):
+    def omega(self) -> float:
         return 2.0 * np.pi * self.frequency
 
     @property
-    def open_times(self):
+    def open_times(self) -> np.ndarray:
         return (self.open + self.phase) / self.omega
 
     @property
-    def close_times(self):
+    def close_times(self) -> np.ndarray:
         return (self.close + self.phase) / self.omega
 
     @property
-    def tofs(self):
+    def tofs(self) -> np.ndarray:
         return units.s_to_us(self._arrival_times[self._mask])
 
-    def hist(self, bins=300):
+    def hist(self, bins: Union[int, np.ndarray] = 300) -> Tuple[np.ndarray, np.ndarray]:
         return np.histogram(self.tofs, bins=bins)
 
-    def plot(self, bins=300):
+    def plot(self, bins: Union[int, np.ndarray] = 300) -> Plot:
         h, edges = self.hist(bins=bins)
         fig, ax = plt.subplots()
         x = np.concatenate([edges, edges[-1:]])
@@ -66,7 +66,7 @@ class Chopper:
         ax.set_title(f"Chopper: {self.name}")
         return Plot(fig=fig, ax=ax)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Chopper(name={self.name}, distance={self.distance}, "
             f"frequency={self.frequency}, phase={self.phase}, "
