@@ -1,60 +1,68 @@
+from itertools import chain
+
 import numpy as np
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 
-from .units import s_to_us
+from .detector import Detector
 from .pulse import Pulse
 from .tools import Plot
+from .units import s_to_us
 
 
 class Model:
-    def __init__(self, choppers, detector, neutrons=1_000_000, pulse=None):
+    def __init__(self, choppers, detectors, pulse):
         self.choppers = choppers
-        self.detector = detector
+        if not isinstance(self.choppers, dict):
+            self.choppers = {self.choppers.name: self.choppers}
+        self.detectors = detectors
+        if not isinstance(self.detectors, dict):
+            self.detectors = {self.detectors.name: self.detectors}
         self.pulse = pulse
 
-        if self.pulse is None:
-            self.pulse = Pulse(kind="ess")
-
-        self.pulse.make_neutrons(neutrons)
-
-    def ray_trace(self):
-        sorted_choppers = [
-            k
-            for k, v in sorted(
-                [(name, ch.distance) for name, ch in self.choppers.items()],
-                key=lambda item: item[1],
-            )
-        ]
+    def ray_trace(self, npulses=1):
+        # TODO: ray-trace multiple pulses
+        components = sorted(
+            chain(self.choppers.values(), self.detectors.values()),
+            key=lambda c: c.distance,
+        )
 
         initial_mask = np.full_like(self.pulse.birth_times, True, dtype=bool)
-        for name in sorted_choppers:
-            ch = self.choppers[name]
-            t = self.pulse.birth_times + ch.distance / self.pulse.speeds
-            ch._arrival_times = t
+        for comp in components:
+            t = self.pulse.birth_times + comp.distance / self.pulse.speeds
+            comp._arrival_times = t
+            if isinstance(comp, Detector):
+                comp._mask = initial_mask
+                continue
             m = np.full_like(t, False, dtype=bool)
-            to = ch.open_times
-            tc = ch.close_times
+            to = comp.open_times
+            tc = comp.close_times
             for i in range(len(to)):
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
-            ch._mask = combined
+            comp._mask = combined
             initial_mask = combined
 
-        self.detector._arrival_times = (
-            self.pulse.birth_times + self.detector.distance / self.pulse.speeds
-        )
-        self.detector._mask = initial_mask
+        # self.detector._arrival_times = (
+        #     self.pulse.birth_times + self.detector.distance / self.pulse.speeds
+        # )
+        # self.detector._mask = initial_mask
 
     def plot(self, nrays=1000):
         fig, ax = plt.subplots()
-        tofs = self.detector.tofs
+
+        furthest_detector = max(self.detectors.values(), key=lambda d: d.distance)
+
+        tofs = furthest_detector.tofs
+        tof_max = tofs.max()
         inds = np.random.choice(len(tofs), size=nrays, replace=False)
         # Plot rays
-        x0 = s_to_us(self.pulse.birth_times[self.detector._mask][inds]).reshape(-1, 1)
+        x0 = s_to_us(self.pulse.birth_times[furthest_detector._mask][inds]).reshape(
+            -1, 1
+        )
         x1 = tofs[inds].reshape(-1, 1)
         y0 = np.zeros(nrays).reshape(-1, 1)
-        y1 = np.full(nrays, self.detector.distance).reshape(-1, 1)
+        y1 = np.full(nrays, furthest_detector.distance).reshape(-1, 1)
         segments = np.concatenate(
             (
                 np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
@@ -64,11 +72,8 @@ class Model:
         )
         coll = LineCollection(segments, cmap=plt.cm.gist_rainbow_r)
         coll.set_array(
-            (
-                self.pulse.wavelengths[self.detector._mask][inds]
-                - self.pulse.wavelength_min
-            )
-            / (self.pulse.wavelength_max - self.pulse.wavelength_min)
+            (self.pulse.wavelengths[furthest_detector._mask][inds] - self.pulse.lmin)
+            / (self.pulse.lmax - self.pulse.lmin)
         )
         ax.add_collection(coll)
         # Plot choppers
@@ -79,14 +84,25 @@ class Model:
             x[0::3] = x0
             x[1::3] = 0.5 * (x0 + x1)
             x[2::3] = x1
-            x = np.concatenate([[0], x, [tofs.max()]])
+            x = np.concatenate([[0], x, [tof_max]])
             y = np.full_like(x, ch.distance)
             y[2::3] = None
             ax.plot(x, y, color="k")
+            ax.text(tof_max, ch.distance, name, ha="right", va="bottom", color="k")
+
+        # Plot detectors
+        for name, det in self.detectors.items():
+            ax.plot([0, tof_max], [det.distance] * 2, color="gray", lw=3)
+            ax.text(0, det.distance, name, ha="left", va="bottom", color="gray")
+
+        ax.set_xlabel("Time-of-flight (us)")
+        ax.set_ylabel("Distance (m)")
         return Plot(fig=fig, ax=ax)
 
     def __repr__(self):
         return (
-            f"Model(choppers={self.choppers},\n      detector={self.detector},\n      "
-            f"pulse={self.pulse},\n      neutrons={len(self.pulse.birth_times)})"
+            f"Model(choppers={self.choppers},\n      "
+            f"detectors={self.detectors},\n      "
+            f"pulse={self.pulse},\n      "
+            f"neutrons={len(self.pulse.birth_times)})"
         )
