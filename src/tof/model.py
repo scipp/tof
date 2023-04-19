@@ -15,17 +15,17 @@ from .units import s_to_us
 class Model:
     def __init__(self, choppers, detectors, pulse):
         self.choppers = choppers
-        if not isinstance(self.choppers, dict):
-            self.choppers = {self.choppers.name: self.choppers}
+        if not isinstance(self.choppers, (list, tuple)):
+            self.choppers = [self.choppers]
         self.detectors = detectors
-        if not isinstance(self.detectors, dict):
-            self.detectors = {self.detectors.name: self.detectors}
+        if not isinstance(self.detectors, (list, tuple)):
+            self.detectors = [self.detectors]
         self.pulse = pulse
 
     def run(self, npulses=1):
         # TODO: ray-trace multiple pulses
         components = sorted(
-            chain(self.choppers.values(), self.detectors.values()),
+            chain(self.choppers, self.detectors),
             key=lambda c: c.distance,
         )
 
@@ -47,7 +47,7 @@ class Model:
 
     def plot(self, max_rays=1000):
         fig, ax = plt.subplots()
-        furthest_detector = max(self.detectors.values(), key=lambda d: d.distance)
+        furthest_detector = max(self.detectors, key=lambda d: d.distance)
         tofs = furthest_detector.tofs
         tof_max = tofs.max()
         if (max_rays is not None) and (len(tofs) > max_rays):
@@ -77,7 +77,7 @@ class Model:
         )
         ax.add_collection(coll)
         # Plot choppers
-        for ch in self.choppers.values():
+        for ch in self.choppers:
             x0 = s_to_us(ch.open_times)
             x1 = s_to_us(ch.close_times)
             x = np.empty(3 * x0.size, dtype=x0.dtype)
@@ -91,7 +91,7 @@ class Model:
             ax.text(tof_max, ch.distance, ch.name, ha="right", va="bottom", color="k")
 
         # Plot detectors
-        for det in self.detectors.values():
+        for det in self.detectors:
             ax.plot([0, tof_max], [det.distance] * 2, color="gray", lw=3)
             ax.text(0, det.distance, det.name, ha="left", va="bottom", color="gray")
 
