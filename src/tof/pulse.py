@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from typing import Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -15,11 +17,11 @@ class Pulse:
         tmax: float = None,
         lmin: float = None,
         lmax: float = None,
-        neutrons=1_000_000,
-        kind=None,
-        p_wav=None,
-        p_time=None,
-        sampling_resolution=10000,
+        neutrons: int = 1_000_000,
+        kind: str = None,
+        p_wav: np.ndarray = None,
+        p_time: np.ndarray = None,
+        sampling_resolution: int = 10000,
     ):
         self.kind = kind
         self.neutrons = neutrons
@@ -61,17 +63,11 @@ class Pulse:
         self.speeds = units.wavelength_to_speed(self.wavelengths)
         self.energies = units.speed_to_mev(self.speeds)
 
-    def __repr__(self):
-        return (
-            f"Pulse(tmin={self.tmin}, tmax={self.tmax}, lmin={self.lmin}, "
-            f"lmax={self.lmax}, neutrons={self.neutrons}, kind={self.kind})"
-        )
-
     @property
-    def duration(self):
+    def duration(self) -> float:
         return self.tmax - self.tmin
 
-    def plot(self, bins=300):
+    def plot(self, bins: Union[int, np.ndarray] = 300) -> Plot:
         fig, ax = plt.subplots(1, 2)
         for i, (data, label) in enumerate(
             zip([self.birth_times, self.wavelengths], ["Time (s)", "Wavelength (Å)"])
@@ -86,3 +82,9 @@ class Pulse:
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
         return Plot(fig=fig, ax=ax)
+
+    def __repr__(self) -> str:
+        return (
+            f"Pulse(tmin={self.tmin}, tmax={self.tmax}, lmin={self.lmin}, "
+            f"lmax={self.lmax}, neutrons={self.neutrons}, kind={self.kind})"
+        )

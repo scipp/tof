@@ -2,18 +2,26 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from itertools import chain
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection
 
+from .chopper import Chopper
 from .detector import Detector
+from .pulse import Pulse
 from .tools import Plot
 from .units import s_to_us
 
 
 class Model:
-    def __init__(self, choppers, detectors, pulse):
+    def __init__(
+        self,
+        choppers: Union[Chopper, List[Chopper]],
+        detectors: Union[Detector, List[Detector]],
+        pulse: Pulse,
+    ):
         self.choppers = choppers
         if not isinstance(self.choppers, (list, tuple)):
             self.choppers = [self.choppers]
@@ -22,7 +30,7 @@ class Model:
             self.detectors = [self.detectors]
         self.pulse = pulse
 
-    def run(self, npulses=1):
+    def run(self, npulses: int = 1):
         # TODO: ray-trace multiple pulses
         components = sorted(
             chain(self.choppers, self.detectors),
@@ -45,7 +53,7 @@ class Model:
             comp._mask = combined
             initial_mask = combined
 
-    def plot(self, max_rays=1000):
+    def plot(self, max_rays: int = 1000) -> Plot:
         fig, ax = plt.subplots()
         furthest_detector = max(self.detectors, key=lambda d: d.distance)
         tofs = furthest_detector.tofs
@@ -108,7 +116,7 @@ class Model:
         ax.set_ylabel("Distance (m)")
         return Plot(fig=fig, ax=ax)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Model(choppers={self.choppers},\n      "
             f"detectors={self.detectors},\n      "
