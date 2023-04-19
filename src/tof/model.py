@@ -57,8 +57,9 @@ class Model:
             -1, 1
         )
         x1 = tofs[inds].reshape(-1, 1)
-        y0 = np.zeros(max_rays).reshape(-1, 1)
-        y1 = np.full(max_rays, furthest_detector.distance).reshape(-1, 1)
+        nrays = x0.size
+        y0 = np.zeros(nrays).reshape(-1, 1)
+        y1 = np.full(nrays, furthest_detector.distance).reshape(-1, 1)
         segments = np.concatenate(
             (
                 np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
