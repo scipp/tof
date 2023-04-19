@@ -30,6 +30,12 @@ You can install from ``pip`` using
    user-guide
 
 .. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   api
+
+.. toctree::
    :hidden:
 
    Release notes <https://github.com/scipp/tof/releases>
