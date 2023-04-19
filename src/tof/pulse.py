@@ -1,12 +1,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from . import facilities
+from . import facilities, units
 from .tools import Plot
-from . import units
 
 
 class Pulse:

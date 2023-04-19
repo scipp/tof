@@ -3,12 +3,11 @@
 
 from typing import List, Union
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-
-from .tools import Plot
 from . import units
+from .tools import Plot
 
 
 class Chopper:

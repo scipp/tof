@@ -3,9 +3,9 @@
 
 from itertools import chain
 
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection
-import matplotlib.pyplot as plt
 
 from .detector import Detector
 from .tools import Plot
