@@ -1,5 +1,5 @@
 import numpy as np
-from matplotlib import colormaps
+from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 
 from .units import s_to_us
@@ -47,22 +47,31 @@ class Model:
         self.detector._mask = initial_mask
 
     def plot(self, nrays=1000):
-        cmap = colormaps["gist_rainbow_r"]
         fig, ax = plt.subplots()
         tofs = self.detector.tofs
         inds = np.random.choice(len(tofs), size=nrays, replace=False)
-        for i in inds:
-            ax.plot(
-                [s_to_us(self.pulse.birth_times[self.detector._mask][i]), tofs[i]],
-                [0, self.detector.distance],
-                color=cmap(
-                    (
-                        self.pulse.wavelengths[self.detector._mask][i]
-                        - self.pulse.wavelength_min
-                    )
-                    / (self.pulse.wavelength_max - self.pulse.wavelength_min)
-                ),
+        # Plot rays
+        x0 = s_to_us(self.pulse.birth_times[self.detector._mask][inds]).reshape(-1, 1)
+        x1 = tofs[inds].reshape(-1, 1)
+        y0 = np.zeros(nrays).reshape(-1, 1)
+        y1 = np.full(nrays, self.detector.distance).reshape(-1, 1)
+        segments = np.concatenate(
+            (
+                np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
+                np.concatenate((x1, y1), axis=1).reshape(-1, 1, 2),
+            ),
+            axis=1,
+        )
+        coll = LineCollection(segments, cmap=plt.cm.gist_rainbow_r)
+        coll.set_array(
+            (
+                self.pulse.wavelengths[self.detector._mask][inds]
+                - self.pulse.wavelength_min
             )
+            / (self.pulse.wavelength_max - self.pulse.wavelength_min)
+        )
+        ax.add_collection(coll)
+        # Plot choppers
         for name, ch in self.choppers.items():
             x0 = s_to_us(ch.open_times)
             x1 = s_to_us(ch.close_times)
