@@ -1,9 +1,11 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
+
 import numpy as np
 
 mass = 1.674927471e-27  # Neutron mass in kg
 alpha = 2.5278e-4  # Neutron mass over Planck constant
 mev = 1.602176634e-22  # meV to Joule
-# angstrom = 1.0e-10  # Angstrom to meter
 
 
 def deg_to_rad(x):
