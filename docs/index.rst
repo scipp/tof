@@ -5,7 +5,7 @@ Tof
 A simple tool to create time-of-flight chopper cascade diagrams
 
 .. image:: _images/user-guide_8_1.png
-   :alt: Build status
+   :alt: preview
    :scale: 100%
 
 Installation
