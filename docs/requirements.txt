@@ -1,0 +1,7 @@
+matplotlib
+numpy
+sphinx<6
+nbsphinx
+jupyter
+sphinx-copybutton
+sphinx-book-theme
