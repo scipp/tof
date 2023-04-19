@@ -5,7 +5,6 @@ from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 
 from .detector import Detector
-from .pulse import Pulse
 from .tools import Plot
 from .units import s_to_us
 
@@ -20,7 +19,7 @@ class Model:
             self.detectors = {self.detectors.name: self.detectors}
         self.pulse = pulse
 
-    def ray_trace(self, npulses=1):
+    def run(self, npulses=1):
         # TODO: ray-trace multiple pulses
         components = sorted(
             chain(self.choppers.values(), self.detectors.values()),
@@ -43,26 +42,23 @@ class Model:
             comp._mask = combined
             initial_mask = combined
 
-        # self.detector._arrival_times = (
-        #     self.pulse.birth_times + self.detector.distance / self.pulse.speeds
-        # )
-        # self.detector._mask = initial_mask
-
-    def plot(self, nrays=1000):
+    def plot(self, max_rays=1000):
         fig, ax = plt.subplots()
-
         furthest_detector = max(self.detectors.values(), key=lambda d: d.distance)
-
         tofs = furthest_detector.tofs
         tof_max = tofs.max()
-        inds = np.random.choice(len(tofs), size=nrays, replace=False)
+        if (max_rays is not None) and (len(tofs) > max_rays):
+            inds = np.random.choice(len(tofs), size=max_rays, replace=False)
+        else:
+            inds = slice(None)
+
         # Plot rays
         x0 = s_to_us(self.pulse.birth_times[furthest_detector._mask][inds]).reshape(
             -1, 1
         )
         x1 = tofs[inds].reshape(-1, 1)
-        y0 = np.zeros(nrays).reshape(-1, 1)
-        y1 = np.full(nrays, furthest_detector.distance).reshape(-1, 1)
+        y0 = np.zeros(max_rays).reshape(-1, 1)
+        y1 = np.full(max_rays, furthest_detector.distance).reshape(-1, 1)
         segments = np.concatenate(
             (
                 np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
@@ -77,7 +73,7 @@ class Model:
         )
         ax.add_collection(coll)
         # Plot choppers
-        for name, ch in self.choppers.items():
+        for ch in self.choppers.values():
             x0 = s_to_us(ch.open_times)
             x1 = s_to_us(ch.close_times)
             x = np.empty(3 * x0.size, dtype=x0.dtype)
@@ -88,12 +84,21 @@ class Model:
             y = np.full_like(x, ch.distance)
             y[2::3] = None
             ax.plot(x, y, color="k")
-            ax.text(tof_max, ch.distance, name, ha="right", va="bottom", color="k")
+            ax.text(tof_max, ch.distance, ch.name, ha="right", va="bottom", color="k")
 
         # Plot detectors
-        for name, det in self.detectors.items():
+        for det in self.detectors.values():
             ax.plot([0, tof_max], [det.distance] * 2, color="gray", lw=3)
-            ax.text(0, det.distance, name, ha="left", va="bottom", color="gray")
+            ax.text(0, det.distance, det.name, ha="left", va="bottom", color="gray")
+
+        # Plot pulse
+        ax.plot(
+            [s_to_us(self.pulse.tmin), s_to_us(self.pulse.tmax)],
+            [0, 0],
+            color="gray",
+            lw=3,
+        )
+        ax.text(s_to_us(self.pulse.tmin), 0, "Pulse", ha="left", va="top", color="gray")
 
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")

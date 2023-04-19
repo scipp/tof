@@ -26,8 +26,10 @@ class Detector:
         x = np.concatenate([edges, edges[-1:]])
         y = np.concatenate([[0], h, [0]])
         ax.step(x, y)
+        ax.fill_between(x, 0, y, step="pre", alpha=0.5)
         ax.set_xlabel('Time-of-flight (us)')
         ax.set_ylabel('Counts')
+        ax.set_title(f"Detector: {self.name}")
         return Plot(fig=fig, ax=ax)
 
     def __repr__(self):

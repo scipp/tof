@@ -1,3 +1,5 @@
+# flake8: noqa F401
+
 from .chopper import Chopper
 from .detector import Detector
 from .pulse import Pulse

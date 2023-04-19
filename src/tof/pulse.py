@@ -14,7 +14,7 @@ class Pulse:
         lmin: float = None,
         lmax: float = None,
         neutrons=1_000_000,
-        kind="ess",
+        kind=None,
         p_wav=None,
         p_time=None,
         sampling_resolution=10000,
@@ -78,6 +78,7 @@ class Pulse:
             x = np.concatenate([edges, edges[-1:]])
             y = np.concatenate([[0], h, [0]])
             ax[i].step(x, y)
+            ax[i].fill_between(x, 0, y, step="pre", alpha=0.5)
             ax[i].set_xlabel(label)
             ax[i].set_ylabel("Counts")
         size = fig.get_size_inches()
