@@ -75,7 +75,7 @@ class Pulse:
     def plot(self, bins=300):
         fig, ax = plt.subplots(1, 2)
         for i, (data, label) in enumerate(
-            zip([self.birth_times, self.wavelengths], ["Time", "Wavelength"])
+            zip([self.birth_times, self.wavelengths], ["Time (s)", "Wavelength (Å)"])
         ):
             h, edges = np.histogram(data, bins=bins)
             x = np.concatenate([edges, edges[-1:]])
