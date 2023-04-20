@@ -85,6 +85,6 @@ class Pulse:
 
     def __repr__(self) -> str:
         return (
-            f"Pulse(tmin={self.tmin}, tmax={self.tmax}, lmin={self.lmin}, "
-            f"lmax={self.lmax}, neutrons={self.neutrons}, kind={self.kind})"
+            f"Pulse(tmin={self.tmin} s, tmax={self.tmax} s, lmin={self.lmin} Å, "
+            f"lmax={self.lmax} Å, neutrons={self.neutrons}, kind={self.kind})"
         )
