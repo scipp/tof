@@ -22,18 +22,11 @@ class Chopper(Component):
         self.distance = distance
         self.phase = phase
         self.name = name
-
-        self._arrival_times = None
-        self._wavelengths = None
-        self._mask = None
+        super().__init__()
 
     @property
     def omega(self) -> sc.Variable:
-        return (
-            sc.constants.pi
-            * (2.0 * sc.units.rad)
-            * self.frequency.to(unit='Hz', copy=False)
-        )
+        return sc.constants.pi * (2.0 * sc.units.rad) * self.frequency
 
     @property
     def open_times(self) -> sc.Variable:
