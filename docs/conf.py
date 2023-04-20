@@ -54,7 +54,7 @@ master_doc = 'index'
 html_theme = 'sphinx_book_theme'
 html_theme_options = {
     'logo_only': True,
-    "repository_url": "https://github.com/scipp/mpltoolbox",
+    "repository_url": "https://github.com/scipp/tof",
     "repository_branch": "main",
     "use_repository_button": True,
     "use_issues_button": True,
