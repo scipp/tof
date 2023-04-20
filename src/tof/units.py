@@ -1,42 +1,35 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
-from typing import Union
-
-import numpy as np
-
-mass = 1.674927471e-27  # Neutron mass in kg
-alpha = 2.5278e-4  # Neutron mass over Planck constant
-mev = 1.602176634e-22  # meV to Joule
+import scipp as sc
+import scipp.constants as const
 
 
-def deg_to_rad(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return np.radians(x)
+class Units:
+    def __init__(self):
+        self.alpha = const.m_n / const.h
+
+        self.Hz = sc.Unit('Hz')
+        self.s = sc.Unit('s')
+        self.us = sc.Unit('us')
+        self.angstrom = sc.Unit('angstrom')
+        self.m = sc.Unit('m')
+        self.deg = sc.Unit('deg')
+        self.rad = sc.Unit('rad')
+
+    def speed_to_wavelength(
+        self, x: sc.Variable, unit: str = 'angstrom'
+    ) -> sc.Variable:
+        return (1.0 / (self.alpha * x)).to(unit=unit)
+
+    def wavelength_to_speed(self, x: sc.Variable, unit: str = 'm/s') -> sc.Variable:
+        return (1.0 / (self.alpha * x)).to(unit=unit)
+
+    def speed_to_energy(self, x: sc.Variable, unit='meV') -> sc.Variable:
+        return (const.m_n * x * x).to(unit=unit)
+
+    def energy_to_speed(self, x: sc.Variable, unit='m/s') -> sc.Variable:
+        return sc.sqrt(x / const.m_n).to(unit=unit)
 
 
-def rad_to_deg(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return np.degrees(x)
-
-
-def us_to_s(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return x * 1.0e-6
-
-
-def s_to_us(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return x * 1.0e6
-
-
-def speed_to_wavelength(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return 1.0 / (alpha * x)
-
-
-def wavelength_to_speed(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return 1.0 / (alpha * x)
-
-
-def speed_to_mev(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return mass * x * x / mev
-
-
-def mev_to_speed(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    return np.sqrt(mev * x / mass)
+units = Units()
