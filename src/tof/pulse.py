@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipp as sc
 
-from . import facilities, units
+from . import facilities
+from .units import units
 
 
 class Pulse:
@@ -88,6 +89,7 @@ class Pulse:
         self.wavelengths.hist(wavelength=bins).plot(ax=ax[1])
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
+        fig.tight_layout()
         return fig, ax
 
     def __repr__(self) -> str:

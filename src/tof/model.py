@@ -128,6 +128,7 @@ class Model:
 
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")
+        fig.tight_layout()
         return fig, ax
 
     def __repr__(self) -> str:
