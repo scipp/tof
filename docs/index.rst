@@ -1,12 +1,16 @@
-**************
-Time-of-flight
-**************
+.. raw:: html
 
-A simple tool to create time-of-flight chopper cascade diagrams
+   <div style="display: block; margin-left: auto; margin-right: auto; width: 60%;">
+      <img src="_static/logo.svg" width="80%" />
+   </div>
+   <style> .transparent {opacity:0; font-size:16px} </style>
 
-.. image:: _images/user-guide_8_1.png
-   :alt: preview
-   :scale: 100%
+.. role:: transparent
+
+:transparent:`Tof`
+******************
+
+A simple tool to create time-of-flight chopper cascade diagrams.
 
 Installation
 ============

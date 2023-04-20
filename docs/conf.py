@@ -61,5 +61,5 @@ html_theme_options = {
     "use_edit_page_button": True,
     "show_toc_level": 2,
 }
-html_logo = "images/logo.png"
-html_favicon = "images/favicon.ico"
+html_logo = "_static/logo.svg"
+html_favicon = "_static/favicon.ico"
