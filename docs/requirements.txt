@@ -1,5 +1,6 @@
 scipp
 plopp
+scipy
 sphinx<6
 nbsphinx
 jupyter

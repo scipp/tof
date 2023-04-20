@@ -8,8 +8,6 @@ src = os.path.abspath('../src')
 os.environ['PYTHONPATH'] = src
 sys.path.insert(0, src)
 
-import tof
-
 # -- Project information -----------------------------------------------------
 
 project = 'tof'

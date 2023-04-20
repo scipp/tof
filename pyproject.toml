@@ -19,7 +19,8 @@ requires-python = ">=3.8"
 dependencies = [
     "importlib-resources",
     "plopp",
-    "scipp"
+    "scipp",
+    "scipy",
 ]
 
 [tool.setuptools.packages.find]
