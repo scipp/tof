@@ -13,7 +13,7 @@ class Chopper(Component):
         open: sc.Variable,
         close: sc.Variable,
         distance: sc.Variable,
-        phase: sc.Variable = sc.scalar(0, unit='rad'),
+        phase: sc.Variable,
         name: str = "",
     ):
         self.frequency = frequency
