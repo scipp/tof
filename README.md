@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/tof/badge/?version=latest)](https://tof.readthedocs.io/en/latest/?badge=latest)
+
 # tof
 
 A simple tool to create time-of-flight chopper cascade diagrams
