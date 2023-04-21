@@ -11,4 +11,4 @@ API Reference
    Detector
    Model
    Pulse
-   units
+   utils

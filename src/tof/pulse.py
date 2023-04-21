@@ -8,7 +8,7 @@ import numpy as np
 import scipp as sc
 
 from . import facilities
-from .units import units
+from .utils import wavelength_to_speed
 
 
 class Pulse:
@@ -77,7 +77,7 @@ class Pulse:
         self.wavelengths = sc.array(
             dims=['event'], values=self.wavelengths, unit='angstrom'
         )
-        self.speeds = units.wavelength_to_speed(self.wavelengths)
+        self.speeds = wavelength_to_speed(self.wavelengths)
 
     @property
     def duration(self) -> float:
