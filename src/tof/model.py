@@ -87,6 +87,28 @@ class Model:
         #     selection_mask = slice(None)
         # else:
 
+        # Blocked rays
+        if blocked_rays > 0:
+            inv_mask = ~furthest_detector._mask
+            tofs = furthest_detector._arrival_times[inv_mask].to(unit='us')
+            if len(tofs) > blocked_rays:
+                inds = np.random.choice(len(tofs), size=blocked_rays, replace=False)
+            else:
+                inds = slice(None)
+            birth_times = self.pulse.birth_times[inv_mask][inds]
+
+            # chopper_masks = [c._mask[inv_mask][inds] for c in self.choppers]
+            chopper_masks = sc.concat(
+                [c._mask[inv_mask][inds] for c in self.choppers], dim='chopper'
+            )
+            self._add_rays(
+                ax=ax,
+                tofs=tofs[inds],
+                birth_times=birth_times,
+                distances=distances,
+                wavelengths=wavelengths,
+            )
+
         # Normal rays
         tofs = furthest_detector.tofs.coords['tof']
         if (max_rays is not None) and (len(tofs) > max_rays):
