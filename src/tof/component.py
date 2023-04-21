@@ -5,6 +5,11 @@ import scipp as sc
 
 
 class Component:
+    def __init__(self):
+        self._arrival_times = None
+        self._wavelengths = None
+        self._mask = None
+
     @property
     def tofs(self) -> sc.Variable:
         t = self._arrival_times[self._mask].to(unit='us')
