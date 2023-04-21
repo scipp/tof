@@ -9,13 +9,8 @@ class Units:
     def __init__(self):
         self.alpha = const.m_n / const.h
 
-        self.Hz = sc.Unit('Hz')
-        self.s = sc.Unit('s')
-        self.us = sc.Unit('us')
-        self.angstrom = sc.Unit('angstrom')
-        self.m = sc.Unit('m')
-        self.deg = sc.Unit('deg')
-        self.rad = sc.Unit('rad')
+    def __call__(self, unit: str) -> sc.Unit:
+        return sc.Unit(unit)
 
     def speed_to_wavelength(
         self, x: sc.Variable, unit: str = 'angstrom'
