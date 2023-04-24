@@ -90,17 +90,32 @@ class Model:
         # Blocked rays
         if blocked_rays > 0:
             inv_mask = ~furthest_detector._mask
-            tofs = furthest_detector._arrival_times[inv_mask].to(unit='us')
-            if len(tofs) > blocked_rays:
-                inds = np.random.choice(len(tofs), size=blocked_rays, replace=False)
+            nrays = inv_mask.sum()
+            # tofs = furthest_detector._arrival_times[inv_mask].to(unit='us')
+            if nrays > blocked_rays:
+                inds = np.random.choice(nrays, size=blocked_rays, replace=False)
             else:
                 inds = slice(None)
             birth_times = self.pulse.birth_times[inv_mask][inds]
 
-            # chopper_masks = [c._mask[inv_mask][inds] for c in self.choppers]
-            chopper_masks = sc.concat(
-                [c._mask[inv_mask][inds] for c in self.choppers], dim='chopper'
+            # Compute arrival times for all rays at all choppers and the furthest
+            # detector
+            components = sorted(
+                chain(self.choppers, [furthest_detector]),
+                key=lambda c: c.distance.value,
             )
+            tofs = sc.concat(
+                [comp._arrival_times for comp in components], dim='component'
+            )
+            distances = sc.concat(
+                [comp.distance for comp in components], dim='component'
+            )
+            masks = sc.concat([comp._mask for comp in components], dim='component')
+
+            # # chopper_masks = [c._mask[inv_mask][inds] for c in self.choppers]
+            # chopper_masks = sc.concat(
+            #     [c._mask[inv_mask][inds] for c in self.choppers], dim='chopper'
+            # )
             self._add_rays(
                 ax=ax,
                 tofs=tofs[inds],
