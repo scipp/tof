@@ -39,6 +39,9 @@ class Model:
         initial_mask = sc.ones(
             sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
         )
+        previous_mask = sc.zeros(
+            sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
+        )
         for comp in components:
             comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + comp.distance / self.pulse.speeds
@@ -53,28 +56,15 @@ class Model:
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
             comp._mask = combined
+            comp._own_mask = ~m & ~previous_mask
             initial_mask = combined
+            previous_mask = ~m
 
-    def plot(self, max_rays: int = 1000) -> tuple:
-        fig, ax = plt.subplots()
-        furthest_detector = max(self.detectors, key=lambda d: d.distance)
-        tofs = furthest_detector.tofs.coords['tof'].values
-        tof_max = tofs.max()
-        if (max_rays is not None) and (len(tofs) > max_rays):
-            inds = np.random.choice(len(tofs), size=max_rays, replace=False)
-        else:
-            inds = slice(None)
-
-        # Plot rays
-        x0 = (
-            self.pulse.birth_times[furthest_detector._mask][inds]
-            .to(unit='us')
-            .values.reshape(-1, 1)
-        )
-        x1 = tofs[inds].reshape(-1, 1)
-        nrays = x0.size
-        y0 = np.zeros(nrays).reshape(-1, 1)
-        y1 = np.full(nrays, furthest_detector.distance.value).reshape(-1, 1)
+    def _add_rays(self, ax, tofs, birth_times, distances, wavelengths=None):
+        x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
+        x1 = tofs.to(unit='us', copy=False).values.reshape(-1, 1)
+        y0 = np.zeros(x0.size).reshape(-1, 1)
+        y1 = distances.values.reshape(-1, 1)
         segments = np.concatenate(
             (
                 np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
@@ -82,17 +72,80 @@ class Model:
             ),
             axis=1,
         )
-        coll = LineCollection(segments, cmap=plt.cm.gist_rainbow_r)
-        coll.set_array(
-            (
-                (
-                    self.pulse.wavelengths[furthest_detector._mask][inds]
-                    - self.pulse.lmin
-                )
-                / (self.pulse.lmax - self.pulse.lmin)
-            ).values
-        )
+        coll = LineCollection(segments)
+        if wavelengths is not None:
+            coll.set_cmap(plt.cm.gist_rainbow_r)
+            coll.set_array(wavelengths.values)
+            coll.set_norm(plt.Normalize(self.pulse.lmin.value, self.pulse.lmax.value))
+            cbar = plt.colorbar(coll)
+            cbar.ax.yaxis.set_label_coords(-0.9, 0.5)
+            cbar.set_label('Wavelength (Å)')
+        else:
+            coll.set_color('lightgray')
         ax.add_collection(coll)
+
+    def plot(self, max_rays: int = 1000, blocked_rays: int = 0, figsize=None) -> tuple:
+        fig, ax = plt.subplots(figsize=figsize)
+        furthest_detector = max(self.detectors, key=lambda d: d.distance)
+
+        if blocked_rays > 0:
+            inv_mask = ~furthest_detector._mask
+            nrays = int(inv_mask.sum())
+            if nrays > blocked_rays:
+                inds = np.random.choice(nrays, size=blocked_rays, replace=False)
+            else:
+                inds = slice(None)
+            birth_times = self.pulse.birth_times[inv_mask][inds]
+
+            components = sorted(
+                chain(self.choppers, [furthest_detector]),
+                key=lambda c: c.distance.value,
+            )
+            dim = 'component'
+            tofs = sc.concat(
+                [comp._arrival_times[inv_mask][inds] for comp in components], dim=dim
+            )
+            distances = sc.concat(
+                [
+                    comp.distance.broadcast(sizes=birth_times.sizes)
+                    for comp in components
+                ],
+                dim=dim,
+            )
+            masks = sc.concat(
+                [sc.ones(sizes=birth_times.sizes, dtype=bool)]
+                + [comp._mask[inv_mask][inds] for comp in components],
+                dim=dim,
+            )
+
+            diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
+            diff.unit = ''
+            self._add_rays(
+                ax=ax,
+                tofs=(tofs * diff).max(dim=dim),
+                birth_times=birth_times,
+                distances=(distances * diff).max(dim=dim),
+            )
+
+        # Normal rays
+        if max_rays > 0:
+            tofs = furthest_detector.tofs.visible.data.coords['tof']
+            if (max_rays is not None) and (len(tofs) > max_rays):
+                inds = np.random.choice(len(tofs), size=max_rays, replace=False)
+            else:
+                inds = slice(None)
+            birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
+            wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
+            distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
+            self._add_rays(
+                ax=ax,
+                tofs=tofs[inds],
+                birth_times=birth_times,
+                distances=distances,
+                wavelengths=wavelengths,
+            )
+
+        tof_max = tofs.max().value
         # Plot choppers
         for ch in self.choppers:
             x0 = ch.open_times.to(unit='us').values
