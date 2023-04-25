@@ -69,27 +69,20 @@ class Model:
         )
         coll = LineCollection(segments)
         if wavelengths is not None:
-            cmap = plt.cm.gist_rainbow_r.copy()
-            cmap.set_bad('lightgray')
-            colors = (
-                (wavelengths - self.pulse.lmin) / (self.pulse.lmax - self.pulse.lmin)
-            ).values
-            coll.set_cmap(cmap)
-            coll.set_array(colors)
+            coll.set_cmap(plt.cm.gist_rainbow_r)
+            coll.set_array(wavelengths.values)
+            coll.set_norm(plt.Normalize(self.pulse.lmin.value, self.pulse.lmax.value))
+            cbar = plt.colorbar(coll)
+            cbar.ax.yaxis.set_label_coords(-0.9, 0.5)
+            cbar.set_label('Wavelength (Å)')
         else:
             coll.set_color('lightgray')
         ax.add_collection(coll)
 
-    def plot(self, max_rays: int = 1000, blocked_rays: int = 0) -> tuple:
-        fig, ax = plt.subplots()
+    def plot(self, max_rays: int = 1000, blocked_rays: int = 0, figsize=None) -> tuple:
+        fig, ax = plt.subplots(figsize=figsize)
         furthest_detector = max(self.detectors, key=lambda d: d.distance)
 
-        # if show_blocked_rays:
-        #     tofs = furthest_detector._arrival_times.to(unit='us').values
-        #     selection_mask = slice(None)
-        # else:
-
-        # Blocked rays
         if blocked_rays > 0:
             inv_mask = ~furthest_detector._mask
             nrays = int(inv_mask.sum())
@@ -99,8 +92,6 @@ class Model:
                 inds = slice(None)
             birth_times = self.pulse.birth_times[inv_mask][inds]
 
-            # Compute arrival times for all rays at all choppers and the furthest
-            # detector
             components = sorted(
                 chain(self.choppers, [furthest_detector]),
                 key=lambda c: c.distance.value,
@@ -124,17 +115,6 @@ class Model:
 
             diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
             diff.unit = ''
-
-            # sel = np.argmax(diff.values, axis=0) + 1
-            # print(distances[birth_times.dim, sel])
-
-            # # chopper_masks = [c._mask[inv_mask][inds] for c in self.choppers]
-            # chopper_masks = sc.concat(
-            #     [c._mask[inv_mask][inds] for c in self.choppers], dim='chopper'
-            # )
-            # print(tofs)
-            # print(tofs[birth_times.dim, sel])
-            # print(sel)
             self._add_rays(
                 ax=ax,
                 tofs=(tofs * diff).max(dim=dim),
@@ -143,77 +123,24 @@ class Model:
             )
 
         # Normal rays
-        tofs = furthest_detector.tofs.coords['tof']
-        if (max_rays is not None) and (len(tofs) > max_rays):
-            inds = np.random.choice(len(tofs), size=max_rays, replace=False)
-        else:
-            inds = slice(None)
-        birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
-        wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
-        distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
-        self._add_rays(
-            ax=ax,
-            tofs=tofs[inds],
-            birth_times=birth_times,
-            distances=distances,
-            wavelengths=wavelengths,
-        )
-
-        # # Blocked rays
-        # tofs = furthest_detector.tofs.coords['tof'].values
-        # if (max_rays is not None) and (len(tofs) > max_rays):
-        #     inds = np.random.choice(len(tofs), size=max_rays, replace=False)
-        # else:
-        #     inds = slice(None)
-        # birth_times = self.pulse.birth_times[selection_mask][inds]
-        # wavelengths = self.pulse.birth_times[selection_mask][inds]
-        # self._add_rays(ax=ax, tofs=tofs, birth_times=birth_times, wavelengths=wavelengths)
-
-        # selection_mask = furthest_detector._mask
-
-        # tof_max = tofs.max()
-        # if (max_rays is not None) and (len(tofs) > max_rays):
-        #     inds = np.random.choice(len(tofs), size=max_rays, replace=False)
-        # else:
-        #     inds = slice(None)
-
-        # # Plot rays
-        # x0 = (
-        #     self.pulse.birth_times[selection_mask][inds]
-        #     .to(unit='us')
-        #     .values.reshape(-1, 1)
-        # )
-        # x1 = tofs[inds].reshape(-1, 1)
-        # nrays = x0.size
-        # y0 = np.zeros(nrays).reshape(-1, 1)
-        # y1 = np.full(nrays, furthest_detector.distance.value).reshape(-1, 1)
-        # segments = np.concatenate(
-        #     (
-        #         np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
-        #         np.concatenate((x1, y1), axis=1).reshape(-1, 1, 2),
-        #     ),
-        #     axis=1,
-        # )
-        # cmap = plt.cm.gist_rainbow_r.copy()
-        # cmap.set_bad('lightgray')
-        # coll = LineCollection(segments, cmap=cmap)
-        # colors = (
-        #     (self.pulse.wavelengths - self.pulse.lmin)
-        #     / (self.pulse.lmax - self.pulse.lmin)
-        # ).values
-        # colors[~furthest_detector._mask.values] = np.nan
-        # print(colors.max(), colors.dtype)
-        # coll.set_array(
-        #     colors[
-        #         selection_mask
-        #         if isinstance(selection_mask, slice)
-        #         else selection_mask.values
-        #     ][inds]
-        # )
-        # ax.add_collection(coll)
+        if max_rays > 0:
+            tofs = furthest_detector.tofs.coords['tof']
+            if (max_rays is not None) and (len(tofs) > max_rays):
+                inds = np.random.choice(len(tofs), size=max_rays, replace=False)
+            else:
+                inds = slice(None)
+            birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
+            wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
+            distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
+            self._add_rays(
+                ax=ax,
+                tofs=tofs[inds],
+                birth_times=birth_times,
+                distances=distances,
+                wavelengths=wavelengths,
+            )
 
         tof_max = tofs.max().value
-
         # Plot choppers
         for ch in self.choppers:
             x0 = ch.open_times.to(unit='us').values
