@@ -56,8 +56,8 @@ class Model:
             initial_mask = combined
 
     def _add_rays(self, ax, tofs, birth_times, distances, wavelengths=None):
-        x0 = birth_times.to(unit='us').values.reshape(-1, 1)
-        x1 = tofs.values.reshape(-1, 1)
+        x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
+        x1 = tofs.to(unit='us', copy=False).values.reshape(-1, 1)
         y0 = np.zeros(x0.size).reshape(-1, 1)
         y1 = distances.values.reshape(-1, 1)
         segments = np.concatenate(
@@ -76,6 +76,8 @@ class Model:
             ).values
             coll.set_cmap(cmap)
             coll.set_array(colors)
+        else:
+            coll.set_color('lightgray')
         ax.add_collection(coll)
 
     def plot(self, max_rays: int = 1000, blocked_rays: int = 0) -> tuple:
@@ -90,8 +92,7 @@ class Model:
         # Blocked rays
         if blocked_rays > 0:
             inv_mask = ~furthest_detector._mask
-            nrays = inv_mask.sum()
-            # tofs = furthest_detector._arrival_times[inv_mask].to(unit='us')
+            nrays = int(inv_mask.sum())
             if nrays > blocked_rays:
                 inds = np.random.choice(nrays, size=blocked_rays, replace=False)
             else:
@@ -104,24 +105,41 @@ class Model:
                 chain(self.choppers, [furthest_detector]),
                 key=lambda c: c.distance.value,
             )
+            dim = 'component'
             tofs = sc.concat(
-                [comp._arrival_times for comp in components], dim='component'
+                [comp._arrival_times[inv_mask][inds] for comp in components], dim=dim
             )
             distances = sc.concat(
-                [comp.distance for comp in components], dim='component'
+                [
+                    comp.distance.broadcast(sizes=birth_times.sizes)
+                    for comp in components
+                ],
+                dim=dim,
             )
-            masks = sc.concat([comp._mask for comp in components], dim='component')
+            masks = sc.concat(
+                [sc.ones(sizes=birth_times.sizes, dtype=bool)]
+                + [comp._mask[inv_mask][inds] for comp in components],
+                dim=dim,
+            )
+
+            diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
+            diff.unit = ''
+
+            # sel = np.argmax(diff.values, axis=0) + 1
+            # print(distances[birth_times.dim, sel])
 
             # # chopper_masks = [c._mask[inv_mask][inds] for c in self.choppers]
             # chopper_masks = sc.concat(
             #     [c._mask[inv_mask][inds] for c in self.choppers], dim='chopper'
             # )
+            # print(tofs)
+            # print(tofs[birth_times.dim, sel])
+            # print(sel)
             self._add_rays(
                 ax=ax,
-                tofs=tofs[inds],
+                tofs=(tofs * diff).max(dim=dim),
                 birth_times=birth_times,
-                distances=distances,
-                wavelengths=wavelengths,
+                distances=(distances * diff).max(dim=dim),
             )
 
         # Normal rays
