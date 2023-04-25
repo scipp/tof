@@ -1,6 +1,7 @@
+ipykernel
 gitpython
 nbsphinx
 sphinx
-sphinx-autodoc-typehints==1.18.3  # later versions require sphinx >=5 which is incompatible with current sphinx-book-theme
-sphinx-book-theme<1.0
+sphinx-autodoc-typehints
+sphinx-book-theme
 sphinx-copybutton
