@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from typing import Union
+
 import plopp as pp
 import scipp as sc
 
@@ -41,8 +43,20 @@ class Component:
             coords={'wavelength': w},
         )
 
-    def plot(self, bins: int = 300, show_blocked: bool = False):
+    def plot(self, bins: Union[int, sc.Variable] = 300, show_blocked: bool = False):
+        tofs = self.tofs
+        btofs = self.blocked_tofs
         if show_blocked:
+            if isinstance(bins, int):
+                bins = sc.linspace(
+                    dim='tof',
+                    start=min(
+                        tofs.coords['tof'].min(), btofs.coords['tof'].min()
+                    ).value,
+                    stop=max(tofs.coords['tof'].max(), btofs.coords['tof'].max()).value,
+                    num=bins,
+                    unit=tofs.coords['tof'].unit,
+                )
             return pp.plot(
                 {
                     'visible': self.tofs.hist(tof=bins),
