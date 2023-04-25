@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
-from typing import Union
+from typing import Optional, Union
 
 import plopp as pp
 import scipp as sc
@@ -24,9 +24,16 @@ class Data:
 
 
 class ComponentData:
-    def __init__(self, data: sc.Variable, mask: sc.Variable, dim: str):
+    def __init__(
+        self,
+        data: sc.Variable,
+        mask: sc.Variable,
+        dim: str,
+        blocking: Optional[sc.Variable] = None,
+    ):
         self._data = data
         self._mask = mask
+        self._blocking = blocking
         self._dim = dim
 
     @property
@@ -41,7 +48,9 @@ class ComponentData:
 
     @property
     def blocked(self) -> Data:
-        a = self._data[~self._mask]
+        if self._blocking is None:
+            return
+        a = self._data[self._blocking]
         return Data(
             data=sc.DataArray(
                 data=sc.ones(sizes=a.sizes, unit='counts'), coords={self._dim: a}
@@ -51,9 +60,10 @@ class ComponentData:
 
     @property
     def data(self) -> sc.DataGroup:
-        return sc.DataGroup(
-            {'visible': self.visible.data, 'blocked': self.blocked.data}
-        )
+        out = {'visible': self.visible.data}
+        if self._blocking is not None:
+            out['blocked'] = self.blocked.data
+        return sc.DataGroup(out)
 
     def __repr__(self) -> str:
         return (
@@ -62,6 +72,8 @@ class ComponentData:
         )
 
     def plot(self, bins: Union[int, sc.Variable] = 300):
+        if self._blocking is None:
+            return self.visible.plot(bins=bins)
         visible = self.visible.data
         blocked = self.blocked.data
         if isinstance(bins, int):
@@ -90,13 +102,22 @@ class Component:
         self._arrival_times = None
         self._wavelengths = None
         self._mask = None
+        self._own_mask = None
 
     @property
     def tofs(self) -> sc.Variable:
         return ComponentData(
-            data=self._arrival_times.to(unit='us'), mask=self._mask, dim='tof'
+            data=self._arrival_times.to(unit='us'),
+            mask=self._mask,
+            blocking=self._own_mask,
+            dim='tof',
         )
 
     @property
     def wavelengths(self) -> sc.Variable:
-        return ComponentData(data=self._wavelengths, mask=self._mask, dim='wavelength')
+        return ComponentData(
+            data=self._wavelengths,
+            mask=self._mask,
+            blocking=self._own_mask,
+            dim='wavelength',
+        )
