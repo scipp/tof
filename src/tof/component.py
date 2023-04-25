@@ -45,24 +45,21 @@ class Component:
 
     def plot(self, bins: Union[int, sc.Variable] = 300, show_blocked: bool = False):
         tofs = self.tofs
+        if not show_blocked:
+            return tofs.hist(tof=bins).plot()
         btofs = self.blocked_tofs
-        if show_blocked:
-            if isinstance(bins, int):
-                bins = sc.linspace(
-                    dim='tof',
-                    start=min(
-                        tofs.coords['tof'].min(), btofs.coords['tof'].min()
-                    ).value,
-                    stop=max(tofs.coords['tof'].max(), btofs.coords['tof'].max()).value,
-                    num=bins,
-                    unit=tofs.coords['tof'].unit,
-                )
-            return pp.plot(
-                {
-                    'visible': self.tofs.hist(tof=bins),
-                    'blocked': self.blocked_tofs.hist(tof=bins),
-                },
-                color={'blocked': 'gray'},
+        if isinstance(bins, int):
+            bins = sc.linspace(
+                dim='tof',
+                start=min(tofs.coords['tof'].min(), btofs.coords['tof'].min()).value,
+                stop=max(tofs.coords['tof'].max(), btofs.coords['tof'].max()).value,
+                num=bins,
+                unit=tofs.coords['tof'].unit,
             )
-        else:
-            return self.tofs.hist(tof=bins).plot()
+        return pp.plot(
+            {
+                'visible': tofs.hist(tof=bins),
+                'blocked': btofs.hist(tof=bins),
+            },
+            color={'blocked': 'gray'},
+        )
