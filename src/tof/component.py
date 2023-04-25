@@ -7,6 +7,84 @@ import plopp as pp
 import scipp as sc
 
 
+class Data:
+    def __init__(self, data: sc.DataArray, dim: str):
+        self._data = data
+        self._dim = dim
+
+    @property
+    def data(self) -> sc.DataArray:
+        return self._data
+
+    def plot(self, bins: Union[int, sc.Variable] = 300):
+        return self._data.hist({self._dim: bins}).plot()
+
+    def __repr__(self) -> str:
+        return f"Data(data={self._data})"
+
+
+class ComponentData:
+    def __init__(self, data: sc.Variable, mask: sc.Variable, dim: str):
+        self._data = data
+        self._mask = mask
+        self._dim = dim
+
+    @property
+    def visible(self) -> Data:
+        a = self._data[self._mask]
+        return Data(
+            data=sc.DataArray(
+                data=sc.ones(sizes=a.sizes, unit='counts'), coords={self._dim: a}
+            ),
+            dim=self._dim,
+        )
+
+    @property
+    def blocked(self) -> Data:
+        a = self._data[~self._mask]
+        return Data(
+            data=sc.DataArray(
+                data=sc.ones(sizes=a.sizes, unit='counts'), coords={self._dim: a}
+            ),
+            dim=self._dim,
+        )
+
+    @property
+    def data(self) -> sc.DataGroup:
+        return sc.DataGroup(
+            {'visible': self.visible.data, 'blocked': self.blocked.data}
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"ComponentData(visible={sc.sum(self._mask).value}, "
+            f"blocked={sc.sum(~self._mask).value}, dim={self._dim})"
+        )
+
+    def plot(self, bins: Union[int, sc.Variable] = 300):
+        visible = self.visible.data
+        blocked = self.blocked.data
+        if isinstance(bins, int):
+            bins = sc.linspace(
+                dim=self._dim,
+                start=min(
+                    visible.coords[self._dim].min(), blocked.coords[self._dim].min()
+                ).value,
+                stop=max(
+                    visible.coords[self._dim].max(), blocked.coords[self._dim].max()
+                ).value,
+                num=bins,
+                unit=visible.coords[self._dim].unit,
+            )
+        return pp.plot(
+            {
+                'visible': visible.hist({self._dim: bins}),
+                'blocked': blocked.hist({self._dim: bins}),
+            },
+            color={'blocked': 'gray'},
+        )
+
+
 class Component:
     def __init__(self):
         self._arrival_times = None
@@ -15,51 +93,10 @@ class Component:
 
     @property
     def tofs(self) -> sc.Variable:
-        t = self._arrival_times[self._mask].to(unit='us')
-        return sc.DataArray(
-            data=sc.ones(sizes=t.sizes, unit='counts'), coords={'tof': t}
+        return ComponentData(
+            data=self._arrival_times.to(unit='us'), mask=self._mask, dim='tof'
         )
 
     @property
     def wavelengths(self) -> sc.Variable:
-        w = self._wavelengths[self._mask]
-        return sc.DataArray(
-            data=sc.ones(sizes=w.sizes, unit='counts'),
-            coords={'wavelength': w},
-        )
-
-    @property
-    def blocked_tofs(self) -> sc.Variable:
-        t = self._arrival_times[~self._mask].to(unit='us')
-        return sc.DataArray(
-            data=sc.ones(sizes=t.sizes, unit='counts'), coords={'tof': t}
-        )
-
-    @property
-    def blocked_wavelengths(self) -> sc.Variable:
-        w = self._wavelengths[~self._mask]
-        return sc.DataArray(
-            data=sc.ones(sizes=w.sizes, unit='counts'),
-            coords={'wavelength': w},
-        )
-
-    def plot(self, bins: Union[int, sc.Variable] = 300, show_blocked: bool = False):
-        tofs = self.tofs
-        if not show_blocked:
-            return tofs.hist(tof=bins).plot()
-        btofs = self.blocked_tofs
-        if isinstance(bins, int):
-            bins = sc.linspace(
-                dim='tof',
-                start=min(tofs.coords['tof'].min(), btofs.coords['tof'].min()).value,
-                stop=max(tofs.coords['tof'].max(), btofs.coords['tof'].max()).value,
-                num=bins,
-                unit=tofs.coords['tof'].unit,
-            )
-        return pp.plot(
-            {
-                'visible': tofs.hist(tof=bins),
-                'blocked': btofs.hist(tof=bins),
-            },
-            color={'blocked': 'gray'},
-        )
+        return ComponentData(data=self._wavelengths, mask=self._mask, dim='wavelength')
