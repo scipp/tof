@@ -124,7 +124,7 @@ class Model:
 
         # Normal rays
         if max_rays > 0:
-            tofs = furthest_detector.tofs.coords['tof']
+            tofs = furthest_detector.tofs.visible.data.coords['tof']
             if (max_rays is not None) and (len(tofs) > max_rays):
                 inds = np.random.choice(len(tofs), size=max_rays, replace=False)
             else:
