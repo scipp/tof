@@ -43,7 +43,7 @@ jobs:
       - run: tox
 
   docs:
-    needs: formatting
+    needs: tests
     name: Documentation
     runs-on: ubuntu-22.04
     steps:
