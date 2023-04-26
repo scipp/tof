@@ -17,8 +17,9 @@ class Pulse:
     It is defined by the number of neutrons, a wavelength range, and a time range.
     A probability distribution for the wavelengths and times can be provided (the
     distribution is flat by default).
-    Finally, some pre-defined pulses from neutron facilities can be used by setting
+    In addition, some pre-defined pulses from neutron facilities can be used by setting
     the ``kind`` parameter.
+    Finally, the wavelengths and times of the neutrons can be provided directly.
 
     Parameters
     ----------
@@ -40,6 +41,10 @@ class Pulse:
         Probability distribution for the times.
     sampling_resolution:
         Number of points used to sample the probability distributions.
+    birth_times:
+        Birth times of neutrons in the pulse.
+    wavelengths:
+        Wavelengths of neutrons in the pulse.
     """
 
     def __init__(
@@ -53,6 +58,8 @@ class Pulse:
         p_wav: Optional[np.ndarray] = None,
         p_time: Optional[np.ndarray] = None,
         sampling_resolution: int = 10000,
+        birth_times: Optional[sc.Variable] = None,
+        wavelengths: Optional[sc.Variable] = None,
     ):
         self.kind = kind
         self.neutrons = neutrons
@@ -63,7 +70,22 @@ class Pulse:
         self.p_wav = p_wav
         self.p_time = p_time
         self.sampling_resolution = sampling_resolution
-        self.generate()
+        if None not in (birth_times, wavelengths):
+            self.birth_times = birth_times.to(unit='s')
+            self.wavelengths = wavelengths.to(unit='angstrom')
+            self.tmin = self.birth_times.min()
+            self.tmax = self.birth_times.max()
+            self.lmin = self.wavelengths.min()
+            self.lmax = self.wavelengths.max()
+            self.speeds = wavelength_to_speed(self.wavelengths)
+            self.neutrons = len(self.birth_times)
+        elif all(v is None for v in (birth_times, wavelengths)):
+            self.generate()
+        else:
+            raise ValueError(
+                "Either both ``birth_times`` and ``wavelengths`` must be provided, or "
+                "neither."
+            )
 
     def generate(self, neutrons: Optional[int] = None):
         """
