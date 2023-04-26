@@ -4,6 +4,7 @@
 # flake8: noqa F401
 
 from .chopper import Chopper
+from .component import Component, ComponentData, Data
 from .detector import Detector
 from .model import Model
 from .pulse import Pulse
