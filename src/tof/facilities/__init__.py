@@ -3,4 +3,4 @@
 
 # flake8: noqa F401
 
-from .ess import pulse as ess
+from .ess_pulse import pulse as ess
