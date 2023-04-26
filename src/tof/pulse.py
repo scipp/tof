@@ -92,7 +92,9 @@ class Pulse:
                 x_wav = np.linspace(self.lmin.value, self.lmax.value, len(p_wav))
             self.wavelengths = np.random.choice(x_wav, size=self.neutrons, p=p_wav)
         else:
-            self.wavelengths = np.random.uniform(self.lmin, self.lmax, self.neutrons)
+            self.wavelengths = np.random.uniform(
+                self.lmin.value, self.lmax.value, self.neutrons
+            )
 
         self.birth_times = sc.array(dims=['event'], values=self.birth_times, unit='s')
         self.wavelengths = sc.array(
