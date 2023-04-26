@@ -21,11 +21,11 @@ You can install from ``pip`` using
 
    pip install tof
 
-.. raw:: html
+You can install from ``conda`` using
 
-   <div style="font-size:2em;">
-      <a href="user-guide.html">User guide</a>
-   </div>
+.. code-block:: sh
+
+   conda install -c conda-forge -c scipp tof
 
 .. toctree::
    :maxdepth: 2
