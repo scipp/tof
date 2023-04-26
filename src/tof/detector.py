@@ -7,6 +7,18 @@ from .component import Component
 
 
 class Detector(Component):
+    """
+    A detector component does not block any neutrons, it sees all neutrons passing
+    through it.
+
+    Parameters
+    ----------
+    distance:
+        The distance from the source to the detector.
+    name:
+        The name of the detector.
+    """
+
     def __init__(self, distance: sc.Variable = 0.0, name: str = "detector"):
         self.distance = distance
         self.name = name
