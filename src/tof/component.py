@@ -172,7 +172,7 @@ class Component:
         self._own_mask = None
 
     @property
-    def tofs(self) -> sc.Variable:
+    def tofs(self) -> ComponentData:
         """
         The arrival times of the neutrons that passed through the component.
         """
@@ -184,7 +184,7 @@ class Component:
         )
 
     @property
-    def wavelengths(self) -> sc.Variable:
+    def wavelengths(self) -> ComponentData:
         """
         The wavelengths of the neutrons that passed through the component.
         """

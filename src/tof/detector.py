@@ -19,7 +19,7 @@ class Detector(Component):
         The name of the detector.
     """
 
-    def __init__(self, distance: sc.Variable = 0.0, name: str = "detector"):
+    def __init__(self, distance: sc.Variable, name: str = "detector"):
         self.distance = distance
         self.name = name
         super().__init__()
