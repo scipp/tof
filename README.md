@@ -10,6 +10,10 @@ A simple tool to create time-of-flight chopper cascade diagrams
 pip install tof
 ```
 
+## Documentation
+
+[https://tof.readthedocs.io/](https://tof.readthedocs.io/)
+
 ## Example
 
 ```Python
@@ -110,7 +114,7 @@ model.plot(max_rays=10000)
 ![model](docs/_static/model.png)
 
 ```Python
-detectors[1].plot()
+detectors[1].tofs.plot()
 ```
 
 ![detector](docs/_static/detector.png)
