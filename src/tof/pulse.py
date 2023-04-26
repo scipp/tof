@@ -35,21 +35,23 @@ class Pulse:
         self.sampling_resolution = sampling_resolution
         self.generate()
 
-    def generate(self):
+    def generate(self, neutrons: Optional[int] = None):
+        if neutrons is not None:
+            self.neutrons = neutrons
         if self.kind is not None:
             params = getattr(facilities, self.kind)
             if self.tmin is None:
-                self.tmin = params['time'].coords['time'].min().to(unit='s')
+                self.tmin = params['time'].coords['time'].min()
             if self.tmax is None:
-                self.tmax = params['time'].coords['time'].max().to(unit='s')
+                self.tmax = params['time'].coords['time'].max()
             if self.lmin is None:
-                self.lmin = (
-                    params['wavelength'].coords['wavelength'].min().to(unit='angstrom')
-                )
+                self.lmin = params['wavelength'].coords['wavelength'].min()
             if self.lmax is None:
-                self.lmax = (
-                    params['wavelength'].coords['wavelength'].max().to(unit='angstrom')
-                )
+                self.lmax = params['wavelength'].coords['wavelength'].max()
+            self.tmin = self.tmin.to(unit='s')
+            self.tmax = self.tmax.to(unit='s')
+            self.lmin = self.lmin.to(unit='angstrom')
+            self.lmax = self.lmax.to(unit='angstrom')
 
             x_time = np.linspace(
                 self.tmin.value, self.tmax.value, self.sampling_resolution
