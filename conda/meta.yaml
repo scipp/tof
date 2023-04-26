@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
+
+package:
+  name: tof
+  version: {{ GIT_DESCRIBE_TAG }}
+source:
+  path: ..
+
+requirements:
+  build:
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=3.8
+    - plopp
+    - scipp
+    - scipy
+
+test:
+  imports:
+    - tof
+  # requires:
+  #   - pytest
+  # source_files:
+  #   - tests/
+  # commands:
+  #   - python -m pytest tests
+
+build:
+  noarch: python
+  script:
+    - pip install .
+
+about:
+  home: https://github.com/scipp/tof
+  license: BSD-3-Clause
+  summary: A simple tool to create time-of-flight chopper cascade diagrams
+  description: A simple tool to create time-of-flight chopper cascade diagrams
+  dev_url: https://github.com/scipp/tof
+  doc_url: https://tof.readthedocs.io/
