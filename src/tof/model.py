@@ -15,6 +15,20 @@ from .pulse import Pulse
 
 
 class Model:
+    """
+    A class that represents a neutron instrument.
+    It is defined by a list of choppers, a list of detectors, and a pulse.
+
+    Parameters
+    ----------
+    choppers:
+        A list of choppers.
+    detectors:
+        A list of detectors.
+    pulse:
+        A pulse of neutrons.
+    """
+
     def __init__(
         self,
         choppers: Union[Chopper, List[Chopper]],
@@ -30,6 +44,14 @@ class Model:
         self.pulse = pulse
 
     def run(self, npulses: int = 1):
+        """
+        Run the simulation.
+
+        Parameters
+        ----------
+        npulses:
+            Number of pulses to simulate.
+        """
         # TODO: ray-trace multiple pulses
         components = sorted(
             chain(self.choppers, self.detectors),
@@ -81,6 +103,23 @@ class Model:
         ax.add_collection(coll)
 
     def plot(self, max_rays: int = 1000, blocked_rays: int = 0, figsize=None) -> tuple:
+        """
+        Plot the time-distance diagram for the instrument, including the rays of
+        neutrons that make it to the furthest detector.
+        As plotting many lines can be slow, the number of rays to plot can be
+        limited by setting ``max_rays``.
+        In addition, it is possible to also plot the rays that are blocked by
+        choppers along the flight path by setting ``blocked_rays > 0``.
+
+        Parameters
+        ----------
+        max_rays:
+            Maximum number of rays to plot.
+        blocked_rays:
+            Number of blocked rays to plot.
+        figsize:
+            Figure size.
+        """
         fig, ax = plt.subplots(figsize=figsize)
         furthest_detector = max(self.detectors, key=lambda d: d.distance)
 
