@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
-from typing import Optional, Union
+from typing import Dict, Optional, Tuple, Union
 
 import plopp as pp
 import scipp as sc
@@ -30,6 +30,26 @@ class Data:
         The underlying data.
         """
         return self._data
+
+    @property
+    def shape(self) -> Tuple[int]:
+        """
+        The shape of the data.
+        """
+        return self._data.shape
+
+    @property
+    def sizes(self) -> Dict[str, int]:
+        """
+        The sizes of the data.
+        """
+        return self._data.sizes
+
+    def __len__(self) -> int:
+        """
+        The length of the data.
+        """
+        return len(self._data)
 
     def plot(self, bins: Union[int, sc.Variable] = 300):
         """
