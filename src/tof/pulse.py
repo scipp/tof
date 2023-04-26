@@ -12,6 +12,36 @@ from .utils import wavelength_to_speed
 
 
 class Pulse:
+    """
+    A class that represents a pulse of neutrons.
+    It is defined by the number of neutrons, a wavelength range, and a time range.
+    A probability distribution for the wavelengths and times can be provided (the
+    distribution is flat by default).
+    Finally, some pre-defined pulses from neutron facilities can be used by setting
+    the ``kind`` parameter.
+
+    Parameters
+    ----------
+    tmin:
+        Start time of the pulse.
+    tmax:
+        End time of the pulse.
+    lmin:
+        Minimum wavelength of the pulse.
+    lmax:
+        Maximum wavelength of the pulse.
+    neutrons:
+        Number of neutrons in the pulse.
+    kind:
+        Name of a pre-defined pulse from a neutron facility.
+    p_wav:
+        Probability distribution for the wavelengths.
+    p_time:
+        Probability distribution for the times.
+    sampling_resolution:
+        Number of points used to sample the probability distributions.
+    """
+
     def __init__(
         self,
         tmin: Optional[sc.Variable] = None,
@@ -36,6 +66,14 @@ class Pulse:
         self.generate()
 
     def generate(self, neutrons: Optional[int] = None):
+        """
+        Generate neutrons inside the pulse.
+
+        Parameters
+        ----------
+        neutrons:
+            Number of neutrons in the pulse.
+        """
         if neutrons is not None:
             self.neutrons = neutrons
         if self.kind is not None:
@@ -102,9 +140,18 @@ class Pulse:
 
     @property
     def duration(self) -> float:
+        """Duration of the pulse."""
         return self.tmax - self.tmin
 
     def plot(self, bins: int = 300) -> tuple:
+        """
+        Plot the pulse.
+
+        Parameters
+        ----------
+        bins:
+            Number of bins to use for histogramming the neutrons.
+        """
         fig, ax = plt.subplots(1, 2)
         self.birth_times.hist(time=bins).plot(ax=ax[0])
         self.wavelengths.hist(wavelength=bins).plot(ax=ax[1])

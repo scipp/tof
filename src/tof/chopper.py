@@ -7,6 +7,25 @@ from .component import Component
 
 
 class Chopper(Component):
+    """
+    A chopper is a rotating device with cutouts that blocks the beam at certain times.
+
+    Parameters
+    ----------
+    frequency:
+        The frequency of the chopper.
+    open:
+        The opening angles of the chopper cutouts.
+    close:
+        The closing angles of the chopper cutouts.
+    distance:
+        The distance from the source to the chopper.
+    phase:
+        The phase of the chopper.
+    name:
+        The name of the chopper.
+    """
+
     def __init__(
         self,
         frequency: sc.Variable,
@@ -26,16 +45,25 @@ class Chopper(Component):
 
     @property
     def omega(self) -> sc.Variable:
+        """
+        The angular velocity of the chopper.
+        """
         return sc.constants.pi * (2.0 * sc.units.rad) * self.frequency
 
     @property
     def open_times(self) -> sc.Variable:
+        """
+        The times at which the chopper is open.
+        """
         return (
             self.open.to(unit='rad', copy=False) + self.phase.to(unit='rad', copy=False)
         ) / self.omega
 
     @property
     def close_times(self) -> sc.Variable:
+        """
+        The times at which the chopper is closed.
+        """
         return (
             self.close.to(unit='rad', copy=False)
             + self.phase.to(unit='rad', copy=False)
