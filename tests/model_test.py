@@ -2,8 +2,8 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 import scipp as sc
-import tof
 
+import tof
 
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
