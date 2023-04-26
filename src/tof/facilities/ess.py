@@ -3,8 +3,10 @@
 
 import scipp as sc
 
-ess = {
-    'time': sc.DataArray(
+from .facility import FacilityPulse
+
+pulse = FacilityPulse(
+    time=sc.DataArray(
         data=sc.array(
             dims=['time'],
             values=[
@@ -421,7 +423,7 @@ ess = {
             )
         },
     ),
-    'wavelength': sc.DataArray(
+    wavelength=sc.DataArray(
         data=sc.array(
             dims=['wavelength'],
             values=[
@@ -638,4 +640,4 @@ ess = {
             )
         },
     ),
-}
+)
