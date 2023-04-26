@@ -39,9 +39,6 @@ class Model:
         initial_mask = sc.ones(
             sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
         )
-        previous_mask = sc.zeros(
-            sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
-        )
         for comp in components:
             comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + comp.distance / self.pulse.speeds
@@ -56,9 +53,8 @@ class Model:
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
             comp._mask = combined
-            comp._own_mask = ~m & ~previous_mask
+            comp._own_mask = ~m & initial_mask
             initial_mask = combined
-            previous_mask = ~m
 
     def _add_rays(self, ax, tofs, birth_times, distances, wavelengths=None):
         x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
