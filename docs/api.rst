@@ -8,6 +8,9 @@ API Reference
    :toctree: generated
 
    Chopper
+   Component
+   ComponentData
+   Data
    Detector
    Model
    Pulse
