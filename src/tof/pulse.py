@@ -101,13 +101,13 @@ class Pulse:
         if self.kind is not None:
             params = getattr(facilities, self.kind)
             if self.tmin is None:
-                self.tmin = params['time'].coords['time'].min()
+                self.tmin = params.time.coords['time'].min()
             if self.tmax is None:
-                self.tmax = params['time'].coords['time'].max()
+                self.tmax = params.time.coords['time'].max()
             if self.lmin is None:
-                self.lmin = params['wavelength'].coords['wavelength'].min()
+                self.lmin = params.wavelength.coords['wavelength'].min()
             if self.lmax is None:
-                self.lmax = params['wavelength'].coords['wavelength'].max()
+                self.lmax = params.wavelength.coords['wavelength'].max()
             self.tmin = self.tmin.to(unit='s')
             self.tmax = self.tmax.to(unit='s')
             self.lmin = self.lmin.to(unit='angstrom')
@@ -121,14 +121,14 @@ class Pulse:
             )
             p_time = np.interp(
                 x_time,
-                params['time'].coords['time'].to(unit='s').values,
-                params['time'].values,
+                params.time.coords['time'].to(unit='s').values,
+                params.time.values,
             )
             p_time /= p_time.sum()
             p_wav = np.interp(
                 x_wav,
-                params['wavelength'].coords['wavelength'].to(unit='angstrom').values,
-                params['wavelength'].values,
+                params.wavelength.coords['wavelength'].to(unit='angstrom').values,
+                params.wavelength.values,
             )
             p_wav /= p_wav.sum()
         else:
