@@ -19,7 +19,7 @@ def test_angular_speed():
         open=0.0 * deg,
         close=10.0 * deg,
         phase=0.0 * deg,
-        distance=1.0 * meter,
+        distance=5.0 * meter,
     )
     assert chopper.omega == two_pi * f
 
@@ -31,7 +31,7 @@ def test_open_close_times():
         open=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
-        distance=1.0 * meter,
+        distance=5.0 * meter,
     )
     assert sc.identical(
         chopper.open_times[0],
@@ -50,7 +50,7 @@ def test_open_close_angles_scalars_converted_to_arrays():
         open=10.0 * deg,
         close=20.0 * deg,
         phase=0.0 * deg,
-        distance=1.0 * meter,
+        distance=5.0 * meter,
     )
     assert sc.identical(
         chopper.open_times[0],
