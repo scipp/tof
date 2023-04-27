@@ -31,15 +31,8 @@ You can install from ``conda`` using
    :maxdepth: 2
    :hidden:
 
-   user-guide
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-
+   short-example
+   pulses
    api
-
-.. toctree::
-   :hidden:
-
    Release notes <https://github.com/scipp/tof/releases>
+

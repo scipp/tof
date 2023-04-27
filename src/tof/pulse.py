@@ -118,7 +118,7 @@ class Pulse:
         lmin: Optional[sc.Variable] = None,
         lmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
-        sampling_resolution: int = 10000,
+        sampling: int = 10000,
     ):
         """
         Create a pulse from a pre-defined pulse from a neutron facility.
@@ -137,7 +137,7 @@ class Pulse:
             Maximum wavelength of the pulse.
         neutrons:
             Number of neutrons in the pulse.
-        sampling_resolution:
+        sampling:
             Number of points used to sample the probability distributions.
         """
         pulse = cls(
@@ -163,8 +163,8 @@ class Pulse:
         pulse.lmin = pulse.lmin.to(unit='angstrom')
         pulse.lmax = pulse.lmax.to(unit='angstrom')
 
-        x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling_resolution)
-        x_wav = np.linspace(pulse.lmin.value, pulse.lmax.value, sampling_resolution)
+        x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
+        x_wav = np.linspace(pulse.lmin.value, pulse.lmax.value, sampling)
         p_time = np.interp(
             x_time,
             params.time.coords['time'].to(unit='s').values,
@@ -197,7 +197,7 @@ class Pulse:
         p_time: sc.DataArray,
         p_wav: sc.DataArray,
         neutrons: int = 1_000_000,
-        sampling_resolution: Optional[int] = None,
+        sampling: Optional[int] = None,
     ):
         """
         Create a pulse from time a wavelength probability distributions.
@@ -212,7 +212,7 @@ class Pulse:
             Wavelength probability distribution.
         neutrons:
             Number of neutrons in the pulse.
-        sampling_resolution:
+        sampling:
             Number of points used to sample the probability distributions. If not set,
             the size of the distributions will be used.
         """
@@ -227,16 +227,14 @@ class Pulse:
         p_time = p_time.to(dtype=float)
         p_wav = p_wav.to(dtype=float)
 
-        if sampling_resolution is None:
+        if sampling is None:
             x_time = p_time.coords['time'].to(dtype=float, unit='s').values
             p_time = p_time.values
             x_wav = p_wav.coords['wavelength'].to(dtype=float, unit='angstrom').values
             p_wav = p_wav.values
         else:
-            x_time = np.linspace(
-                pulse.tmin.value, pulse.tmax.value, sampling_resolution
-            )
-            x_wav = np.linspace(pulse.lmin.value, pulse.lmax.value, sampling_resolution)
+            x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
+            x_wav = np.linspace(pulse.lmin.value, pulse.lmax.value, sampling)
             p_time = np.interp(
                 x_time,
                 p_time.coords['time'].to(unit='s').values,
