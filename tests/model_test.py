@@ -11,17 +11,37 @@ meter = sc.Unit('m')
 ms = sc.Unit('ms')
 
 
+def make_chopper(topen, tclose, f, phase, distance, name):
+    aopen = (
+        sc.constants.pi
+        * (2.0 * sc.units.rad)
+        * sc.concat(topen, dim='cutout').to(unit='s')
+        * f
+    )
+    aclose = (
+        sc.constants.pi
+        * (2.0 * sc.units.rad)
+        * sc.concat(tclose, dim='cutout').to(unit='s')
+        * f
+    )
+    return tof.Chopper(
+        frequency=f,
+        open=aopen,
+        close=aclose,
+        phase=phase,
+        distance=distance,
+        name=name,
+    )
+
+
 def test_one_chopper_one_opening():
     # Make a chopper with settings to that it is open from 10-20 ms. Assume zero phase.
     topen = 10.0 * ms
     tclose = 20.0 * ms
-    f = 10.0 * Hz
-    aopen = sc.constants.pi * (2.0 * sc.units.rad) * topen.to(unit='s') * f
-    aclose = sc.constants.pi * (2.0 * sc.units.rad) * tclose.to(unit='s') * f
-    chopper = tof.Chopper(
-        frequency=f,
-        open=aopen.flatten(to='cutout'),
-        close=aclose.flatten(to='cutout'),
+    chopper = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name="chopper",
@@ -68,33 +88,51 @@ def test_two_choppers_one_opening():
     # Make the second chopper first, with settings to that it is open from 15-20 ms.
     topen = 15.0 * ms
     tclose = 20.0 * ms
-    f = 15.0 * Hz
-    aopen = sc.constants.pi * (2.0 * sc.units.rad) * topen.to(unit='s') * f
-    aclose = sc.constants.pi * (2.0 * sc.units.rad) * tclose.to(unit='s') * f
-    chopper2 = tof.Chopper(
-        frequency=f,
-        open=aopen.flatten(to='cutout'),
-        close=aclose.flatten(to='cutout'),
+    chopper2 = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
         name="chopper2",
     )
 
+    # f = 15.0 * Hz
+    # aopen = sc.constants.pi * (2.0 * sc.units.rad) * topen.to(unit='s') * f
+    # aclose = sc.constants.pi * (2.0 * sc.units.rad) * tclose.to(unit='s') * f
+    # chopper2 = tof.Chopper(
+    #     frequency=f,
+    #     open=aopen.flatten(to='cutout'),
+    #     close=aclose.flatten(to='cutout'),
+    #     phase=0.0 * deg,
+    #     distance=15 * meter,
+    #     name="chopper2",
+    # )
+
     # Make a chopper with settings to that it is open from 5-16 ms. Assume zero phase.
     topen = 5.0 * ms
     tclose = 16.0 * ms
-    f = 10.0 * Hz
-    a = sc.constants.pi * (2.0 * sc.units.rad) * f
-    aopen = a * topen.to(unit='s')
-    aclose = a * tclose.to(unit='s')
-    chopper1 = tof.Chopper(
-        frequency=f,
-        open=aopen.flatten(to='cutout'),
-        close=aclose.flatten(to='cutout'),
+    chopper1 = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name="chopper1",
     )
+
+    # f = 10.0 * Hz
+    # a = sc.constants.pi * (2.0 * sc.units.rad) * f
+    # aopen = a * topen.to(unit='s')
+    # aclose = a * tclose.to(unit='s')
+    # chopper1 = tof.Chopper(
+    #     frequency=f,
+    #     open=aopen.flatten(to='cutout'),
+    #     close=aclose.flatten(to='cutout'),
+    #     phase=0.0 * deg,
+    #     distance=10 * meter,
+    #     name="chopper1",
+    # )
 
     detector = tof.Detector(distance=20 * meter, name="detector")
 
