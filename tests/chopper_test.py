@@ -9,6 +9,7 @@ Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 rad = sc.Unit('rad')
 meter = sc.Unit('m')
+two_pi = 2.0 * rad * sc.constants.pi
 
 
 def test_angular_speed():
@@ -20,7 +21,7 @@ def test_angular_speed():
         phase=0.0 * deg,
         distance=1.0 * meter,
     )
-    assert chopper.omega == (2.0 * rad * sc.constants.pi) * f
+    assert chopper.omega == two_pi * f
 
 
 def test_open_close_times():
@@ -34,11 +35,11 @@ def test_open_close_times():
     )
     assert sc.identical(
         chopper.open_times[0],
-        (10.0 * deg).to(unit='rad') / (2.0 * rad * sc.constants.pi * f),
+        (10.0 * deg).to(unit='rad') / (two_pi * f),
     )
     assert sc.identical(
         chopper.close_times[0],
-        (20.0 * deg).to(unit='rad') / (2.0 * rad * sc.constants.pi * f),
+        (20.0 * deg).to(unit='rad') / (two_pi * f),
     )
 
 
@@ -53,11 +54,11 @@ def test_open_close_angles_scalars_converted_to_arrays():
     )
     assert sc.identical(
         chopper.open_times[0],
-        (10.0 * deg).to(unit='rad') / (2.0 * rad * sc.constants.pi * f),
+        (10.0 * deg).to(unit='rad') / (two_pi * f),
     )
     assert sc.identical(
         chopper.close_times[0],
-        (20.0 * deg).to(unit='rad') / (2.0 * rad * sc.constants.pi * f),
+        (20.0 * deg).to(unit='rad') / (two_pi * f),
     )
 
 
