@@ -9,7 +9,6 @@ Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 rad = sc.Unit('rad')
 meter = sc.Unit('m')
-ms = sc.Unit('ms')
 
 
 def test_angular_speed():
@@ -43,7 +42,7 @@ def test_open_close_times():
     )
 
 
-def test_open_close_times_scalars_converted_to_arrays():
+def test_open_close_angles_scalars_converted_to_arrays():
     f = 10.0 * Hz
     chopper = tof.Chopper(
         frequency=f,
