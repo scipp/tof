@@ -220,7 +220,7 @@ class Component:
 
     def plot(self, bins: int = 300) -> tuple:
         """
-        Plot the pulse.
+        Plot both the tof and wavelength data side by side.
 
         Parameters
         ----------
