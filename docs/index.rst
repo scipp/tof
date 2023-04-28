@@ -36,4 +36,3 @@ You can install from ``conda`` using
    components
    api
    Release notes <https://github.com/scipp/tof/releases>
-
