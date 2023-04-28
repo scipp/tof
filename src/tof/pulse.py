@@ -8,7 +8,7 @@ import numpy as np
 import scipp as sc
 
 from . import facilities
-from .utils import wavelength_to_speed
+from .utils import Plot, wavelength_to_speed
 
 
 class Pulse:
@@ -282,7 +282,7 @@ class Pulse:
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
         fig.tight_layout()
-        return fig, ax
+        return Plot(fig=fig, ax=ax)
 
     def __repr__(self) -> str:
         return (

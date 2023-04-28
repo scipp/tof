@@ -33,6 +33,7 @@ You can install from ``conda`` using
 
    short-example
    pulses
+   components
    api
    Release notes <https://github.com/scipp/tof/releases>
 

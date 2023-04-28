@@ -3,8 +3,11 @@
 
 from typing import Dict, Optional, Tuple, Union
 
+import matplotlib.pyplot as plt
 import plopp as pp
 import scipp as sc
+
+from .utils import Plot
 
 
 class Data:
@@ -51,7 +54,7 @@ class Data:
         """
         return len(self._data)
 
-    def plot(self, bins: Union[int, sc.Variable] = 300):
+    def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
         Plot the neutrons that reach the component as a histogram.
 
@@ -60,7 +63,7 @@ class Data:
         bins:
             The bins to use for histogramming the neutrons.
         """
-        return self._data.hist({self._dim: bins}).plot()
+        return self._data.hist({self._dim: bins}).plot(**kwargs)
 
     def __repr__(self) -> str:
         return f"Data(data={self._data})"
@@ -143,7 +146,7 @@ class ComponentData:
             f"blocked={sc.sum(~self._mask).value}, dim={self._dim})"
         )
 
-    def plot(self, bins: Union[int, sc.Variable] = 300):
+    def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
         Plot the data for the neutrons that reach the component, split up into those
         that are blocked by the component and those that are not.
@@ -154,7 +157,7 @@ class ComponentData:
             The bins to use for histogramming the neutrons.
         """
         if self._blocking is None:
-            return self.visible.plot(bins=bins)
+            return self.visible.plot(bins=bins, **kwargs)
         visible = self.visible.data
         blocked = self.blocked.data
         if isinstance(bins, int):
@@ -174,7 +177,7 @@ class ComponentData:
                 'visible': visible.hist({self._dim: bins}),
                 'blocked': blocked.hist({self._dim: bins}),
             },
-            color={'blocked': 'gray'},
+            **{**{'color': {'blocked': 'gray'}}, **kwargs},
         )
 
 
@@ -214,3 +217,21 @@ class Component:
             blocking=self._own_mask,
             dim='wavelength',
         )
+
+    def plot(self, bins: int = 300) -> tuple:
+        """
+        Plot the pulse.
+
+        Parameters
+        ----------
+        bins:
+            Number of bins to use for histogramming the neutrons.
+        """
+        fig, ax = plt.subplots(1, 2)
+        self.tofs.plot(bins=bins, ax=ax[0])
+        self.wavelengths.plot(bins=bins, ax=ax[1])
+        size = fig.get_size_inches()
+        fig.set_size_inches(size[0] * 2, size[1])
+        fig.tight_layout()
+        print(ax[0].lines)
+        return Plot(fig=fig, ax=ax)

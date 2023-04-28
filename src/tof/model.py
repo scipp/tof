@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from itertools import chain
-from typing import List, Union
+from typing import List, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +12,7 @@ from matplotlib.collections import LineCollection
 from .chopper import Chopper
 from .detector import Detector
 from .pulse import Pulse
+from .utils import Plot
 
 
 class Model:
@@ -31,14 +32,14 @@ class Model:
 
     def __init__(
         self,
-        choppers: Union[Chopper, List[Chopper]],
-        detectors: Union[Detector, List[Detector]],
         pulse: Pulse,
+        choppers: Optional[Union[Chopper, List[Chopper]]] = None,
+        detectors: Optional[Union[Detector, List[Detector]]] = None,
     ):
-        self.choppers = choppers
+        self.choppers = [] if choppers is None else choppers
         if not isinstance(self.choppers, (list, tuple)):
             self.choppers = [self.choppers]
-        self.detectors = detectors
+        self.detectors = [] if detectors is None else detectors
         if not isinstance(self.detectors, (list, tuple)):
             self.detectors = [self.detectors]
         self.pulse = pulse
@@ -217,7 +218,7 @@ class Model:
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")
         fig.tight_layout()
-        return fig, ax
+        return Plot(fig=fig, ax=ax)
 
     def __repr__(self) -> str:
         return (

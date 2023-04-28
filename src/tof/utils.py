@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from dataclasses import dataclass
+
+import matplotlib.pyplot as plt
 import scipp as sc
 import scipp.constants as const
 
@@ -61,3 +64,15 @@ def energy_to_speed(x: sc.Variable, unit='m/s') -> sc.Variable:
         The unit of the output speeds.
     """
     return sc.sqrt(x / const.m_n).to(unit=unit)
+
+
+@dataclass
+class FacilityPulse:
+    time: sc.DataArray
+    wavelength: sc.DataArray
+
+
+@dataclass
+class Plot:
+    ax: plt.Axes
+    fig: plt.Figure
