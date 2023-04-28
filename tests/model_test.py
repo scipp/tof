@@ -36,7 +36,7 @@ def make_chopper(topen, tclose, f, phase, distance, name):
 
 def make_pulse(arrival_times, distance):
     # Arrival times are distance * alpha * wavelength
-    return tof.Pulse(
+    return tof.Pulse.from_neutrons(
         birth_times=sc.array(
             dims=['event'],
             values=[0.0] * len(arrival_times),
@@ -213,7 +213,7 @@ def test_two_choppers_one_and_two_openings():
 
 def test_neutron_conservation():
     N = 100_000
-    pulse = tof.Pulse(neutrons=N, kind='ess')
+    pulse = tof.Pulse.from_facility('ess', neutrons=N)
 
     chopper1 = make_chopper(
         topen=[5.0 * ms],

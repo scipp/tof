@@ -23,10 +23,10 @@ def test_creation_from_distribution():
     assert pulse.wavelengths.max() <= lmax
 
 
-def test_creation_from_supplied_values():
+def test_creation_from_neutrons():
     birth_times = sc.array(dims=['event'], values=[1000.0, 1500.0, 2000.0], unit='us')
     wavelengths = sc.array(dims=['event'], values=[1.0, 5.0, 10.0], unit='angstrom')
-    pulse = tof.Pulse(
+    pulse = tof.Pulse.from_neutrons(
         birth_times=birth_times,
         wavelengths=wavelengths,
     )
@@ -49,22 +49,8 @@ def test_duration():
     assert pulse.duration == tmax - tmin
 
 
-def test_generate_new_neutrons():
-    N = 1234
-    tmin = sc.scalar(0.5e-3, unit='s')
-    tmax = sc.scalar(2.7e-3, unit='s')
-    lmin = sc.scalar(1.0, unit='angstrom')
-    lmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse(neutrons=N, tmin=tmin, tmax=tmax, lmin=lmin, lmax=lmax)
-    assert pulse.neutrons == N
-    assert len(pulse.birth_times) == N
-    pulse.generate(9999)
-    assert pulse.neutrons == 9999
-    assert len(pulse.birth_times) == 9999
-
-
 def test_ess_pulse():
-    pulse = tof.Pulse(kind='ess', neutrons=100_000)
+    pulse = tof.Pulse.from_facility(kind='ess', neutrons=100_000)
     # Check that the time distribution is low on edges and high in the middle
     times = pulse.birth_times.hist(time=300)
     mean = times.mean()
