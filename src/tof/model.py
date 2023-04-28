@@ -79,7 +79,7 @@ class Model:
             comp._own_mask = ~m & initial_mask
             initial_mask = combined
 
-    def _add_rays(self, ax, tofs, birth_times, distances, wavelengths=None):
+    def _add_rays(self, ax, tofs, birth_times, distances, cbar=True, wavelengths=None):
         x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
         x1 = tofs.to(unit='us', copy=False).values.reshape(-1, 1)
         y0 = np.zeros(x0.size).reshape(-1, 1)
@@ -96,14 +96,22 @@ class Model:
             coll.set_cmap(plt.cm.gist_rainbow_r)
             coll.set_array(wavelengths.values)
             coll.set_norm(plt.Normalize(self.pulse.lmin.value, self.pulse.lmax.value))
-            cbar = plt.colorbar(coll)
-            cbar.ax.yaxis.set_label_coords(-0.9, 0.5)
-            cbar.set_label('Wavelength (Å)')
+            if cbar:
+                cb = plt.colorbar(coll)
+                cb.ax.yaxis.set_label_coords(-0.9, 0.5)
+                cb.set_label('Wavelength (Å)')
         else:
             coll.set_color('lightgray')
         ax.add_collection(coll)
 
-    def plot(self, max_rays: int = 1000, blocked_rays: int = 0, figsize=None) -> tuple:
+    def plot(
+        self,
+        max_rays: int = 1000,
+        blocked_rays: int = 0,
+        figsize=None,
+        ax=None,
+        cbar=True,
+    ) -> tuple:
         """
         Plot the time-distance diagram for the instrument, including the rays of
         neutrons that make it to the furthest detector.
@@ -120,8 +128,13 @@ class Model:
             Number of blocked rays to plot.
         figsize:
             Figure size.
+        ax:
+            Axes to plot on.
         """
-        fig, ax = plt.subplots(figsize=figsize)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
         furthest_detector = max(self.detectors, key=lambda d: d.distance)
 
         if blocked_rays > 0:
@@ -179,6 +192,7 @@ class Model:
                 birth_times=birth_times,
                 distances=distances,
                 wavelengths=wavelengths,
+                cbar=cbar,
             )
 
         tof_max = tofs.max().value

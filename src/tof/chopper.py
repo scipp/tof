@@ -38,8 +38,8 @@ class Chopper(Component):
         self.frequency = frequency
         self.open = open if open.dims else open.flatten(to='cutout')
         self.close = close if close.dims else close.flatten(to='cutout')
-        self.distance = distance
-        self.phase = phase
+        self.distance = distance.to(dtype=float, copy=False)
+        self.phase = phase.to(dtype=float, copy=False)
         self.name = name
         super().__init__()
 
