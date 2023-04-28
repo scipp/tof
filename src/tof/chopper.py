@@ -35,9 +35,13 @@ class Chopper(Component):
         phase: sc.Variable,
         name: str = "",
     ):
-        self.frequency = frequency
-        self.open = open if open.dims else open.flatten(to='cutout')
-        self.close = close if close.dims else close.flatten(to='cutout')
+        self.frequency = frequency.to(dtype=float, copy=False)
+        self.open = (open if open.dims else open.flatten(to='cutout')).to(
+            dtype=float, copy=False
+        )
+        self.close = (close if close.dims else close.flatten(to='cutout')).to(
+            dtype=float, copy=False
+        )
         self.distance = distance.to(dtype=float, copy=False)
         self.phase = phase.to(dtype=float, copy=False)
         self.name = name

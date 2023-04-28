@@ -233,5 +233,4 @@ class Component:
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
         fig.tight_layout()
-        print(ax[0].lines)
         return Plot(fig=fig, ax=ax)

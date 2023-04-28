@@ -86,3 +86,26 @@ def test_phase():
     assert sc.identical(
         chopper2.close_times, close_times + (30.0 * deg).to(unit='rad') / chopper2.omega
     )
+
+
+def test_phase_int():
+    f = 10.0 * Hz
+    op = sc.array(dims=['cutout'], values=[10.0], unit='deg')
+    cl = sc.array(dims=['cutout'], values=[20.0], unit='deg')
+    d = 10.0 * meter
+    chopper1 = tof.Chopper(
+        frequency=f,
+        open=op,
+        close=cl,
+        phase=30.0 * deg,
+        distance=d,
+    )
+    chopper2 = tof.Chopper(
+        frequency=f,
+        open=op,
+        close=cl,
+        phase=30 * deg,
+        distance=d,
+    )
+    assert sc.identical(chopper1.open_times, chopper2.open_times)
+    assert sc.identical(chopper1.close_times, chopper2.close_times)

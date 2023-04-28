@@ -20,7 +20,7 @@ class Detector(Component):
     """
 
     def __init__(self, distance: sc.Variable, name: str = "detector"):
-        self.distance = distance
+        self.distance = distance.to(dtype=float, copy=False)
         self.name = name
         super().__init__()
 
