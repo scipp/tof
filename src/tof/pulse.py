@@ -290,6 +290,7 @@ class Pulse:
 
     def __repr__(self) -> str:
         return (
-            f"Pulse(t_start={self.t_start:c}, t_end={self.t_end:c}, wav_min={self.wav_min:c}, "
-            f"wav_max={self.wav_max:c}, neutrons={self.neutrons}, kind={self.kind})"
+            f"Pulse(t_start={self.t_start:c}, t_end={self.t_end:c}, "
+            f"wav_min={self.wav_min:c}, wav_max={self.wav_max:c}, "
+            f"neutrons={self.neutrons}, kind={self.kind})"
         )
