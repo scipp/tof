@@ -203,6 +203,10 @@ class Pulse:
         Create a pulse from time a wavelength probability distributions.
         The distributions should be supplied as DataArrays where the coordinates
         are the values of the distribution, and the values are the probability.
+        Note that the time and wavelength distributions are independent. A neutron with
+        a randomly selected birth time from ``p_time`` can adopt any wavelength in
+        ``p_wav`` (in other words, the two distributions are simply broadcast into a
+        square 2D parameter space).
 
         Parameters
         ----------
