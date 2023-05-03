@@ -4,15 +4,13 @@
 from itertools import chain
 from typing import List, Optional, Union
 
-import matplotlib.pyplot as plt
-import numpy as np
 import scipp as sc
-from matplotlib.collections import LineCollection
 
 from .chopper import Chopper
+from .component import Component
 from .detector import Detector
 from .pulse import Pulse
-from .utils import Plot
+from .result import Result
 
 
 class Model:
@@ -44,6 +42,24 @@ class Model:
             self.detectors = [self.detectors]
         self.pulse = pulse
 
+    def add(self, component):
+        """
+        Add a component to the instrument.
+
+        Parameters
+        ----------
+        component:
+            A chopper or detector.
+        """
+        if isinstance(component, Chopper):
+            self.choppers.append(component)
+        elif isinstance(component, Detector):
+            self.detectors.append(component)
+        else:
+            raise ValueError(
+                f"Cannot add component of type {type(component)} to the model."
+            )
+
     def run(self, npulses: int = 1):
         """
         Run the simulation.
@@ -62,177 +78,187 @@ class Model:
         initial_mask = sc.ones(
             sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
         )
-        for comp in components:
+
+        result_choppers = {}
+        result_detectors = {}
+        for c in components:
+            comp = Component(**c.to_dict())
             comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + comp.distance / self.pulse.speeds
             comp._arrival_times = t
-            if isinstance(comp, Detector):
+            if isinstance(c, Detector):
                 comp._mask = initial_mask
+                result_detectors[comp.name] = comp
                 continue
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
-            to = comp.open_times
-            tc = comp.close_times
+            to = c.open_times
+            tc = c.close_times
             for i in range(len(to)):
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
             comp._mask = combined
             comp._own_mask = ~m & initial_mask
             initial_mask = combined
+            result_choppers[comp.name] = comp
 
-    def _add_rays(self, ax, tofs, birth_times, distances, cbar=True, wavelengths=None):
-        x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
-        x1 = tofs.to(unit='us', copy=False).values.reshape(-1, 1)
-        y0 = np.zeros(x0.size).reshape(-1, 1)
-        y1 = distances.values.reshape(-1, 1)
-        segments = np.concatenate(
-            (
-                np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
-                np.concatenate((x1, y1), axis=1).reshape(-1, 1, 2),
-            ),
-            axis=1,
+        return Result(
+            pulse=self.pulse, choppers=result_choppers, detectors=result_detectors
         )
-        coll = LineCollection(segments)
-        if wavelengths is not None:
-            coll.set_cmap(plt.cm.gist_rainbow_r)
-            coll.set_array(wavelengths.values)
-            coll.set_norm(plt.Normalize(self.pulse.lmin.value, self.pulse.lmax.value))
-            if cbar:
-                cb = plt.colorbar(coll)
-                cb.ax.yaxis.set_label_coords(-0.9, 0.5)
-                cb.set_label('Wavelength (Å)')
-        else:
-            coll.set_color('lightgray')
-        ax.add_collection(coll)
 
-    def plot(
-        self,
-        max_rays: int = 1000,
-        blocked_rays: int = 0,
-        figsize=None,
-        ax=None,
-        cbar=True,
-    ) -> tuple:
-        """
-        Plot the time-distance diagram for the instrument, including the rays of
-        neutrons that make it to the furthest detector.
-        As plotting many lines can be slow, the number of rays to plot can be
-        limited by setting ``max_rays``.
-        In addition, it is possible to also plot the rays that are blocked by
-        choppers along the flight path by setting ``blocked_rays > 0``.
+    # def _add_rays(self, ax, tofs, birth_times, distances, cbar=True, wavelengths=None):
+    #     x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
+    #     x1 = tofs.to(unit='us', copy=False).values.reshape(-1, 1)
+    #     y0 = np.zeros(x0.size).reshape(-1, 1)
+    #     y1 = distances.values.reshape(-1, 1)
+    #     segments = np.concatenate(
+    #         (
+    #             np.concatenate((x0, y0), axis=1).reshape(-1, 1, 2),
+    #             np.concatenate((x1, y1), axis=1).reshape(-1, 1, 2),
+    #         ),
+    #         axis=1,
+    #     )
+    #     coll = LineCollection(segments)
+    #     if wavelengths is not None:
+    #         coll.set_cmap(plt.cm.gist_rainbow_r)
+    #         coll.set_array(wavelengths.values)
+    #         coll.set_norm(plt.Normalize(self.pulse.lmin.value, self.pulse.lmax.value))
+    #         if cbar:
+    #             cb = plt.colorbar(coll)
+    #             cb.ax.yaxis.set_label_coords(-0.9, 0.5)
+    #             cb.set_label('Wavelength (Å)')
+    #     else:
+    #         coll.set_color('lightgray')
+    #     ax.add_collection(coll)
 
-        Parameters
-        ----------
-        max_rays:
-            Maximum number of rays to plot.
-        blocked_rays:
-            Number of blocked rays to plot.
-        figsize:
-            Figure size.
-        ax:
-            Axes to plot on.
-        """
-        if ax is None:
-            fig, ax = plt.subplots(figsize=figsize)
-        else:
-            fig = ax.get_figure()
-        furthest_detector = max(self.detectors, key=lambda d: d.distance)
+    # def plot(
+    #     self,
+    #     max_rays: int = 1000,
+    #     blocked_rays: int = 0,
+    #     figsize=None,
+    #     ax=None,
+    #     cbar=True,
+    # ) -> tuple:
+    #     """
+    #     Plot the time-distance diagram for the instrument, including the rays of
+    #     neutrons that make it to the furthest detector.
+    #     As plotting many lines can be slow, the number of rays to plot can be
+    #     limited by setting ``max_rays``.
+    #     In addition, it is possible to also plot the rays that are blocked by
+    #     choppers along the flight path by setting ``blocked_rays > 0``.
 
-        if blocked_rays > 0:
-            inv_mask = ~furthest_detector._mask
-            nrays = int(inv_mask.sum())
-            if nrays > blocked_rays:
-                inds = np.random.choice(nrays, size=blocked_rays, replace=False)
-            else:
-                inds = slice(None)
-            birth_times = self.pulse.birth_times[inv_mask][inds]
+    #     Parameters
+    #     ----------
+    #     max_rays:
+    #         Maximum number of rays to plot.
+    #     blocked_rays:
+    #         Number of blocked rays to plot.
+    #     figsize:
+    #         Figure size.
+    #     ax:
+    #         Axes to plot on.
+    #     """
+    #     if ax is None:
+    #         fig, ax = plt.subplots(figsize=figsize)
+    #     else:
+    #         fig = ax.get_figure()
+    #     furthest_detector = max(self.detectors, key=lambda d: d.distance)
 
-            components = sorted(
-                chain(self.choppers, [furthest_detector]),
-                key=lambda c: c.distance.value,
-            )
-            dim = 'component'
-            tofs = sc.concat(
-                [comp._arrival_times[inv_mask][inds] for comp in components], dim=dim
-            )
-            distances = sc.concat(
-                [
-                    comp.distance.broadcast(sizes=birth_times.sizes)
-                    for comp in components
-                ],
-                dim=dim,
-            )
-            masks = sc.concat(
-                [sc.ones(sizes=birth_times.sizes, dtype=bool)]
-                + [comp._mask[inv_mask][inds] for comp in components],
-                dim=dim,
-            )
+    #     if blocked_rays > 0:
+    #         inv_mask = ~furthest_detector._mask
+    #         nrays = int(inv_mask.sum())
+    #         if nrays > blocked_rays:
+    #             inds = np.random.choice(nrays, size=blocked_rays, replace=False)
+    #         else:
+    #             inds = slice(None)
+    #         birth_times = self.pulse.birth_times[inv_mask][inds]
 
-            diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
-            diff.unit = ''
-            self._add_rays(
-                ax=ax,
-                tofs=(tofs * diff).max(dim=dim),
-                birth_times=birth_times,
-                distances=(distances * diff).max(dim=dim),
-            )
+    #         components = sorted(
+    #             chain(self.choppers, [furthest_detector]),
+    #             key=lambda c: c.distance.value,
+    #         )
+    #         dim = 'component'
+    #         tofs = sc.concat(
+    #             [comp._arrival_times[inv_mask][inds] for comp in components], dim=dim
+    #         )
+    #         distances = sc.concat(
+    #             [
+    #                 comp.distance.broadcast(sizes=birth_times.sizes)
+    #                 for comp in components
+    #             ],
+    #             dim=dim,
+    #         )
+    #         masks = sc.concat(
+    #             [sc.ones(sizes=birth_times.sizes, dtype=bool)]
+    #             + [comp._mask[inv_mask][inds] for comp in components],
+    #             dim=dim,
+    #         )
 
-        # Normal rays
-        if max_rays > 0:
-            tofs = furthest_detector.tofs.visible.data.coords['tof']
-            if (max_rays is not None) and (len(tofs) > max_rays):
-                inds = np.random.choice(len(tofs), size=max_rays, replace=False)
-            else:
-                inds = slice(None)
-            birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
-            wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
-            distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
-            self._add_rays(
-                ax=ax,
-                tofs=tofs[inds],
-                birth_times=birth_times,
-                distances=distances,
-                wavelengths=wavelengths,
-                cbar=cbar,
-            )
+    #         diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
+    #         diff.unit = ''
+    #         self._add_rays(
+    #             ax=ax,
+    #             tofs=(tofs * diff).max(dim=dim),
+    #             birth_times=birth_times,
+    #             distances=(distances * diff).max(dim=dim),
+    #         )
 
-        tof_max = tofs.max().value
-        # Plot choppers
-        for ch in self.choppers:
-            x0 = ch.open_times.to(unit='us').values
-            x1 = ch.close_times.to(unit='us').values
-            x = np.empty(3 * x0.size, dtype=x0.dtype)
-            x[0::3] = x0
-            x[1::3] = 0.5 * (x0 + x1)
-            x[2::3] = x1
-            x = np.concatenate([[0], x, [tof_max]])
-            y = np.full_like(x, ch.distance.value)
-            y[2::3] = None
-            ax.plot(x, y, color="k")
-            ax.text(
-                tof_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
-            )
+    #     # Normal rays
+    #     if max_rays > 0:
+    #         tofs = furthest_detector.tofs.visible.data.coords['tof']
+    #         if (max_rays is not None) and (len(tofs) > max_rays):
+    #             inds = np.random.choice(len(tofs), size=max_rays, replace=False)
+    #         else:
+    #             inds = slice(None)
+    #         birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
+    #         wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
+    #         distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
+    #         self._add_rays(
+    #             ax=ax,
+    #             tofs=tofs[inds],
+    #             birth_times=birth_times,
+    #             distances=distances,
+    #             wavelengths=wavelengths,
+    #             cbar=cbar,
+    #         )
 
-        # Plot detectors
-        for det in self.detectors:
-            ax.plot([0, tof_max], [det.distance.value] * 2, color="gray", lw=3)
-            ax.text(
-                0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
-            )
+    #     tof_max = tofs.max().value
+    #     # Plot choppers
+    #     for ch in self.choppers:
+    #         x0 = ch.open_times.to(unit='us').values
+    #         x1 = ch.close_times.to(unit='us').values
+    #         x = np.empty(3 * x0.size, dtype=x0.dtype)
+    #         x[0::3] = x0
+    #         x[1::3] = 0.5 * (x0 + x1)
+    #         x[2::3] = x1
+    #         x = np.concatenate([[0], x, [tof_max]])
+    #         y = np.full_like(x, ch.distance.value)
+    #         y[2::3] = None
+    #         ax.plot(x, y, color="k")
+    #         ax.text(
+    #             tof_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
+    #         )
 
-        # Plot pulse
-        tmin = self.pulse.tmin.to(unit='us').value
-        ax.plot(
-            [tmin, self.pulse.tmax.to(unit='us').value],
-            [0, 0],
-            color="gray",
-            lw=3,
-        )
-        ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
+    #     # Plot detectors
+    #     for det in self.detectors:
+    #         ax.plot([0, tof_max], [det.distance.value] * 2, color="gray", lw=3)
+    #         ax.text(
+    #             0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
+    #         )
 
-        ax.set_xlabel("Time-of-flight (us)")
-        ax.set_ylabel("Distance (m)")
-        fig.tight_layout()
-        return Plot(fig=fig, ax=ax)
+    #     # Plot pulse
+    #     tmin = self.pulse.tmin.to(unit='us').value
+    #     ax.plot(
+    #         [tmin, self.pulse.tmax.to(unit='us').value],
+    #         [0, 0],
+    #         color="gray",
+    #         lw=3,
+    #     )
+    #     ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
+
+    #     ax.set_xlabel("Time-of-flight (us)")
+    #     ax.set_ylabel("Distance (m)")
+    #     fig.tight_layout()
+    #     return Plot(fig=fig, ax=ax)
 
     def __repr__(self) -> str:
         return (

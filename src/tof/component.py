@@ -188,7 +188,9 @@ class Component:
     passed through it.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self._arrival_times = None
         self._wavelengths = None
         self._mask = None
@@ -234,3 +236,6 @@ class Component:
         fig.set_size_inches(size[0] * 2, size[1])
         fig.tight_layout()
         return Plot(fig=fig, ax=ax)
+
+    def __repr__(self) -> str:
+        return f"Component(tofs={self.tofs}, wavelengths={self.wavelengths})"

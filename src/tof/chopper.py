@@ -3,10 +3,8 @@
 
 import scipp as sc
 
-from .component import Component
 
-
-class Chopper(Component):
+class Chopper:
     """
     A chopper is a rotating device with cutouts that blocks the beam at certain times.
 
@@ -79,3 +77,15 @@ class Chopper(Component):
             f"frequency={self.frequency:c}, phase={self.phase:c}, "
             f"cutouts={len(self.open)})"
         )
+
+    def to_dict(self):
+        return {
+            'frequency': self.frequency,
+            'open': self.open,
+            'close': self.close,
+            'distance': self.distance,
+            'phase': self.phase,
+            'name': self.name,
+            'open_times': self.open_times,
+            'close_times': self.close_times,
+        }

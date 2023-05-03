@@ -3,10 +3,8 @@
 
 import scipp as sc
 
-from .component import Component
 
-
-class Detector(Component):
+class Detector:
     """
     A detector component does not block any neutrons, it sees all neutrons passing
     through it.
@@ -22,7 +20,9 @@ class Detector(Component):
     def __init__(self, distance: sc.Variable, name: str = "detector"):
         self.distance = distance.to(dtype=float, copy=False)
         self.name = name
-        super().__init__()
 
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"
+
+    def to_dict(self):
+        return {'distance': self.distance, 'name': self.name}
