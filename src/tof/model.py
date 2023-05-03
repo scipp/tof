@@ -7,7 +7,7 @@ from typing import List, Optional, Union
 import scipp as sc
 
 from .chopper import Chopper
-from .component import Component
+from .component import ComponentResult
 from .detector import Detector
 from .pulse import Pulse
 from .result import Result
@@ -82,7 +82,7 @@ class Model:
         result_choppers = {}
         result_detectors = {}
         for c in components:
-            comp = Component(**c.to_dict())
+            comp = ComponentResult(**c.to_dict())
             comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + comp.distance / self.pulse.speeds
             comp._arrival_times = t
