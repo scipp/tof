@@ -189,8 +189,6 @@ class Component:
     """
 
     def __init__(self):
-        # for key, value in kwargs.items():
-        #     setattr(self, key, value)
         self._arrival_times = None
         self._wavelengths = None
         self._mask = None

@@ -26,9 +26,6 @@ class Detector:
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"
 
-    # def to_dict(self):
-    #     return {'distance': self.distance, 'name': self.name}
-
     def as_readonly(self):
         return ReadonlyDetector(self)
 
