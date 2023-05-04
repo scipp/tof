@@ -8,3 +8,4 @@ from .component import Component, ComponentData, Data
 from .detector import Detector
 from .model import Model
 from .pulse import Pulse
+from .result import Result

@@ -3,6 +3,8 @@
 
 import scipp as sc
 
+from .component import Component
+
 
 class Detector:
     """
@@ -24,5 +26,25 @@ class Detector:
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"
 
-    def to_dict(self):
-        return {'distance': self.distance, 'name': self.name}
+    # def to_dict(self):
+    #     return {'distance': self.distance, 'name': self.name}
+
+    def as_readonly(self):
+        return ReadonlyDetector(self)
+
+
+class ReadonlyDetector(Component):
+    """ """
+
+    def __init__(self, detector: Detector):
+        self._distance = detector.distance
+        self._name = detector.name
+        super().__init__()
+
+    @property
+    def distance(self) -> sc.Variable:
+        return self._distance
+
+    @property
+    def name(self) -> str:
+        return self._name

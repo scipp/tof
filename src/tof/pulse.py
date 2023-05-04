@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from dataclasses import dataclass
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -288,9 +289,35 @@ class Pulse:
         fig.tight_layout()
         return Plot(fig=fig, ax=ax)
 
+    def as_readonly(self):
+        return ReadonlyPulse(
+            birth_times=self.birth_times,
+            wavelengths=self.wavelengths,
+            speeds=self.speeds,
+            kind=self.kind,
+            neutrons=self.neutrons,
+            t_start=self.t_start,
+            t_end=self.t_end,
+            wav_min=self.wav_min,
+            wav_max=self.wav_max,
+        )
+
     def __repr__(self) -> str:
         return (
             f"Pulse(t_start={self.t_start:c}, t_end={self.t_end:c}, "
             f"wav_min={self.wav_min:c}, wav_max={self.wav_max:c}, "
             f"neutrons={self.neutrons}, kind={self.kind})"
         )
+
+
+@dataclass(frozen=True)
+class ReadonlyPulse:
+    birth_times: sc.DataArray
+    wavelengths: sc.DataArray
+    speeds: sc.DataArray
+    kind: Optional[str]
+    neutrons: int
+    t_start: sc.Variable
+    t_end: sc.Variable
+    wav_min: sc.Variable
+    wav_max: sc.Variable

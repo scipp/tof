@@ -2,15 +2,36 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from itertools import chain
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import scipp as sc
 
 from .chopper import Chopper
-from .component import ComponentResult
 from .detector import Detector
 from .pulse import Pulse
 from .result import Result
+
+ComponentType = Union[Chopper, Detector]
+
+
+def _input_to_dict(
+    obj: Optional[
+        Union[
+            Dict[str, ComponentType],
+            List[ComponentType],
+            Tuple[ComponentType, ...],
+            ComponentType,
+        ]
+    ]
+):
+    if obj is None:
+        return {}
+    elif isinstance(obj, dict):
+        return obj
+    elif isinstance(obj, (list, tuple)):
+        return {item.name: item for item in obj}
+    else:
+        return {obj.name: obj}
 
 
 class Model:
@@ -31,15 +52,15 @@ class Model:
     def __init__(
         self,
         pulse: Pulse,
-        choppers: Optional[Union[Chopper, List[Chopper]]] = None,
-        detectors: Optional[Union[Detector, List[Detector]]] = None,
+        choppers: Optional[
+            Union[Chopper, List[Chopper], Tuple[Chopper, ...], Dict[str, Chopper]]
+        ] = None,
+        detectors: Optional[
+            Union[Detector, List[Detector], Tuple[Detector, ...], Dict[str, Detector]]
+        ] = None,
     ):
-        self.choppers = [] if choppers is None else choppers
-        if not isinstance(self.choppers, (list, tuple)):
-            self.choppers = [self.choppers]
-        self.detectors = [] if detectors is None else detectors
-        if not isinstance(self.detectors, (list, tuple)):
-            self.detectors = [self.detectors]
+        self.choppers = _input_to_dict(choppers)
+        self.detectors = _input_to_dict(detectors)
         self.pulse = pulse
 
     def add(self, component):
@@ -52,9 +73,21 @@ class Model:
             A chopper or detector.
         """
         if isinstance(component, Chopper):
-            self.choppers.append(component)
+            if component.name in self.choppers:
+                raise ValueError(
+                    f"Chopper with name {component.name} already exists. "
+                    "If you wish to replace/update an existing chopper, use "
+                    "``model.choppers['name'] = new_chopper``."
+                )
+            self.choppers[component.name] = component
         elif isinstance(component, Detector):
-            self.detectors.append(component)
+            if component.name in self.detectors:
+                raise ValueError(
+                    f"Detector with name {component.name} already exists. "
+                    "If you wish to replace/update an existing detector, use "
+                    "``model.detectors['name'] = new_detector``."
+                )
+            self.detectors[component.name] = component
         else:
             raise ValueError(
                 f"Cannot add component of type {type(component)} to the model."
@@ -71,7 +104,7 @@ class Model:
         """
         # TODO: ray-trace multiple pulses
         components = sorted(
-            chain(self.choppers, self.detectors),
+            chain(self.choppers.values(), self.detectors.values()),
             key=lambda c: c.distance.value,
         )
 
@@ -82,7 +115,7 @@ class Model:
         result_choppers = {}
         result_detectors = {}
         for c in components:
-            comp = ComponentResult(**c.to_dict())
+            comp = c.as_readonly()
             comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + comp.distance / self.pulse.speeds
             comp._arrival_times = t
@@ -102,7 +135,9 @@ class Model:
             result_choppers[comp.name] = comp
 
         return Result(
-            pulse=self.pulse, choppers=result_choppers, detectors=result_detectors
+            pulse=self.pulse.as_readonly(),
+            choppers=result_choppers,
+            detectors=result_detectors,
         )
 
     # def _add_rays(self, ax, tofs, birth_times, distances, cbar=True, wavelengths=None):

@@ -188,9 +188,9 @@ class Component:
     passed through it.
     """
 
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def __init__(self):
+        # for key, value in kwargs.items():
+        #     setattr(self, key, value)
         self._arrival_times = None
         self._wavelengths = None
         self._mask = None
