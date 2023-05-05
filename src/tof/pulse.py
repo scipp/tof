@@ -24,9 +24,9 @@ class Pulse:
 
     Parameters
     ----------
-    t_min:
+    tmin:
         Start time of the pulse.
-    t_max:
+    tmax:
         End time of the pulse.
     wmin:
         Minimum wavelength of the pulse.
@@ -50,8 +50,8 @@ class Pulse:
 
     def __init__(
         self,
-        t_min: Optional[sc.Variable] = None,
-        t_max: Optional[sc.Variable] = None,
+        tmin: Optional[sc.Variable] = None,
+        tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
@@ -63,8 +63,8 @@ class Pulse:
         self.kind = None
 
         self.neutrons = neutrons
-        self.t_min = t_min
-        self.t_max = t_max
+        self.tmin = tmin
+        self.tmax = tmax
         self.wmin = wmin
         self.wmax = wmax
 
@@ -72,7 +72,7 @@ class Pulse:
             self.birth_times = sc.array(
                 dims=['event'],
                 values=np.random.uniform(
-                    self.t_min.value, self.t_max.value, self.neutrons
+                    self.tmin.value, self.tmax.value, self.neutrons
                 ),
                 unit='s',
             )
@@ -102,8 +102,8 @@ class Pulse:
         pulse = cls(generate=False)
         pulse.birth_times = birth_times.to(unit='s')
         pulse.wavelengths = wavelengths.to(unit='angstrom')
-        pulse.t_min = pulse.birth_times.min()
-        pulse.t_max = pulse.birth_times.max()
+        pulse.tmin = pulse.birth_times.min()
+        pulse.tmax = pulse.birth_times.max()
         pulse.wmin = pulse.wavelengths.min()
         pulse.wmax = pulse.wavelengths.max()
         pulse.speeds = wavelength_to_speed(pulse.wavelengths)
@@ -114,8 +114,8 @@ class Pulse:
     def from_facility(
         cls,
         kind: str,
-        t_min: Optional[sc.Variable] = None,
-        t_max: Optional[sc.Variable] = None,
+        tmin: Optional[sc.Variable] = None,
+        tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
@@ -128,9 +128,9 @@ class Pulse:
         ----------
         kind:
             Name of a pre-defined pulse from a neutron facility.
-        t_min:
+        tmin:
             Start time of the pulse.
-        t_max:
+        tmax:
             End time of the pulse.
         wmin:
             Minimum wavelength of the pulse.
@@ -142,8 +142,8 @@ class Pulse:
             Number of points used to sample the probability distributions.
         """
         pulse = cls(
-            t_min=t_min,
-            t_max=t_max,
+            tmin=tmin,
+            tmax=tmax,
             wmin=wmin,
             wmax=wmax,
             neutrons=neutrons,
@@ -151,20 +151,20 @@ class Pulse:
         )
         pulse.kind = kind
         params = getattr(facilities, pulse.kind)
-        if pulse.t_min is None:
-            pulse.t_min = params.time.coords['time'].min()
-        if pulse.t_max is None:
-            pulse.t_max = params.time.coords['time'].max()
+        if pulse.tmin is None:
+            pulse.tmin = params.time.coords['time'].min()
+        if pulse.tmax is None:
+            pulse.tmax = params.time.coords['time'].max()
         if pulse.wmin is None:
             pulse.wmin = params.wavelength.coords['wavelength'].min()
         if pulse.wmax is None:
             pulse.wmax = params.wavelength.coords['wavelength'].max()
-        pulse.t_min = pulse.t_min.to(unit='s')
-        pulse.t_max = pulse.t_max.to(unit='s')
+        pulse.tmin = pulse.tmin.to(unit='s')
+        pulse.tmax = pulse.tmax.to(unit='s')
         pulse.wmin = pulse.wmin.to(unit='angstrom')
         pulse.wmax = pulse.wmax.to(unit='angstrom')
 
-        x_time = np.linspace(pulse.t_min.value, pulse.t_max.value, sampling)
+        x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
         x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
         p_time = np.interp(
             x_time,
@@ -222,8 +222,8 @@ class Pulse:
             the size of the distributions will be used.
         """
         pulse = cls(
-            t_min=p_time.coords['time'].min().to(unit='s'),
-            t_max=p_time.coords['time'].max().to(unit='s'),
+            tmin=p_time.coords['time'].min().to(unit='s'),
+            tmax=p_time.coords['time'].max().to(unit='s'),
             wmin=p_wav.coords['wavelength'].min().to(unit='angstrom'),
             wmax=p_wav.coords['wavelength'].max().to(unit='angstrom'),
             neutrons=neutrons,
@@ -238,7 +238,7 @@ class Pulse:
             x_wav = p_wav.coords['wavelength'].to(dtype=float, unit='angstrom').values
             p_wav = p_wav.values
         else:
-            x_time = np.linspace(pulse.t_min.value, pulse.t_max.value, sampling)
+            x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
             x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
             p_time = np.interp(
                 x_time,
@@ -270,7 +270,7 @@ class Pulse:
     @property
     def duration(self) -> float:
         """Duration of the pulse."""
-        return self.t_max - self.t_min
+        return self.tmax - self.tmin
 
     def plot(self, bins: int = 300) -> tuple:
         """
@@ -296,15 +296,15 @@ class Pulse:
             speeds=self.speeds,
             kind=self.kind,
             neutrons=self.neutrons,
-            t_min=self.t_min,
-            t_max=self.t_max,
+            tmin=self.tmin,
+            tmax=self.tmax,
             wmin=self.wmin,
             wmax=self.wmax,
         )
 
     def __repr__(self) -> str:
         return (
-            f"Pulse(t_min={self.t_min:c}, t_max={self.t_max:c}, "
+            f"Pulse(tmin={self.tmin:c}, tmax={self.tmax:c}, "
             f"wmin={self.wmin:c}, wmax={self.wmax:c}, "
             f"neutrons={self.neutrons}, kind={self.kind})"
         )
@@ -317,7 +317,7 @@ class ReadonlyPulse:
     speeds: sc.DataArray
     kind: Optional[str]
     neutrons: int
-    t_min: sc.Variable
-    t_max: sc.Variable
+    tmin: sc.Variable
+    tmax: sc.Variable
     wmin: sc.Variable
     wmax: sc.Variable
