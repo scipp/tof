@@ -203,14 +203,14 @@ class Result:
             )
 
         # Plot pulse
-        t_start = self.pulse.t_start.to(unit='us').value
+        tmin = self.pulse.tmin.to(unit='us').value
         ax.plot(
-            [t_start, self.pulse.t_end.to(unit='us').value],
+            [tmin, self.pulse.tmax.to(unit='us').value],
             [0, 0],
             color="gray",
             lw=3,
         )
-        ax.text(t_start, 0, "Pulse", ha="left", va="top", color="gray")
+        ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
 
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")
