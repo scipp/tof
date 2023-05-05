@@ -70,23 +70,22 @@ def test_one_chopper_one_opening():
     )
 
     model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
-    model.run()
+    res = model.run()
 
-    assert len(chopper.tofs.visible) == 1
-    assert len(chopper.tofs.blocked) == 2
+    visible = res.choppers['chopper'].tofs.visible
+    blocked = res.choppers['chopper'].tofs.blocked
+
+    assert len(visible) == 1
+    assert len(blocked) == 2
     assert sc.isclose(
-        chopper.tofs.visible.data.coords['tof'][0],
+        visible.data.coords['tof'][0],
         (0.5 * (topen + tclose)).to(unit='us'),
     )
+    assert sc.isclose(blocked.data.coords['tof'][0], (0.9 * topen).to(unit='us'))
+    assert sc.isclose(blocked.data.coords['tof'][1], (1.1 * tclose).to(unit='us'))
+    assert len(res.detectors['detector'].tofs.visible) == 1
     assert sc.isclose(
-        chopper.tofs.blocked.data.coords['tof'][0], (0.9 * topen).to(unit='us')
-    )
-    assert sc.isclose(
-        chopper.tofs.blocked.data.coords['tof'][1], (1.1 * tclose).to(unit='us')
-    )
-    assert len(detector.tofs.visible) == 1
-    assert sc.isclose(
-        detector.tofs.visible.data.coords['tof'][0],
+        res.detectors['detector'].tofs.visible.data.coords['tof'][0],
         (pulse.wavelengths[1] * detector.distance * tof.utils.alpha).to(unit='us'),
     )
 
@@ -126,34 +125,37 @@ def test_two_choppers_one_opening():
     )
 
     model = tof.Model(pulse=pulse, choppers=[chopper1, chopper2], detectors=[detector])
-    model.run()
+    res = model.run()
 
-    assert len(chopper1.tofs.visible) == 2
-    assert len(chopper1.tofs.blocked) == 1
+    ch1_tofs = res.choppers['chopper1'].tofs
+    ch2_tofs = res.choppers['chopper2'].tofs
+
+    assert len(ch1_tofs.visible) == 2
+    assert len(ch1_tofs.blocked) == 1
     assert sc.isclose(
-        chopper1.tofs.visible.data.coords['tof'][0], (1.5 * topen).to(unit='us')
+        ch1_tofs.visible.data.coords['tof'][0], (1.5 * topen).to(unit='us')
     )
     assert sc.isclose(
-        chopper1.tofs.visible.data.coords['tof'][1],
+        ch1_tofs.visible.data.coords['tof'][1],
         (0.5 * (topen + tclose)).to(unit='us'),
     )
     assert sc.isclose(
-        chopper1.tofs.blocked.data.coords['tof'][0], (1.1 * tclose).to(unit='us')
+        ch1_tofs.blocked.data.coords['tof'][0], (1.1 * tclose).to(unit='us')
     )
-    assert len(chopper2.tofs.visible) == 1
+    assert len(ch2_tofs.visible) == 1
     # Blocks only one neutron, the other is blocked by chopper1
-    assert len(chopper2.tofs.blocked) == 1
+    assert len(ch2_tofs.blocked) == 1
     assert sc.isclose(
-        chopper2.tofs.visible.data.coords['tof'][0],
+        ch2_tofs.visible.data.coords['tof'][0],
         (pulse.wavelengths[1] * chopper2.distance * tof.utils.alpha).to(unit='us'),
     )
     assert sc.isclose(
-        chopper2.tofs.blocked.data.coords['tof'][0],
+        ch2_tofs.blocked.data.coords['tof'][0],
         (pulse.wavelengths[0] * chopper2.distance * tof.utils.alpha).to(unit='us'),
     )
-    assert len(detector.tofs.visible) == 1
+    assert len(res.detectors["detector"].tofs.visible) == 1
     assert sc.isclose(
-        detector.tofs.visible.data.coords['tof'][0],
+        res.detectors["detector"].tofs.visible.data.coords['tof'][0],
         (pulse.wavelengths[1] * detector.distance * tof.utils.alpha).to(unit='us'),
     )
 
@@ -202,13 +204,13 @@ def test_two_choppers_one_and_two_openings():
     )
 
     model = tof.Model(pulse=pulse, choppers=[chopper1, chopper2], detectors=[detector])
-    model.run()
+    res = model.run()
 
-    assert len(chopper1.tofs.visible) == 5
-    assert len(chopper1.tofs.blocked) == 2
-    assert len(chopper2.tofs.visible) == 2
-    assert len(chopper2.tofs.blocked) == 3
-    assert len(detector.tofs.visible) == 2
+    assert len(res.choppers["chopper1"].tofs.visible) == 5
+    assert len(res.choppers["chopper1"].tofs.blocked) == 2
+    assert len(res.choppers["chopper2"].tofs.visible) == 2
+    assert len(res.choppers["chopper2"].tofs.blocked) == 3
+    assert len(res.detectors["detector"].tofs.visible) == 2
 
 
 def test_neutron_conservation():
@@ -234,15 +236,18 @@ def test_neutron_conservation():
 
     detector = tof.Detector(distance=20 * meter, name="detector")
     model = tof.Model(pulse=pulse, choppers=[chopper1, chopper2], detectors=[detector])
-    model.run()
+    res = model.run()
 
     assert (
-        chopper1.tofs.visible.data.sum() + chopper1.tofs.blocked.data.sum()
+        res.choppers["chopper1"].tofs.visible.data.sum()
+        + res.choppers["chopper1"].tofs.blocked.data.sum()
     ).value == N
     assert sc.identical(
-        chopper2.tofs.visible.data.sum() + chopper2.tofs.blocked.data.sum(),
-        chopper1.tofs.visible.data.sum(),
+        res.choppers["chopper2"].tofs.visible.data.sum()
+        + res.choppers["chopper2"].tofs.blocked.data.sum(),
+        res.choppers["chopper1"].tofs.visible.data.sum(),
     )
     assert sc.identical(
-        detector.tofs.visible.data.sum(), chopper2.tofs.visible.data.sum()
+        res.detectors["detector"].tofs.visible.data.sum(),
+        res.choppers["chopper2"].tofs.visible.data.sum(),
     )
