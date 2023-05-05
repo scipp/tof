@@ -8,17 +8,17 @@ import tof
 
 def test_creation_default():
     N = 1234
-    tsta = sc.scalar(0.5e-3, unit='s')
-    tend = sc.scalar(2.7e-3, unit='s')
+    tmin = sc.scalar(0.5e-3, unit='s')
+    tmax = sc.scalar(2.7e-3, unit='s')
     wmin = sc.scalar(1.0, unit='angstrom')
     wmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse(neutrons=N, tmin=tsta, tmax=tend, wmin=wmin, wmax=wmax)
+    pulse = tof.Pulse(neutrons=N, tmin=tmin, tmax=tmax, wmin=wmin, wmax=wmax)
     assert pulse.neutrons == N
     assert len(pulse.birth_times) == N
     assert len(pulse.wavelengths) == N
     assert len(pulse.speeds) == N
-    assert pulse.birth_times.min() >= tsta
-    assert pulse.birth_times.max() <= tend
+    assert pulse.birth_times.min() >= tmin
+    assert pulse.birth_times.max() <= tmax
     assert pulse.wavelengths.min() >= wmin
     assert pulse.wavelengths.max() <= wmax
 
@@ -41,12 +41,12 @@ def test_creation_from_neutrons():
 
 def test_duration():
     N = 1234
-    tsta = sc.scalar(0.5e-3, unit='s')
-    tend = sc.scalar(2.7e-3, unit='s')
+    tmin = sc.scalar(0.5e-3, unit='s')
+    tmax = sc.scalar(2.7e-3, unit='s')
     wmin = sc.scalar(1.0, unit='angstrom')
     wmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse(neutrons=N, tmin=tsta, tmax=tend, wmin=wmin, wmax=wmax)
-    assert pulse.duration == tend - tsta
+    pulse = tof.Pulse(neutrons=N, tmin=tmin, tmax=tmax, wmin=wmin, wmax=wmax)
+    assert pulse.duration == tmax - tmin
 
 
 def test_ess_pulse():
