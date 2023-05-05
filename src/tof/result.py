@@ -22,8 +22,8 @@ def _add_rays(
     distances: sc.Variable,
     cbar: bool = True,
     wavelengths: Optional[sc.Variable] = None,
-    wav_min: Optional[sc.Variable] = None,
-    wav_max: Optional[sc.Variable] = None,
+    wmin: Optional[sc.Variable] = None,
+    wmax: Optional[sc.Variable] = None,
 ):
     x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
     x1 = tofs.to(unit='us', copy=False).values.reshape(-1, 1)
@@ -40,7 +40,7 @@ def _add_rays(
     if wavelengths is not None:
         coll.set_cmap(plt.cm.gist_rainbow_r)
         coll.set_array(wavelengths.values)
-        coll.set_norm(plt.Normalize(wav_min.value, wav_max.value))
+        coll.set_norm(plt.Normalize(wmin.value, wmax.value))
         if cbar:
             cb = plt.colorbar(coll)
             cb.ax.yaxis.set_label_coords(-0.9, 0.5)
@@ -174,8 +174,8 @@ class Result:
                 distances=distances,
                 cbar=cbar,
                 wavelengths=wavelengths,
-                wav_min=self._pulse.wav_min,
-                wav_max=self._pulse.wav_max,
+                wmin=self._pulse.wmin,
+                wmax=self._pulse.wmax,
             )
 
         tof_max = tofs.max().value

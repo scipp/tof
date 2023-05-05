@@ -28,9 +28,9 @@ class Pulse:
         Start time of the pulse.
     t_max:
         End time of the pulse.
-    wav_min:
+    wmin:
         Minimum wavelength of the pulse.
-    wav_max:
+    wmax:
         Maximum wavelength of the pulse.
     neutrons:
         Number of neutrons in the pulse.
@@ -52,8 +52,8 @@ class Pulse:
         self,
         t_min: Optional[sc.Variable] = None,
         t_max: Optional[sc.Variable] = None,
-        wav_min: Optional[sc.Variable] = None,
-        wav_max: Optional[sc.Variable] = None,
+        wmin: Optional[sc.Variable] = None,
+        wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
         generate: bool = True,
     ):
@@ -65,8 +65,8 @@ class Pulse:
         self.neutrons = neutrons
         self.t_min = t_min
         self.t_max = t_max
-        self.wav_min = wav_min
-        self.wav_max = wav_max
+        self.wmin = wmin
+        self.wmax = wmax
 
         if generate:
             self.birth_times = sc.array(
@@ -79,7 +79,7 @@ class Pulse:
             self.wavelengths = sc.array(
                 dims=['event'],
                 values=np.random.uniform(
-                    self.wav_min.value, self.wav_max.value, self.neutrons
+                    self.wmin.value, self.wmax.value, self.neutrons
                 ),
                 unit='angstrom',
             )
@@ -104,8 +104,8 @@ class Pulse:
         pulse.wavelengths = wavelengths.to(unit='angstrom')
         pulse.t_min = pulse.birth_times.min()
         pulse.t_max = pulse.birth_times.max()
-        pulse.wav_min = pulse.wavelengths.min()
-        pulse.wav_max = pulse.wavelengths.max()
+        pulse.wmin = pulse.wavelengths.min()
+        pulse.wmax = pulse.wavelengths.max()
         pulse.speeds = wavelength_to_speed(pulse.wavelengths)
         pulse.neutrons = len(pulse.birth_times)
         return pulse
@@ -116,8 +116,8 @@ class Pulse:
         kind: str,
         t_min: Optional[sc.Variable] = None,
         t_max: Optional[sc.Variable] = None,
-        wav_min: Optional[sc.Variable] = None,
-        wav_max: Optional[sc.Variable] = None,
+        wmin: Optional[sc.Variable] = None,
+        wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
         sampling: int = 10000,
     ):
@@ -132,9 +132,9 @@ class Pulse:
             Start time of the pulse.
         t_max:
             End time of the pulse.
-        wav_min:
+        wmin:
             Minimum wavelength of the pulse.
-        wav_max:
+        wmax:
             Maximum wavelength of the pulse.
         neutrons:
             Number of neutrons in the pulse.
@@ -144,8 +144,8 @@ class Pulse:
         pulse = cls(
             t_min=t_min,
             t_max=t_max,
-            wav_min=wav_min,
-            wav_max=wav_max,
+            wmin=wmin,
+            wmax=wmax,
             neutrons=neutrons,
             generate=False,
         )
@@ -155,17 +155,17 @@ class Pulse:
             pulse.t_min = params.time.coords['time'].min()
         if pulse.t_max is None:
             pulse.t_max = params.time.coords['time'].max()
-        if pulse.wav_min is None:
-            pulse.wav_min = params.wavelength.coords['wavelength'].min()
-        if pulse.wav_max is None:
-            pulse.wav_max = params.wavelength.coords['wavelength'].max()
+        if pulse.wmin is None:
+            pulse.wmin = params.wavelength.coords['wavelength'].min()
+        if pulse.wmax is None:
+            pulse.wmax = params.wavelength.coords['wavelength'].max()
         pulse.t_min = pulse.t_min.to(unit='s')
         pulse.t_max = pulse.t_max.to(unit='s')
-        pulse.wav_min = pulse.wav_min.to(unit='angstrom')
-        pulse.wav_max = pulse.wav_max.to(unit='angstrom')
+        pulse.wmin = pulse.wmin.to(unit='angstrom')
+        pulse.wmax = pulse.wmax.to(unit='angstrom')
 
         x_time = np.linspace(pulse.t_min.value, pulse.t_max.value, sampling)
-        x_wav = np.linspace(pulse.wav_min.value, pulse.wav_max.value, sampling)
+        x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
         p_time = np.interp(
             x_time,
             params.time.coords['time'].to(unit='s').values,
@@ -224,8 +224,8 @@ class Pulse:
         pulse = cls(
             t_min=p_time.coords['time'].min().to(unit='s'),
             t_max=p_time.coords['time'].max().to(unit='s'),
-            wav_min=p_wav.coords['wavelength'].min().to(unit='angstrom'),
-            wav_max=p_wav.coords['wavelength'].max().to(unit='angstrom'),
+            wmin=p_wav.coords['wavelength'].min().to(unit='angstrom'),
+            wmax=p_wav.coords['wavelength'].max().to(unit='angstrom'),
             neutrons=neutrons,
             generate=False,
         )
@@ -239,7 +239,7 @@ class Pulse:
             p_wav = p_wav.values
         else:
             x_time = np.linspace(pulse.t_min.value, pulse.t_max.value, sampling)
-            x_wav = np.linspace(pulse.wav_min.value, pulse.wav_max.value, sampling)
+            x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
             p_time = np.interp(
                 x_time,
                 p_time.coords['time'].to(unit='s').values,
@@ -298,14 +298,14 @@ class Pulse:
             neutrons=self.neutrons,
             t_min=self.t_min,
             t_max=self.t_max,
-            wav_min=self.wav_min,
-            wav_max=self.wav_max,
+            wmin=self.wmin,
+            wmax=self.wmax,
         )
 
     def __repr__(self) -> str:
         return (
             f"Pulse(t_min={self.t_min:c}, t_max={self.t_max:c}, "
-            f"wav_min={self.wav_min:c}, wav_max={self.wav_max:c}, "
+            f"wmin={self.wmin:c}, wmax={self.wmax:c}, "
             f"neutrons={self.neutrons}, kind={self.kind})"
         )
 
@@ -319,5 +319,5 @@ class ReadonlyPulse:
     neutrons: int
     t_min: sc.Variable
     t_max: sc.Variable
-    wav_min: sc.Variable
-    wav_max: sc.Variable
+    wmin: sc.Variable
+    wmax: sc.Variable

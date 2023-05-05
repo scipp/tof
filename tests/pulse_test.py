@@ -12,7 +12,7 @@ def test_creation_default():
     tend = sc.scalar(2.7e-3, unit='s')
     wmin = sc.scalar(1.0, unit='angstrom')
     wmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse(neutrons=N, tmin=tsta, tmax=tend, wav_min=wmin, wav_max=wmax)
+    pulse = tof.Pulse(neutrons=N, tmin=tsta, tmax=tend, wmin=wmin, wmax=wmax)
     assert pulse.neutrons == N
     assert len(pulse.birth_times) == N
     assert len(pulse.wavelengths) == N
@@ -35,8 +35,8 @@ def test_creation_from_neutrons():
     assert sc.identical(pulse.wavelengths, wavelengths)
     assert pulse.tmin == sc.scalar(1.0e-3, unit='s')
     assert pulse.tmax == sc.scalar(2.0e-3, unit='s')
-    assert pulse.wav_min == sc.scalar(1.0, unit='angstrom')
-    assert pulse.wav_max == sc.scalar(10.0, unit='angstrom')
+    assert pulse.wmin == sc.scalar(1.0, unit='angstrom')
+    assert pulse.wmax == sc.scalar(10.0, unit='angstrom')
 
 
 def test_duration():
@@ -45,7 +45,7 @@ def test_duration():
     tend = sc.scalar(2.7e-3, unit='s')
     wmin = sc.scalar(1.0, unit='angstrom')
     wmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse(neutrons=N, tmin=tsta, tmax=tend, wav_min=wmin, wav_max=wmax)
+    pulse = tof.Pulse(neutrons=N, tmin=tsta, tmax=tend, wmin=wmin, wmax=wmax)
     assert pulse.duration == tend - tsta
 
 
