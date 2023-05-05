@@ -6,21 +6,21 @@ import scipp as sc
 import tof
 
 
-def test_creation_from_distribution():
+def test_creation_default():
     N = 1234
-    tmin = sc.scalar(0.5e-3, unit='s')
-    tmax = sc.scalar(2.7e-3, unit='s')
-    lmin = sc.scalar(1.0, unit='angstrom')
-    lmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse(neutrons=N, tmin=tmin, tmax=tmax, lmin=lmin, lmax=lmax)
+    tsta = sc.scalar(0.5e-3, unit='s')
+    tend = sc.scalar(2.7e-3, unit='s')
+    wmin = sc.scalar(1.0, unit='angstrom')
+    wmax = sc.scalar(10.0, unit='angstrom')
+    pulse = tof.Pulse(neutrons=N, t_start=tsta, t_end=tend, wav_min=wmin, wav_max=wmax)
     assert pulse.neutrons == N
     assert len(pulse.birth_times) == N
     assert len(pulse.wavelengths) == N
     assert len(pulse.speeds) == N
-    assert pulse.birth_times.min() >= tmin
-    assert pulse.birth_times.max() <= tmax
-    assert pulse.wavelengths.min() >= lmin
-    assert pulse.wavelengths.max() <= lmax
+    assert pulse.birth_times.min() >= tsta
+    assert pulse.birth_times.max() <= tend
+    assert pulse.wavelengths.min() >= wmin
+    assert pulse.wavelengths.max() <= wmax
 
 
 def test_creation_from_neutrons():
@@ -33,20 +33,20 @@ def test_creation_from_neutrons():
     assert pulse.neutrons == 3
     assert sc.identical(pulse.birth_times, birth_times.to(unit='s'))
     assert sc.identical(pulse.wavelengths, wavelengths)
-    assert pulse.tmin == sc.scalar(1.0e-3, unit='s')
-    assert pulse.tmax == sc.scalar(2.0e-3, unit='s')
-    assert pulse.lmin == sc.scalar(1.0, unit='angstrom')
-    assert pulse.lmax == sc.scalar(10.0, unit='angstrom')
+    assert pulse.t_start == sc.scalar(1.0e-3, unit='s')
+    assert pulse.t_end == sc.scalar(2.0e-3, unit='s')
+    assert pulse.wav_min == sc.scalar(1.0, unit='angstrom')
+    assert pulse.wav_max == sc.scalar(10.0, unit='angstrom')
 
 
 def test_duration():
     N = 1234
-    tmin = sc.scalar(0.5e-3, unit='s')
-    tmax = sc.scalar(2.7e-3, unit='s')
-    lmin = sc.scalar(1.0, unit='angstrom')
-    lmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse(neutrons=N, tmin=tmin, tmax=tmax, lmin=lmin, lmax=lmax)
-    assert pulse.duration == tmax - tmin
+    tsta = sc.scalar(0.5e-3, unit='s')
+    tend = sc.scalar(2.7e-3, unit='s')
+    wmin = sc.scalar(1.0, unit='angstrom')
+    wmax = sc.scalar(10.0, unit='angstrom')
+    pulse = tof.Pulse(neutrons=N, t_start=tsta, t_end=tend, wav_min=wmin, wav_max=wmax)
+    assert pulse.duration == tend - tsta
 
 
 def test_ess_pulse():
