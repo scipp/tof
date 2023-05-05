@@ -14,4 +14,5 @@ API Reference
    Detector
    Model
    Pulse
+   Result
    utils
