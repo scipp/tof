@@ -184,3 +184,10 @@ def test_ess_pulse():
     # Check that there are more neutrons at low wavelengths
     wavs = pulse.wavelengths.hist(wavelength=300)
     assert (wavs[:150].sum() > 1.5 * wavs[150:].sum()).value
+
+
+def test_non_integer_sampling():
+    N = 10_000
+    pulse_float = tof.Pulse.from_facility(kind='ess', neutrons=N, sampling=1e4)
+    pulse_int = tof.Pulse.from_facility(kind='ess', neutrons=N, sampling=10_000)
+    assert pulse_float.neutrons == pulse_int.neutrons == N

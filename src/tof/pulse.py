@@ -119,7 +119,7 @@ class Pulse:
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
-        sampling: int = 10000,
+        sampling: int = 100_000,
     ):
         """
         Create a pulse from a pre-defined pulse from a neutron facility.
@@ -164,6 +164,7 @@ class Pulse:
         pulse.wmin = pulse.wmin.to(unit='angstrom')
         pulse.wmax = pulse.wmax.to(unit='angstrom')
 
+        sampling = int(sampling)
         x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
         x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
         p_time = np.interp(
@@ -238,6 +239,7 @@ class Pulse:
             x_wav = p_wav.coords['wavelength'].to(dtype=float, unit='angstrom').values
             p_wav = p_wav.values
         else:
+            sampling = int(sampling)
             x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
             x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
             p_time = np.interp(
