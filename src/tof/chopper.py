@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from typing import Tuple
+
 import scipp as sc
 
 from .component import Component
+from .utils import two_pi
 
 
 class Chopper:
@@ -52,26 +55,39 @@ class Chopper:
         """
         The angular velocity of the chopper.
         """
-        return sc.constants.pi * (2.0 * sc.units.rad) * self.frequency
+        return two_pi * self.frequency
 
-    @property
-    def open_times(self) -> sc.Variable:
+    def open_close_times(
+        self, time_limit: sc.Variable
+    ) -> Tuple[sc.Variable, sc.Variable]:
         """
-        The times at which the chopper is open.
-        """
-        return (
-            self.open.to(unit='rad', copy=False) + self.phase.to(unit='rad', copy=False)
-        ) / self.omega
+        The times at which the chopper opens and closes.
 
-    @property
-    def close_times(self) -> sc.Variable:
+        Parameters
+        ----------
+        time_limit:
+            Determines how many rotations the chopper needs to perform to reach the time
+            limit.
         """
-        The times at which the chopper is closed.
-        """
+        open_times = []
+        close_times = []
+        nrot = 0
+        phase = self.phase.to(unit='rad')
+        while True:
+            nrot += 1
+            open_times.append(
+                (self.open.to(unit='rad', copy=False) + phase) / self.omega
+            )
+            close_times.append(
+                (self.close.to(unit='rad', copy=False) + phase) / self.omega
+            )
+            if close_times[-1].max() > time_limit:
+                break
+            phase += two_pi
         return (
-            self.close.to(unit='rad', copy=False)
-            + self.phase.to(unit='rad', copy=False)
-        ) / self.omega
+            sc.concat(open_times, self.open.dim),
+            sc.concat(close_times, self.close.dim),
+        )
 
     def __repr__(self) -> str:
         return (
@@ -92,8 +108,8 @@ class ReadonlyChopper(Component):
         self._distance = chopper.distance
         self._phase = chopper.phase
         self._name = chopper.name
-        self._open_times = chopper.open_times
-        self._close_times = chopper.close_times
+        self._open_times = None
+        self._close_times = None
         super().__init__()
 
     @property

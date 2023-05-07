@@ -114,6 +114,9 @@ class Model:
 
         result_choppers = {}
         result_detectors = {}
+        time_limit = (
+            self.pulse.birth_times + components[-1].distance / self.pulse.speeds
+        ).max()
         for c in components:
             comp = c.as_readonly()
             comp._wavelengths = self.pulse.wavelengths
@@ -124,8 +127,9 @@ class Model:
                 result_detectors[comp.name] = comp
                 continue
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
-            to = c.open_times
-            tc = c.close_times
+            to, tc = c.open_close_times(time_limit=time_limit)
+            comp._open_times = to
+            comp._close_times = tc
             for i in range(len(to)):
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
