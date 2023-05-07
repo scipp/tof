@@ -73,6 +73,7 @@ class Chopper:
         close_times = []
         nrot = 0
         phase = self.phase.to(unit='rad')
+        time_limit = time_limit.to(unit='s')
         while True:
             nrot += 1
             open_times.append(

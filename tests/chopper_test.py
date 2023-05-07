@@ -9,6 +9,7 @@ Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 rad = sc.Unit('rad')
 meter = sc.Unit('m')
+sec = sc.Unit('s')
 two_pi = 2.0 * rad * sc.constants.pi
 
 
@@ -24,7 +25,7 @@ def test_angular_speed():
     assert chopper.omega == two_pi * f
 
 
-def test_open_close_times():
+def test_open_close_times_one_rotation():
     f = 10.0 * Hz
     chopper = tof.Chopper(
         frequency=f,
@@ -33,13 +34,34 @@ def test_open_close_times():
         phase=0.0 * deg,
         distance=5.0 * meter,
     )
+
+    topen, tclose = chopper.open_close_times(0 * sec)
+    assert sc.identical(topen[0], (10.0 * deg).to(unit='rad') / (two_pi * f))
+    assert sc.identical(tclose[0], (20.0 * deg).to(unit='rad') / (two_pi * f))
+
+
+def test_open_close_times_three_rotations():
+    f = 10.0 * Hz
+    chopper = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+    )
+
+    topen, tclose = chopper.open_close_times(0.2 * sec)
+    open0 = (10.0 * deg).to(unit='rad')
+    close0 = (20.0 * deg).to(unit='rad')
     assert sc.identical(
-        chopper.open_times[0],
-        (10.0 * deg).to(unit='rad') / (two_pi * f),
+        topen,
+        sc.concat([open0, open0 + two_pi, open0 + 2 * two_pi], dim='cutout')
+        / (two_pi * f),
     )
     assert sc.identical(
-        chopper.close_times[0],
-        (20.0 * deg).to(unit='rad') / (two_pi * f),
+        tclose,
+        sc.concat([close0, close0 + two_pi, close0 + 2 * two_pi], dim='cutout')
+        / (two_pi * f),
     )
 
 
@@ -52,14 +74,9 @@ def test_open_close_angles_scalars_converted_to_arrays():
         phase=0.0 * deg,
         distance=5.0 * meter,
     )
-    assert sc.identical(
-        chopper.open_times[0],
-        (10.0 * deg).to(unit='rad') / (two_pi * f),
-    )
-    assert sc.identical(
-        chopper.close_times[0],
-        (20.0 * deg).to(unit='rad') / (two_pi * f),
-    )
+    topen, tclose = chopper.open_close_times(0.0 * sec)
+    assert sc.identical(topen[0], (10.0 * deg).to(unit='rad') / (two_pi * f))
+    assert sc.identical(tclose[0], (20.0 * deg).to(unit='rad') / (two_pi * f))
 
 
 def test_phase():
@@ -71,8 +88,7 @@ def test_phase():
         phase=0.0 * deg,
         distance=10.0 * meter,
     )
-    open_times = chopper1.open_times
-    close_times = chopper1.close_times
+    topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     chopper2 = tof.Chopper(
         frequency=f,
         open=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
@@ -80,12 +96,9 @@ def test_phase():
         phase=30.0 * deg,
         distance=10.0 * meter,
     )
-    assert sc.identical(
-        chopper2.open_times, open_times + (30.0 * deg).to(unit='rad') / chopper2.omega
-    )
-    assert sc.identical(
-        chopper2.close_times, close_times + (30.0 * deg).to(unit='rad') / chopper2.omega
-    )
+    topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
+    assert sc.identical(topen2, topen1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
+    assert sc.identical(tclose2, tclose1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
 
 
 def test_phase_int():
@@ -107,5 +120,7 @@ def test_phase_int():
         phase=30 * deg,
         distance=d,
     )
-    assert sc.identical(chopper1.open_times, chopper2.open_times)
-    assert sc.identical(chopper1.close_times, chopper2.close_times)
+    topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
+    topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
+    assert sc.identical(topen1, topen2)
+    assert sc.identical(tclose1, tclose2)
