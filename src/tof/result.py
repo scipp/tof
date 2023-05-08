@@ -15,6 +15,20 @@ from .pulse import Pulse
 from .utils import Plot
 
 
+def _readonly(self, *args, **kwargs):
+    raise RuntimeError("Cannot modify ReadOnlyDict")
+
+
+class ReadonlyDict(dict):
+    __setitem__ = _readonly
+    __delitem__ = _readonly
+    pop = _readonly
+    popitem = _readonly
+    clear = _readonly
+    update = _readonly
+    setdefault = _readonly
+
+
 def _add_rays(
     ax: plt.Axes,
     tofs: sc.Variable,

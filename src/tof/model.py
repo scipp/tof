@@ -9,7 +9,7 @@ import scipp as sc
 from .chopper import Chopper
 from .detector import Detector
 from .pulse import Pulse
-from .result import Result
+from .result import ReadonlyDict, Result
 
 ComponentType = Union[Chopper, Detector]
 
@@ -136,8 +136,8 @@ class Model:
 
         return Result(
             pulse=self.pulse.as_readonly(),
-            choppers=result_choppers,
-            detectors=result_detectors,
+            choppers=ReadonlyDict(result_choppers),
+            detectors=ReadonlyDict(result_detectors),
         )
 
     def __repr__(self) -> str:
