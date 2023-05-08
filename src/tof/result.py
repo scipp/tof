@@ -89,18 +89,26 @@ class Result:
             # blocked = chopper['arrival_times'][chopper['blocked']]
             tofs = ComponentData(
                 visible=_make_data(
-                    chopper['arrival_times'][chopper['visible']], dim='tof'
+                    chopper['arrival_times'][chopper['visible_mask']], dim='tof'
                 ),
                 blocked=_make_data(
-                    chopper['arrival_times'][chopper['blocked']], dim='tof'
+                    chopper['arrival_times'][chopper['blocked_mask']], dim='tof'
                 ),
             )
             wavs = ComponentData(
                 visible=_make_data(
-                    chopper['wavelengths'][chopper['visible']], dim='wavelength'
+                    chopper['wavelengths'][chopper['visible_mask']], dim='wavelength'
                 ),
                 blocked=_make_data(
-                    chopper['wavelengths'][chopper['blocked']], dim='wavelength'
+                    chopper['wavelengths'][chopper['blocked_mask']], dim='wavelength'
+                ),
+            )
+            births = ComponentData(
+                visible=_make_data(
+                    chopper['birth_times'][chopper['visible_mask']], dim='time'
+                ),
+                blocked=_make_data(
+                    chopper['birth_times'][chopper['blocked_mask']], dim='time'
                 ),
             )
             chops[name] = ReadonlyChopper(
@@ -114,6 +122,7 @@ class Result:
                 close_times=chopper['close_times'],
                 tofs=tofs,
                 wavelengths=wavs,
+                birth_times=births,
             )
 
         dets = {}
@@ -122,13 +131,19 @@ class Result:
             # visible = chopper['arrival_times'][chopper['visible']]
             # blocked = chopper['arrival_times'][chopper['blocked']]
             tofs = ComponentData(
-                visible=_make_data(det['arrival_times'][det['visible']], dim='tof'),
+                visible=_make_data(
+                    det['arrival_times'][det['visible_mask']], dim='tof'
+                ),
                 blocked=None,
             )
             wavs = ComponentData(
                 visible=_make_data(
-                    det['wavelengths'][det['visible']], dim='wavelength'
+                    det['wavelengths'][det['visible_mask']], dim='wavelength'
                 ),
+                blocked=None,
+            )
+            births = ComponentData(
+                visible=_make_data(det['birth_times'][det['visible_mask']], dim='time'),
                 blocked=None,
             )
             dets[name] = ReadonlyDetector(
@@ -136,6 +151,7 @@ class Result:
                 name=det['name'],
                 tofs=tofs,
                 wavelengths=wavs,
+                birth_times=births,
             )
 
         self._choppers = MappingProxyType(chops)
@@ -250,8 +266,14 @@ class Result:
                 inds = np.random.choice(len(tofs), size=max_rays, replace=False)
             else:
                 inds = slice(None)
-            birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
-            wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
+            # birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
+            # wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
+            birth_times = furthest_detector.birth_times.visible.data.coords['time'][
+                inds
+            ]
+            wavelengths = furthest_detector.wavelengths.visible.data.coords[
+                'wavelength'
+            ][inds]
             distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
             _add_rays(
                 ax=ax,

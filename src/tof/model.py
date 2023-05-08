@@ -153,12 +153,13 @@ class Model:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
             container[c.name]['wavelengths'] = self.pulse.wavelengths
+            container[c.name]['birth_times'] = self.pulse.birth_times
             # comp = c.as_readonly()
             # comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + c.distance / self.pulse.speeds
             container[c.name]['arrival_times'] = t.to(unit='us')
             if isinstance(c, Detector):
-                container[c.name]['visible'] = initial_mask
+                container[c.name]['visible_mask'] = initial_mask
                 #     # result_detectors[comp.name] = comp
                 continue
             # if isinstance(c, Chopper):
@@ -171,7 +172,7 @@ class Model:
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
             container[c.name].update(
-                {'visible': combined, 'blocked': ~m & initial_mask}
+                {'visible_mask': combined, 'blocked_mask': ~m & initial_mask}
             )
             initial_mask = combined
 

@@ -109,6 +109,7 @@ class ReadonlyChopper(Component):
     close_times: sc.Variable
     tofs: ComponentData
     wavelengths: ComponentData
+    birth_times: ComponentData
     # _arrival_times: sc.Variable
     # _wavelengths: sc.Variable
     # _mask: sc.Variable
