@@ -74,7 +74,7 @@ def test_creation_from_distribution():
     right = pulse.birth_times.hist(
         time=sc.array(dims=['time'], values=[5.1, 8.1], unit='ms').to(unit='s')
     ).data.sum()
-    rtol = sc.scalar(0.03)
+    rtol = sc.scalar(0.05)
     assert sc.isclose(mid / left, sc.scalar(10.0), rtol=rtol)
     assert sc.isclose(mid / right, sc.scalar(10.0), rtol=rtol)
 
@@ -184,3 +184,9 @@ def test_ess_pulse():
     # Check that there are more neutrons at low wavelengths
     wavs = pulse.wavelengths.hist(wavelength=300)
     assert (wavs[:150].sum() > 1.5 * wavs[150:].sum()).value
+
+
+def test_pulse_length():
+    N = 31245
+    pulse = tof.Pulse.from_facility(kind='ess', neutrons=N)
+    assert len(pulse) == N

@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from itertools import chain
+from types import MappingProxyType
 from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
@@ -9,24 +10,20 @@ import numpy as np
 import scipp as sc
 from matplotlib.collections import LineCollection
 
-from .chopper import Chopper
-from .detector import Detector
+from .chopper import Chopper, ReadonlyChopper
+from .component import ComponentData, Data
+from .detector import Detector, ReadonlyDetector
 from .pulse import Pulse
 from .utils import Plot
 
 
-def _readonly(self, *args, **kwargs):
-    raise RuntimeError("Cannot modify ReadOnlyDict")
-
-
-class ReadonlyDict(dict):
-    __setitem__ = _readonly
-    __delitem__ = _readonly
-    pop = _readonly
-    popitem = _readonly
-    clear = _readonly
-    update = _readonly
-    setdefault = _readonly
+def _make_data(array, dim):
+    return Data(
+        data=sc.DataArray(
+            data=sc.ones(sizes=array.sizes, unit='counts'), coords={dim: array}
+        ),
+        dim=dim,
+    )
 
 
 def _add_rays(
@@ -65,22 +62,90 @@ def _add_rays(
 
 
 class Result:
-    """Result of a simulation."""
+    """
+    Result of a simulation.
+
+    Parameters
+    ----------
+    pulse:
+        The pulse of neutrons.
+    choppers:
+        The choppers in the model.
+    detectors:
+        The detectors in the model.
+    """
 
     def __init__(
-        self, pulse: Pulse, choppers: Dict[str, Chopper], detectors: Dict[str, Detector]
+        self,
+        pulse: Pulse,
+        choppers: Dict[str, Chopper],
+        detectors: Dict[str, Detector],
     ):
         self._pulse = pulse
-        self._choppers = choppers
-        self._detectors = detectors
+        chops = {}
+        for name, chopper in choppers.items():
+            # params = chopper.copy()
+            # visible = chopper['arrival_times'][chopper['visible']]
+            # blocked = chopper['arrival_times'][chopper['blocked']]
+            tofs = ComponentData(
+                visible=_make_data(
+                    chopper['arrival_times'][chopper['visible']], dim='tof'
+                ),
+                blocked=_make_data(
+                    chopper['arrival_times'][chopper['blocked']], dim='tof'
+                ),
+            )
+            wavs = ComponentData(
+                visible=_make_data(
+                    chopper['wavelengths'][chopper['visible']], dim='wavelength'
+                ),
+                blocked=_make_data(
+                    chopper['wavelengths'][chopper['blocked']], dim='wavelength'
+                ),
+            )
+            chops[name] = ReadonlyChopper(
+                distance=chopper['distance'],
+                name=chopper['name'],
+                frequency=chopper['frequency'],
+                open=chopper['open'],
+                close=chopper['close'],
+                phase=chopper['phase'],
+                tofs=tofs,
+                wavelengths=wavs,
+            )
+
+        dets = {}
+        for name, det in detectors.items():
+            # params = chopper.copy()
+            # visible = chopper['arrival_times'][chopper['visible']]
+            # blocked = chopper['arrival_times'][chopper['blocked']]
+            tofs = ComponentData(
+                visible=_make_data(det['arrival_times'][det['visible']], dim='tof'),
+                blocked=None,
+            )
+            wavs = ComponentData(
+                visible=_make_data(
+                    det['wavelengths'][det['visible']], dim='wavelength'
+                ),
+                blocked=None,
+            )
+            dets[name] = ReadonlyDetector(
+                distance=det['distance'],
+                name=det['name'],
+                tofs=tofs,
+                wavelengths=wavs,
+            )
+
+        self._choppers = MappingProxyType(chops)
+        self._detectors = MappingProxyType(dets)
 
     @property
-    def choppers(self) -> Dict[str, Chopper]:
+    def choppers(self) -> MappingProxyType[str, Chopper]:
         """The choppers in the model."""
         return self._choppers
 
     @property
-    def detectors(self) -> Dict[str, Detector]:
+    def detectors(self) -> MappingProxyType[str, Detector]:
         """The detectors in the model."""
         return self._detectors
 
@@ -90,6 +155,11 @@ class Result:
         return self._pulse
 
     def __getattr__(self, name):
+        if all([name in self._choppers, name in self._detectors]):
+            raise AttributeError(
+                f"Result has both a chopper and a detector named {name}. "
+                "Please use `.choppers` or `.detectors` to specify which one you want."
+            )
         if name in self._choppers:
             return self._choppers[name]
         elif name in self._detectors:

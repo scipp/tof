@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from dataclasses import dataclass
+
+
 import scipp as sc
 
-from .component import Component
+from .component import Component, ComponentData
 
 
 class Chopper:
@@ -80,57 +83,83 @@ class Chopper:
             f"cutouts={len(self.open)})"
         )
 
-    def as_readonly(self):
-        return ReadonlyChopper(self)
+    # def as_readonly(self):
+    #     return ReadonlyChopper(self)
+
+    def as_dict(self):
+        return {
+            'frequency': self.frequency,
+            'open': self.open,
+            'close': self.close,
+            'distance': self.distance,
+            'phase': self.phase,
+            'name': self.name,
+        }
 
 
+@dataclass(frozen=True)
 class ReadonlyChopper(Component):
-    def __init__(self, chopper: Chopper):
-        self._frequency = chopper.frequency
-        self._open = chopper.open
-        self._close = chopper.close
-        self._distance = chopper.distance
-        self._phase = chopper.phase
-        self._name = chopper.name
-        self._open_times = chopper.open_times
-        self._close_times = chopper.close_times
-        super().__init__()
+    distance: sc.Variable
+    name: str
+    frequency: sc.Variable
+    open: sc.Variable
+    close: sc.Variable
+    phase: sc.Variable
+    tofs: ComponentData
+    wavelengths: ComponentData
+    # _arrival_times: sc.Variable
+    # _wavelengths: sc.Variable
+    # _mask: sc.Variable
+    # _own_mask: sc.Variable
 
-    @property
-    def frequency(self) -> sc.Variable:
-        return self._frequency
 
-    @property
-    def open(self) -> sc.Variable:
-        return self._open
+# class ReadonlyChopper(Component):
+#     def __init__(self, chopper: Chopper):
+#         self._frequency = chopper.frequency
+#         self._open = chopper.open
+#         self._close = chopper.close
+#         self._distance = chopper.distance
+#         self._phase = chopper.phase
+#         self._name = chopper.name
+#         self._open_times = chopper.open_times
+#         self._close_times = chopper.close_times
+#         # super().__init__()
 
-    @property
-    def close(self) -> sc.Variable:
-        return self._close
+#     @property
+#     def frequency(self) -> sc.Variable:
+#         return self._frequency
 
-    @property
-    def distance(self) -> sc.Variable:
-        return self._distance
+#     @property
+#     def open(self) -> sc.Variable:
+#         return self._open
 
-    @property
-    def phase(self) -> sc.Variable:
-        return self._phase
+#     @property
+#     def close(self) -> sc.Variable:
+#         return self._close
 
-    @property
-    def name(self) -> str:
-        return self._name
+#     @property
+#     def distance(self) -> sc.Variable:
+#         return self._distance
 
-    @property
-    def open_times(self) -> sc.Variable:
-        return self._open_times
+#     @property
+#     def phase(self) -> sc.Variable:
+#         return self._phase
 
-    @property
-    def close_times(self) -> sc.Variable:
-        return self._close_times
+#     @property
+#     def name(self) -> str:
+#         return self._name
 
-    def __repr__(self) -> str:
-        return (
-            f"Chopper(name={self.name}, distance={self.distance:c}, "
-            f"frequency={self.frequency:c}, phase={self.phase:c}, "
-            f"cutouts={len(self.open)})"
-        )
+#     @property
+#     def open_times(self) -> sc.Variable:
+#         return self._open_times
+
+#     @property
+#     def close_times(self) -> sc.Variable:
+#         return self._close_times
+
+#     def __repr__(self) -> str:
+#         return (
+#             f"Chopper(name={self.name}, distance={self.distance:c}, "
+#             f"frequency={self.frequency:c}, phase={self.phase:c}, "
+#             f"cutouts={len(self.open)})"
+#         )

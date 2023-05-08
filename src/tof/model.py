@@ -2,14 +2,15 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from itertools import chain
+from types import MappingProxyType
 from typing import Dict, List, Optional, Tuple, Union
 
 import scipp as sc
 
-from .chopper import Chopper
+from .chopper import Chopper, ReadonlyChopper
 from .detector import Detector
 from .pulse import Pulse
-from .result import ReadonlyDict, Result
+from .result import Result
 
 ComponentType = Union[Chopper, Detector]
 
@@ -32,6 +33,18 @@ def _input_to_dict(
         return {item.name: item for item in obj}
     else:
         return {obj.name: obj}
+
+
+# def _make_result(pulse, choppers, detectors):
+#     return Result(
+#         pulse=pulse.as_readonly(),
+#         choppers=MappingProxyType(
+#             {key: ReadonlyChopper(**value) for key, value in result_choppers.items()}
+#         ),
+#         detectors=MappingProxyType(
+#             {key: ReadonlyDetector(**value) for key, value in result_detectors.items()}
+#         ),
+#     )
 
 
 class Model:
@@ -112,32 +125,73 @@ class Model:
             sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
         )
 
+        # result_choppers = {}
+        # result_detectors = {}
+        # for c in components:
+        #     comp = c.as_readonly()
+        #     comp._wavelengths = self.pulse.wavelengths
+        #     t = self.pulse.birth_times + comp.distance / self.pulse.speeds
+        #     comp._arrival_times = t
+        #     if isinstance(c, Detector):
+        #         comp._mask = initial_mask
+        #         result_detectors[comp.name] = comp
+        #         continue
+        #     m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
+        #     to = c.open_times
+        #     tc = c.close_times
+        #     for i in range(len(to)):
+        #         m |= (t > to[i]) & (t < tc[i])
+        #     combined = initial_mask & m
+        #     comp._mask = combined
+        #     comp._own_mask = ~m & initial_mask
+        #     initial_mask = combined
+        #     result_choppers[comp.name] = comp
+
         result_choppers = {}
         result_detectors = {}
         for c in components:
-            comp = c.as_readonly()
-            comp._wavelengths = self.pulse.wavelengths
-            t = self.pulse.birth_times + comp.distance / self.pulse.speeds
-            comp._arrival_times = t
+            container = result_detectors if isinstance(c, Detector) else result_choppers
+            container[c.name] = c.as_dict()
+            container[c.name]['wavelengths'] = self.pulse.wavelengths
+            # comp = c.as_readonly()
+            # comp._wavelengths = self.pulse.wavelengths
+            t = self.pulse.birth_times + c.distance / self.pulse.speeds
+            container[c.name]['arrival_times'] = t.to(unit='us')
             if isinstance(c, Detector):
-                comp._mask = initial_mask
-                result_detectors[comp.name] = comp
+                container[c.name]['visible'] = initial_mask
+                #     # result_detectors[comp.name] = comp
                 continue
+            # if isinstance(c, Chopper):
+            # else:
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
             to = c.open_times
             tc = c.close_times
+            container[c.name].update({'open_times': to, 'close_times': tc})
             for i in range(len(to)):
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
-            comp._mask = combined
-            comp._own_mask = ~m & initial_mask
+            container[c.name].update(
+                {'visible': combined, 'blocked': ~m & initial_mask}
+            )
             initial_mask = combined
-            result_choppers[comp.name] = comp
 
+        # return Result(
+        #     pulse=self.pulse.as_readonly(),
+        #     choppers=MappingProxyType(
+        #         {
+        #             key: ReadonlyChopper(**value)
+        #             for key, value in result_choppers.items()
+        #         }
+        #     ),
+        #     detectors=MappingProxyType(
+        #         {
+        #             key: ReadonlyDetector(**value)
+        #             for key, value in result_detectors.items()
+        #         }
+        #     ),
+        # )
         return Result(
-            pulse=self.pulse.as_readonly(),
-            choppers=ReadonlyDict(result_choppers),
-            detectors=ReadonlyDict(result_detectors),
+            pulse=self.pulse, choppers=result_choppers, detectors=result_detectors
         )
 
     def __repr__(self) -> str:

@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from dataclasses import FrozenInstanceError
+
+import pytest
 import scipp as sc
 
 import tof
@@ -251,3 +254,75 @@ def test_neutron_conservation():
         res.detectors["detector"].tofs.visible.data.sum(),
         res.choppers["chopper2"].tofs.visible.data.sum(),
     )
+
+
+def test_pulse_results_are_read_only():
+    topen = 10.0 * ms
+    tclose = 20.0 * ms
+    chopper = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name="chopper",
+    )
+    detector = tof.Detector(distance=20 * meter, name="detector")
+
+    pulse = make_pulse(
+        arrival_times=sc.concat(
+            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
+        ),
+        distance=chopper.distance,
+    )
+
+    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
+    res = model.run()
+
+    # Check that basic properties are accessible
+    assert res.pulse.neutrons == 3
+    assert sc.identical(res.pulse.wavelengths, pulse.wavelengths)
+    # Check that values cannot be overwritten
+    with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
+        res.pulse.neutrons = 5
+    with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
+        res.pulse.wavelengths = 'corrupted'
+    with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
+        res.pulse.birth_times = sc.ones_like(res.pulse.birth_times)
+
+
+def test_chopper_results_are_read_only():
+    topen = 10.0 * ms
+    tclose = 20.0 * ms
+    chopper = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name="chopper",
+    )
+    detector = tof.Detector(distance=20 * meter, name="detector")
+
+    pulse = make_pulse(
+        arrival_times=sc.concat(
+            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
+        ),
+        distance=chopper.distance,
+    )
+
+    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
+    res = model.run()
+
+    ch = res.choppers['chopper']
+
+    # Check that basic properties are accessible
+    assert len(ch.tofs.visible) == 1
+    assert len(ch.tofs.blocked) == 2
+    assert sc.identical(ch.distance, chopper.distance)
+    assert sc.identical(ch.phase, chopper.phase)
+    # Check that values cannot be overwritten
+    with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
+        ch.phase = 63.0 * deg
+    with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
+        ch.frequency = 20.0 * Hz

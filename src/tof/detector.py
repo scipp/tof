@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from dataclasses import dataclass
+
+
 import scipp as sc
 
-from .component import Component
+from .component import Component, ComponentData
 
 
 class Detector:
@@ -26,22 +29,36 @@ class Detector:
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"
 
-    def as_readonly(self):
-        return ReadonlyDetector(self)
+    def as_dict(self):
+        return {'distance': self.distance, 'name': self.name}
+
+    # def as_readonly(self):
+    #     return ReadonlyDetector(distance=self.distance, name=self.name)
 
 
+# class ReadonlyDetector(Component):
+#     """ """
+
+#     def __init__(self, detector: Detector):
+#         self._distance = detector.distance
+#         self._name = detector.name
+#         super().__init__()
+
+#     @property
+#     def distance(self) -> sc.Variable:
+#         return self._distance
+
+#     @property
+#     def name(self) -> str:
+#         return self._name
+
+
+@dataclass(frozen=True)
 class ReadonlyDetector(Component):
-    """ """
-
-    def __init__(self, detector: Detector):
-        self._distance = detector.distance
-        self._name = detector.name
-        super().__init__()
-
-    @property
-    def distance(self) -> sc.Variable:
-        return self._distance
-
-    @property
-    def name(self) -> str:
-        return self._name
+    distance: sc.Variable
+    name: str
+    tofs: ComponentData
+    wavelengths: ComponentData
+    # _arrival_times: sc.Variable
+    # _wavelengths: sc.Variable
+    # _mask: sc.Variable

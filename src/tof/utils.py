@@ -66,7 +66,7 @@ def energy_to_speed(x: sc.Variable, unit='m/s') -> sc.Variable:
     return sc.sqrt(x / const.m_n).to(unit=unit)
 
 
-@dataclass
+@dataclass(frozen=True)
 class FacilityPulse:
     time: sc.DataArray
     wavelength: sc.DataArray

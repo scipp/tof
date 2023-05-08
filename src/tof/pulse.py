@@ -85,6 +85,12 @@ class Pulse:
             )
             self.speeds = wavelength_to_speed(self.wavelengths)
 
+    def __len__(self) -> int:
+        """
+        Return the number of neutrons in the pulse.
+        """
+        return len(self.birth_times)
+
     @classmethod
     def from_neutrons(cls, birth_times: sc.Variable, wavelengths: sc.Variable):
         """
