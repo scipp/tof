@@ -110,6 +110,8 @@ class Result:
                 open=chopper['open'],
                 close=chopper['close'],
                 phase=chopper['phase'],
+                open_times=chopper['open_times'],
+                close_times=chopper['close_times'],
                 tofs=tofs,
                 wavelengths=wavs,
             )

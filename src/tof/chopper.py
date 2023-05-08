@@ -105,6 +105,8 @@ class ReadonlyChopper(Component):
     open: sc.Variable
     close: sc.Variable
     phase: sc.Variable
+    open_times: sc.Variable
+    close_times: sc.Variable
     tofs: ComponentData
     wavelengths: ComponentData
     # _arrival_times: sc.Variable

@@ -68,7 +68,7 @@ class Data:
         bins:
             The bins to use for histogramming the neutrons.
         """
-        return self.data.hist({self._dim: bins}).plot(**kwargs)
+        return self.data.hist({self.dim: bins}).plot(**kwargs)
 
     # def __repr__(self) -> str:
     #     return f"Data(data={self._data})"
@@ -138,16 +138,16 @@ class ComponentData:
     #         dim=self._dim,
     #     )
 
-    # @property
-    # def data(self) -> sc.DataGroup:
-    #     """
-    #     The neutrons that reach the component, split up into those that are blocked by
-    #     the component and those that are not.
-    #     """
-    #     out = {'visible': self.visible.data}
-    #     if self._blocking is not None:
-    #         out['blocked'] = self.blocked.data
-    #     return sc.DataGroup(out)
+    @property
+    def data(self) -> sc.DataGroup:
+        """
+        The neutrons that reach the component, split up into those that are blocked by
+        the component and those that are not.
+        """
+        out = {'visible': self.visible.data}
+        if self.blocked is not None:
+            out['blocked'] = self.blocked.data
+        return sc.DataGroup(out)
 
     # def __repr__(self) -> str:
     #     return (
@@ -169,10 +169,10 @@ class ComponentData:
             return self.visible.plot(bins=bins, **kwargs)
         visible = self.visible.data
         blocked = self.blocked.data
-        dim = visible.dim
+        dim = self.visible.dim
         if isinstance(bins, int):
             bins = sc.linspace(
-                dim=visible.dim,
+                dim=dim,
                 start=min(visible.coords[dim].min(), blocked.coords[dim].min()).value,
                 stop=max(visible.coords[dim].max(), blocked.coords[dim].max()).value,
                 num=bins,
