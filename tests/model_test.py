@@ -286,7 +286,7 @@ def test_add_components_with_same_name_raises():
         model.add(detector2)
 
 
-def test_iter():
+def test_remove():
     # Make a chopper open from 10-20 ms. Assume zero phase.
     topen = 10.0 * ms
     tclose = 20.0 * ms
@@ -311,9 +311,40 @@ def test_iter():
 
     model = tof.Model(pulse=pulse)
     model.add(chopper)
-    assert 'chopper' in model
+    assert 'chopper' in model.choppers
     model.add(detector)
+    assert 'detector' in model.detectors
+
+
+def test_iter():
+    # Make a chopper open from 10-20 ms. Assume zero phase.
+    topen = 10.0 * ms
+    tclose = 20.0 * ms
+    chopper = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='chopper',
+    )
+    detector = tof.Detector(distance=20 * meter, name='detector')
+
+    # Make a pulse with 3 neutrons with one neutron going through the chopper opening
+    # and the other two neutrons on either side of the opening.
+    pulse = make_pulse(
+        arrival_times=sc.concat(
+            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
+        ),
+        distance=chopper.distance,
+    )
+
+    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
+    model.remove('chopper')
+    assert 'chopper' not in model
     assert 'detector' in model
+    model.remove('detector')
+    assert 'detector' not in model
 
 
 def test_getitem():

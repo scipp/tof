@@ -66,6 +66,7 @@ class Model:
     def add(self, component):
         """
         Add a component to the instrument.
+        Component names must be unique across choppers and detectors.
 
         Parameters
         ----------
@@ -84,9 +85,25 @@ class Model:
         elif isinstance(component, Detector):
             self.detectors[component.name] = component
         else:
-            raise ValueError(
+            raise TypeError(
                 f"Cannot add component of type {type(component)} to the model."
             )
+
+    def remove(self, name: str):
+        """
+        Remove a component.
+
+        Parameters
+        ----------
+        name:
+            The name of the component to remove.
+        """
+        if name in self.choppers:
+            del self.choppers[name]
+        elif name in self.detectors:
+            del self.detectors[name]
+        else:
+            raise KeyError(f"No component with name {name} was found.")
 
     def __iter__(self):
         return chain(self.choppers, self.detectors)
@@ -95,6 +112,9 @@ class Model:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
         return self.choppers.get(name, self.detectors.get(name))
+
+    def __delitem__(self, name):
+        self.remove(name)
 
     def run(self, npulses: int = 1):
         """
