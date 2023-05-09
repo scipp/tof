@@ -8,7 +8,6 @@ import tof
 
 from .common import make_chopper, make_pulse
 
-
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')

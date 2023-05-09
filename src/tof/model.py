@@ -2,12 +2,11 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from itertools import chain
-from types import MappingProxyType
 from typing import Dict, List, Optional, Tuple, Union
 
 import scipp as sc
 
-from .chopper import Chopper, ReadonlyChopper
+from .chopper import Chopper
 from .detector import Detector
 from .pulse import Pulse
 from .result import Result

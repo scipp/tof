@@ -3,7 +3,6 @@
 
 from dataclasses import dataclass
 
-
 import scipp as sc
 
 from .component import Component, ComponentData
