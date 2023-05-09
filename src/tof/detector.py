@@ -40,3 +40,20 @@ class ReadonlyDetector(Component):
     tofs: ComponentData
     wavelengths: ComponentData
     birth_times: ComponentData
+    speeds: ComponentData
+
+    def __repr__(self) -> str:
+        out = f"Detector: '{self.name}'\n"
+        out += f"  distance: {self.distance:c}\n"
+        for key, dim in {
+            'tofs': 'tof',
+            'wavelengths': 'wavelength',
+            'birth_times': 'time',
+            'speeds': 'speed',
+        }.items():
+            coord = getattr(self, key).visible.data.coords[dim]
+            out += f"  {key}: [{coord.min():c} - {coord.max():c}]\n"
+        return out
+
+    def __str__(self) -> str:
+        return self.__repr__()

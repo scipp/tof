@@ -123,8 +123,9 @@ class Model:
             container[c.name] = c.as_dict()
             container[c.name].update(
                 {
-                    'wavelengths': self.pulse.wavelengths,
                     'birth_times': self.pulse.birth_times,
+                    'speeds': self.pulse.speeds,
+                    'wavelengths': self.pulse.wavelengths,
                 }
             )
             t = self.pulse.birth_times + c.distance / self.pulse.speeds
@@ -149,9 +150,13 @@ class Model:
         )
 
     def __repr__(self) -> str:
-        return (
-            f"Model(choppers={self.choppers},\n      "
-            f"detectors={self.detectors},\n      "
-            f"pulse={self.pulse},\n      "
-            f"neutrons={len(self.pulse.birth_times)})"
-        )
+        out = f"Model:\n  Pulse: {self.pulse}\n  Choppers:\n"
+        for name, ch in self.choppers.items():
+            out += f"    {name}: {ch}\n"
+        out += "  Detectors:\n"
+        for name, det in self.detectors.items():
+            out += f"    {name}: {det}\n"
+        return out
+
+    def __str__(self) -> str:
+        return self.__repr__()

@@ -26,6 +26,15 @@ def _make_data(array, dim):
     )
 
 
+def _make_component_data(component, key, dim, blocked=False):
+    return ComponentData(
+        visible=_make_data(component[key][component['visible_mask']], dim=dim),
+        blocked=_make_data(component[key][component['blocked_mask']], dim=dim)
+        if blocked
+        else None,
+    )
+
+
 def _add_rays(
     ax: plt.Axes,
     tofs: sc.Variable,
@@ -85,36 +94,15 @@ class Result:
         self._masks = {}
         self._arrival_times = {}
         self._choppers = {}
+        fields = {
+            'tofs': ('arrival_times', 'tof'),
+            'wavelengths': ('wavelengths', 'wavelength'),
+            'birth_times': ('birth_times', 'time'),
+            'speeds': ('speeds', 'speed'),
+        }
         for name, chopper in choppers.items():
-            # params = chopper.copy()
-            # visible = chopper['arrival_times'][chopper['visible']]
-            # blocked = chopper['arrival_times'][chopper['blocked']]
             self._masks[name] = chopper['visible_mask']
             self._arrival_times[name] = chopper['arrival_times']
-            tofs = ComponentData(
-                visible=_make_data(
-                    chopper['arrival_times'][chopper['visible_mask']], dim='tof'
-                ),
-                blocked=_make_data(
-                    chopper['arrival_times'][chopper['blocked_mask']], dim='tof'
-                ),
-            )
-            wavs = ComponentData(
-                visible=_make_data(
-                    chopper['wavelengths'][chopper['visible_mask']], dim='wavelength'
-                ),
-                blocked=_make_data(
-                    chopper['wavelengths'][chopper['blocked_mask']], dim='wavelength'
-                ),
-            )
-            births = ComponentData(
-                visible=_make_data(
-                    chopper['birth_times'][chopper['visible_mask']], dim='time'
-                ),
-                blocked=_make_data(
-                    chopper['birth_times'][chopper['blocked_mask']], dim='time'
-                ),
-            )
             self._choppers[name] = ReadonlyChopper(
                 distance=chopper['distance'],
                 name=chopper['name'],
@@ -124,37 +112,23 @@ class Result:
                 phase=chopper['phase'],
                 open_times=chopper['open_times'],
                 close_times=chopper['close_times'],
-                tofs=tofs,
-                wavelengths=wavs,
-                birth_times=births,
+                **{
+                    key: _make_component_data(chopper, field, dim, blocked=True)
+                    for key, (field, dim) in fields.items()
+                },
             )
 
         self._detectors = {}
         for name, det in detectors.items():
             self._masks[name] = det['visible_mask']
             self._arrival_times[name] = det['arrival_times']
-            tofs = ComponentData(
-                visible=_make_data(
-                    det['arrival_times'][det['visible_mask']], dim='tof'
-                ),
-                blocked=None,
-            )
-            wavs = ComponentData(
-                visible=_make_data(
-                    det['wavelengths'][det['visible_mask']], dim='wavelength'
-                ),
-                blocked=None,
-            )
-            births = ComponentData(
-                visible=_make_data(det['birth_times'][det['visible_mask']], dim='time'),
-                blocked=None,
-            )
             self._detectors[name] = ReadonlyDetector(
                 distance=det['distance'],
                 name=det['name'],
-                tofs=tofs,
-                wavelengths=wavs,
-                birth_times=births,
+                **{
+                    key: _make_component_data(det, field, dim)
+                    for key, (field, dim) in fields.items()
+                },
             )
 
         self._choppers = MappingProxyType(self._choppers)
@@ -325,14 +299,17 @@ class Result:
         return Plot(fig=fig, ax=ax)
 
     def __repr__(self) -> str:
-        out = f"Pulse: {self._pulse.neutrons} neutrons.\nChoppers:\n"
+        out = f"Result:\n  Pulse: {self._pulse.neutrons} neutrons.\n  Choppers:\n"
         for name, ch in self._choppers.items():
             tofs = ch.tofs
             out += (
-                f"  {name}: visible={len(tofs.visible)}, "
+                f"    {name}: visible={len(tofs.visible)}, "
                 f"blocked={len(tofs.blocked)}\n"
             )
-        out += "Detectors:\n"
+        out += "  Detectors:\n"
         for name, det in self._detectors.items():
-            out += f"  {name}: visible={len(det.tofs.visible)}\n"
+            out += f"    {name}: visible={len(det.tofs.visible)}\n"
         return out
+
+    def __str__(self) -> str:
+        return self.__repr__()

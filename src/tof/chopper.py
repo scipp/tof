@@ -107,3 +107,23 @@ class ReadonlyChopper(Component):
     tofs: ComponentData
     wavelengths: ComponentData
     birth_times: ComponentData
+    speeds: ComponentData
+
+    def __repr__(self) -> str:
+        out = f"Chopper: '{self.name}'\n"
+        out += f"  distance: {self.distance:c}\n"
+        out += f"  frequency: {self.frequency:c}\n"
+        out += f"  phase: {self.phase:c}\n"
+        out += f"  cutouts: {len(self.open)}\n"
+        for key, dim in {
+            'tofs': 'tof',
+            'wavelengths': 'wavelength',
+            'birth_times': 'time',
+            'speeds': 'speed',
+        }.items():
+            coord = getattr(self, key).visible.data.coords[dim]
+            out += f"  {key}: [{coord.min():c} - {coord.max():c}]\n"
+        return out
+
+    def __str__(self) -> str:
+        return self.__repr__()

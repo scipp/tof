@@ -59,6 +59,13 @@ class Data:
         """
         return self.data.hist({self.dim: bins}).plot(**kwargs)
 
+    def __repr__(self) -> str:
+        coord = self.data.coords[self.dim]
+        return (
+            f"Data(dim='{self.dim}', events={len(self)}, "
+            f"min={coord.min():c}, max={coord.max():c})"
+        )
+
 
 @dataclass(frozen=True)
 class ComponentData:
@@ -95,11 +102,11 @@ class ComponentData:
             out['blocked'] = self.blocked.data
         return sc.DataGroup(out)
 
-    # def __repr__(self) -> str:
-    #     return (
-    #         f"ComponentData(visible={sc.sum(self._mask).value}, "
-    #         f"blocked={sc.sum(~self._mask).value}, dim={self._dim})"
-    #     )
+    def __repr__(self) -> str:
+        return (
+            f"ComponentData(dim='{self.visible.dim}', visible={len(self.visible)}, "
+            f"blocked={len(self.blocked) if self.blocked is not None else None})"
+        )
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -140,6 +147,18 @@ class Component:
     passed through it.
     """
 
+    @property
+    def data(self) -> sc.DataGroup:
+        """ """
+        return sc.DataGroup(
+            {
+                'tofs': self.tofs.data,
+                'wavelengths': self.wavelengths.data,
+                'birth_times': self.birth_times.data,
+                'speeds': self.speeds.data,
+            }
+        )
+
     def plot(self, bins: int = 300) -> tuple:
         """
         Plot both the tof and wavelength data side by side.
@@ -156,6 +175,3 @@ class Component:
         fig.set_size_inches(size[0] * 2, size[1])
         fig.tight_layout()
         return Plot(fig=fig, ax=ax)
-
-    # def __repr__(self) -> str:
-    #     return f"Component(tofs={self.tofs}, wavelengths={self.wavelengths})"
