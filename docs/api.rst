@@ -14,5 +14,8 @@ API Reference
    Detector
    Model
    Pulse
+   ReadonlyChopper
+   ReadonlyDetector
+   ReadonlyPulse
    Result
    utils

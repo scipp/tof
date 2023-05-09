@@ -159,7 +159,7 @@ class Component:
             }
         )
 
-    def plot(self, bins: int = 300) -> tuple:
+    def plot(self, bins: int = 300) -> Plot:
         """
         Plot both the tof and wavelength data side by side.
 

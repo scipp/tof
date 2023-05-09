@@ -3,9 +3,9 @@
 
 # flake8: noqa F401
 
-from .chopper import Chopper
+from .chopper import Chopper, ReadonlyChopper
 from .component import Component, ComponentData, Data
-from .detector import Detector
+from .detector import Detector, ReadonlyDetector
 from .model import Model
-from .pulse import Pulse
+from .pulse import Pulse, ReadonlyPulse
 from .result import Result

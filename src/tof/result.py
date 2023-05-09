@@ -166,7 +166,7 @@ class Result:
         figsize=None,
         ax=None,
         cbar=True,
-    ) -> tuple:
+    ) -> Plot:
         """
         Plot the time-distance diagram for the instrument, including the rays of
         neutrons that make it to the furthest detector.
