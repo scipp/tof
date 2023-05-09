@@ -3,7 +3,7 @@
 
 from itertools import chain
 from types import MappingProxyType
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -81,12 +81,16 @@ class Result:
         choppers: Dict[str, Chopper],
         detectors: Dict[str, Detector],
     ):
-        self._pulse = pulse
-        chops = {}
+        self._pulse = pulse.as_readonly()
+        self._masks = {}
+        self._arrival_times = {}
+        readonly_choppers = {}
         for name, chopper in choppers.items():
             # params = chopper.copy()
             # visible = chopper['arrival_times'][chopper['visible']]
             # blocked = chopper['arrival_times'][chopper['blocked']]
+            self._masks[name] = chopper['visible_mask']
+            self._arrival_times[name] = chopper['arrival_times']
             tofs = ComponentData(
                 visible=_make_data(
                     chopper['arrival_times'][chopper['visible_mask']], dim='tof'
@@ -111,7 +115,7 @@ class Result:
                     chopper['birth_times'][chopper['blocked_mask']], dim='time'
                 ),
             )
-            chops[name] = ReadonlyChopper(
+            readonly_choppers[name] = ReadonlyChopper(
                 distance=chopper['distance'],
                 name=chopper['name'],
                 frequency=chopper['frequency'],
@@ -125,11 +129,13 @@ class Result:
                 birth_times=births,
             )
 
-        dets = {}
+        readonly_detectors = {}
         for name, det in detectors.items():
             # params = chopper.copy()
             # visible = chopper['arrival_times'][chopper['visible']]
             # blocked = chopper['arrival_times'][chopper['blocked']]
+            self._masks[name] = det['visible_mask']
+            self._arrival_times[name] = det['arrival_times']
             tofs = ComponentData(
                 visible=_make_data(
                     det['arrival_times'][det['visible_mask']], dim='tof'
@@ -146,7 +152,7 @@ class Result:
                 visible=_make_data(det['birth_times'][det['visible_mask']], dim='time'),
                 blocked=None,
             )
-            dets[name] = ReadonlyDetector(
+            readonly_detectors[name] = ReadonlyDetector(
                 distance=det['distance'],
                 name=det['name'],
                 tofs=tofs,
@@ -154,8 +160,8 @@ class Result:
                 birth_times=births,
             )
 
-        self._choppers = MappingProxyType(chops)
-        self._detectors = MappingProxyType(dets)
+        self._choppers = MappingProxyType(readonly_choppers)
+        self._detectors = MappingProxyType(readonly_detectors)
 
     @property
     def choppers(self) -> MappingProxyType[str, Chopper]:
@@ -172,18 +178,14 @@ class Result:
         """The pulse of neutrons."""
         return self._pulse
 
-    def __getattr__(self, name):
-        if all([name in self._choppers, name in self._detectors]):
-            raise AttributeError(
-                f"Result has both a chopper and a detector named {name}. "
-                "Please use `.choppers` or `.detectors` to specify which one you want."
-            )
-        if name in self._choppers:
-            return self._choppers[name]
-        elif name in self._detectors:
-            return self._detectors[name]
-        else:
-            raise AttributeError(f"Result has no attribute {name}.")
+    def __getitem__(self, name) -> Union[Chopper, Detector]:
+        return self._choppers.get(name, self._detectors[name])
+        # if name in self._choppers:
+        #     return self._choppers[name]
+        # elif name in self._detectors:
+        #     return self._detectors[name]
+        # else:
+        #     raise KeyError(f"Result has no entry {name}.")
 
     def plot(
         self,
@@ -221,7 +223,7 @@ class Result:
         furthest_detector = max(self._detectors.values(), key=lambda d: d.distance)
 
         if blocked_rays > 0:
-            inv_mask = ~furthest_detector._mask
+            inv_mask = ~self._masks[furthest_detector.name]
             nrays = int(inv_mask.sum())
             if nrays > blocked_rays:
                 inds = np.random.choice(nrays, size=blocked_rays, replace=False)
@@ -235,7 +237,8 @@ class Result:
             )
             dim = 'component'
             tofs = sc.concat(
-                [comp._arrival_times[inv_mask][inds] for comp in components], dim=dim
+                [self._arrival_times[comp.name][inv_mask][inds] for comp in components],
+                dim=dim,
             )
             distances = sc.concat(
                 [
@@ -246,7 +249,7 @@ class Result:
             )
             masks = sc.concat(
                 [sc.ones(sizes=birth_times.sizes, dtype=bool)]
-                + [comp._mask[inv_mask][inds] for comp in components],
+                + [self._masks[comp.name][inv_mask][inds] for comp in components],
                 dim=dim,
             )
 
@@ -266,8 +269,6 @@ class Result:
                 inds = np.random.choice(len(tofs), size=max_rays, replace=False)
             else:
                 inds = slice(None)
-            # birth_times = self.pulse.birth_times[furthest_detector._mask][inds]
-            # wavelengths = self.pulse.wavelengths[furthest_detector._mask][inds]
             birth_times = furthest_detector.birth_times.visible.data.coords['time'][
                 inds
             ]
@@ -330,10 +331,10 @@ class Result:
         for name, ch in self._choppers.items():
             tofs = ch.tofs
             out += (
-                f"  {name}: visible={len(tofs.visible.data)}, "
-                f"blocked={len(tofs.blocked.data)}\n"
+                f"  {name}: visible={len(tofs.visible)}, "
+                f"blocked={len(tofs.blocked)}\n"
             )
         out += "Detectors:\n"
         for name, det in self._detectors.items():
-            out += f"  {name}: visible={len(det.tofs.visible.data)}\n"
+            out += f"  {name}: visible={len(det.tofs.visible)}\n"
         return out

@@ -85,26 +85,30 @@ class Model:
         component:
             A chopper or detector.
         """
+        if component.name in chain(self.choppers, self.detectors):
+            raise ValueError(
+                f"Component with name {component.name} already exists. "
+                "If you wish to replace/update an existing component, use "
+                "``model.choppers['name'] = new_chopper`` or "
+                "``model.detectors['name'] = new_detector``."
+            )
         if isinstance(component, Chopper):
-            if component.name in self.choppers:
-                raise ValueError(
-                    f"Chopper with name {component.name} already exists. "
-                    "If you wish to replace/update an existing chopper, use "
-                    "``model.choppers['name'] = new_chopper``."
-                )
             self.choppers[component.name] = component
         elif isinstance(component, Detector):
-            if component.name in self.detectors:
-                raise ValueError(
-                    f"Detector with name {component.name} already exists. "
-                    "If you wish to replace/update an existing detector, use "
-                    "``model.detectors['name'] = new_detector``."
-                )
             self.detectors[component.name] = component
         else:
             raise ValueError(
                 f"Cannot add component of type {type(component)} to the model."
             )
+
+    def __getitem__(self, name) -> Union[Chopper, Detector]:
+        return self.choppers.get(name, self.detectors[name])
+        # if name in self.choppers:
+        #     return self.choppers[name]
+        # elif name in self.detectors:
+        #     return self.detectors[name]
+        # else:
+        #     raise KeyError(f"No component with name {name} was found.")
 
     def run(self, npulses: int = 1):
         """
@@ -152,8 +156,12 @@ class Model:
         for c in components:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
-            container[c.name]['wavelengths'] = self.pulse.wavelengths
-            container[c.name]['birth_times'] = self.pulse.birth_times
+            container[c.name].update(
+                {
+                    'wavelengths': self.pulse.wavelengths,
+                    'birth_times': self.pulse.birth_times,
+                }
+            )
             # comp = c.as_readonly()
             # comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + c.distance / self.pulse.speeds
