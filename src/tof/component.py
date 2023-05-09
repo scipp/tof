@@ -28,17 +28,6 @@ class Data:
     data: sc.DataArray
     dim: str
 
-    # def __init__(self, data: sc.DataArray, dim: str):
-    #     self._data = data
-    #     self._dim = dim
-
-    # @property
-    # def data(self) -> sc.DataArray:
-    #     """
-    #     The underlying data.
-    #     """
-    #     return self._data
-
     @property
     def shape(self) -> Tuple[int]:
         """
@@ -70,9 +59,6 @@ class Data:
         """
         return self.data.hist({self.dim: bins}).plot(**kwargs)
 
-    # def __repr__(self) -> str:
-    #     return f"Data(data={self._data})"
-
 
 @dataclass(frozen=True)
 class ComponentData:
@@ -95,48 +81,8 @@ class ComponentData:
         since a :class:`Detector` does not block any neutrons).
     """
 
-    # def __init__(
-    #     self,
-    #     data: sc.Variable,
-    #     mask: sc.Variable,
-    #     dim: str,
-    #     blocking: Optional[sc.Variable] = None,
-    # ):
-    #     self._data = data
-    #     self._mask = mask
-    #     self._blocking = blocking
-    #     self._dim = dim
     visible: Data
     blocked: Optional[Data]
-    # data: sc.DataGroup
-
-    # @property
-    # def visible(self) -> Data:
-    #     """
-    #     The data for the neutrons that pass through the component.
-    #     """
-    #     a = self._data[self._mask]
-    #     return Data(
-    #         data=sc.DataArray(
-    #             data=sc.ones(sizes=a.sizes, unit='counts'), coords={self._dim: a}
-    #         ),
-    #         dim=self._dim,
-    #     )
-
-    # @property
-    # def blocked(self) -> Data:
-    #     """
-    #     The data for the neutrons that are blocked by the component.
-    #     """
-    #     if self._blocking is None:
-    #         return
-    #     a = self._data[self._blocking]
-    #     return Data(
-    #         data=sc.DataArray(
-    #             data=sc.ones(sizes=a.sizes, unit='counts'), coords={self._dim: a}
-    #         ),
-    #         dim=self._dim,
-    #     )
 
     @property
     def data(self) -> sc.DataGroup:
@@ -187,46 +133,12 @@ class ComponentData:
         )
 
 
-# @dataclass(frozen=True)
 class Component:
     """
     A component is placed in the beam path. After the model is run, the component
     will have a record of the arrival times and wavelengths of the neutrons that
     passed through it.
     """
-
-    # tofs: ComponentData
-    # wavelengths: ComponentData
-
-    # def __init__(self):
-    #     self._arrival_times = None
-    #     self._wavelengths = None
-    #     self._mask = None
-    #     self._own_mask = None
-
-    # @property
-    # def tofs(self) -> ComponentData:
-    #     """
-    #     The arrival times of the neutrons that passed through the component.
-    #     """
-    #     return ComponentData(
-    #         data=self._arrival_times.to(unit='us'),
-    #         mask=self._mask,
-    #         blocking=self._own_mask,
-    #         dim='tof',
-    #     )
-
-    # @property
-    # def wavelengths(self) -> ComponentData:
-    #     """
-    #     The wavelengths of the neutrons that passed through the component.
-    #     """
-    #     return ComponentData(
-    #         data=self._wavelengths,
-    #         mask=self._mask,
-    #         blocking=self._own_mask,
-    #         dim='wavelength',
-    #     )
 
     def plot(self, bins: int = 300) -> tuple:
         """

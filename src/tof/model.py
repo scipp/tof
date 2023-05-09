@@ -35,18 +35,6 @@ def _input_to_dict(
         return {obj.name: obj}
 
 
-# def _make_result(pulse, choppers, detectors):
-#     return Result(
-#         pulse=pulse.as_readonly(),
-#         choppers=MappingProxyType(
-#             {key: ReadonlyChopper(**value) for key, value in result_choppers.items()}
-#         ),
-#         detectors=MappingProxyType(
-#             {key: ReadonlyDetector(**value) for key, value in result_detectors.items()}
-#         ),
-#     )
-
-
 class Model:
     """
     A class that represents a neutron instrument.
@@ -108,12 +96,6 @@ class Model:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
         return self.choppers.get(name, self.detectors.get(name))
-        # if name in self.choppers:
-        #     return self.choppers[name]
-        # elif name in self.detectors:
-        #     return self.detectors[name]
-        # else:
-        #     raise KeyError(f"No component with name {name} was found.")
 
     def run(self, npulses: int = 1):
         """
@@ -134,28 +116,6 @@ class Model:
             sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
         )
 
-        # result_choppers = {}
-        # result_detectors = {}
-        # for c in components:
-        #     comp = c.as_readonly()
-        #     comp._wavelengths = self.pulse.wavelengths
-        #     t = self.pulse.birth_times + comp.distance / self.pulse.speeds
-        #     comp._arrival_times = t
-        #     if isinstance(c, Detector):
-        #         comp._mask = initial_mask
-        #         result_detectors[comp.name] = comp
-        #         continue
-        #     m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
-        #     to = c.open_times
-        #     tc = c.close_times
-        #     for i in range(len(to)):
-        #         m |= (t > to[i]) & (t < tc[i])
-        #     combined = initial_mask & m
-        #     comp._mask = combined
-        #     comp._own_mask = ~m & initial_mask
-        #     initial_mask = combined
-        #     result_choppers[comp.name] = comp
-
         result_choppers = {}
         result_detectors = {}
         for c in components:
@@ -167,16 +127,11 @@ class Model:
                     'birth_times': self.pulse.birth_times,
                 }
             )
-            # comp = c.as_readonly()
-            # comp._wavelengths = self.pulse.wavelengths
             t = self.pulse.birth_times + c.distance / self.pulse.speeds
             container[c.name]['arrival_times'] = t.to(unit='us')
             if isinstance(c, Detector):
                 container[c.name]['visible_mask'] = initial_mask
-                #     # result_detectors[comp.name] = comp
                 continue
-            # if isinstance(c, Chopper):
-            # else:
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
             to = c.open_times
             tc = c.close_times
@@ -189,21 +144,6 @@ class Model:
             )
             initial_mask = combined
 
-        # return Result(
-        #     pulse=self.pulse.as_readonly(),
-        #     choppers=MappingProxyType(
-        #         {
-        #             key: ReadonlyChopper(**value)
-        #             for key, value in result_choppers.items()
-        #         }
-        #     ),
-        #     detectors=MappingProxyType(
-        #         {
-        #             key: ReadonlyDetector(**value)
-        #             for key, value in result_detectors.items()
-        #         }
-        #     ),
-        # )
         return Result(
             pulse=self.pulse, choppers=result_choppers, detectors=result_detectors
         )

@@ -131,9 +131,6 @@ class Result:
 
         self._detectors = {}
         for name, det in detectors.items():
-            # params = chopper.copy()
-            # visible = chopper['arrival_times'][chopper['visible']]
-            # blocked = chopper['arrival_times'][chopper['blocked']]
             self._masks[name] = det['visible_mask']
             self._arrival_times[name] = det['arrival_times']
             tofs = ComponentData(
@@ -187,12 +184,6 @@ class Result:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
         return self._choppers.get(name, self._detectors.get(name))
-        # if name in self._choppers:
-        #     return self._choppers[name]
-        # elif name in self._detectors:
-        #     return self._detectors[name]
-        # else:
-        #     raise KeyError(f"Result has no entry {name}.")
 
     def plot(
         self,
