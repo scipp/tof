@@ -86,7 +86,7 @@ class Model:
             A chopper or detector.
         """
         if component.name in chain(self.choppers, self.detectors):
-            raise ValueError(
+            raise KeyError(
                 f"Component with name {component.name} already exists. "
                 "If you wish to replace/update an existing component, use "
                 "``model.choppers['name'] = new_chopper`` or "
@@ -101,8 +101,13 @@ class Model:
                 f"Cannot add component of type {type(component)} to the model."
             )
 
+    def __iter__(self):
+        return chain(self.choppers, self.detectors)
+
     def __getitem__(self, name) -> Union[Chopper, Detector]:
-        return self.choppers.get(name, self.detectors[name])
+        if name not in self:
+            raise KeyError(f"No component with name {name} was found.")
+        return self.choppers.get(name, self.detectors.get(name))
         # if name in self.choppers:
         #     return self.choppers[name]
         # elif name in self.detectors:

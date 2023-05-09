@@ -84,7 +84,7 @@ class Result:
         self._pulse = pulse.as_readonly()
         self._masks = {}
         self._arrival_times = {}
-        readonly_choppers = {}
+        self._choppers = {}
         for name, chopper in choppers.items():
             # params = chopper.copy()
             # visible = chopper['arrival_times'][chopper['visible']]
@@ -115,7 +115,7 @@ class Result:
                     chopper['birth_times'][chopper['blocked_mask']], dim='time'
                 ),
             )
-            readonly_choppers[name] = ReadonlyChopper(
+            self._choppers[name] = ReadonlyChopper(
                 distance=chopper['distance'],
                 name=chopper['name'],
                 frequency=chopper['frequency'],
@@ -129,7 +129,7 @@ class Result:
                 birth_times=births,
             )
 
-        readonly_detectors = {}
+        self._detectors = {}
         for name, det in detectors.items():
             # params = chopper.copy()
             # visible = chopper['arrival_times'][chopper['visible']]
@@ -152,7 +152,7 @@ class Result:
                 visible=_make_data(det['birth_times'][det['visible_mask']], dim='time'),
                 blocked=None,
             )
-            readonly_detectors[name] = ReadonlyDetector(
+            self._detectors[name] = ReadonlyDetector(
                 distance=det['distance'],
                 name=det['name'],
                 tofs=tofs,
@@ -160,8 +160,10 @@ class Result:
                 birth_times=births,
             )
 
-        self._choppers = MappingProxyType(readonly_choppers)
-        self._detectors = MappingProxyType(readonly_detectors)
+        self._choppers = MappingProxyType(self._choppers)
+        self._detectors = MappingProxyType(self._detectors)
+        self._masks = MappingProxyType(self._masks)
+        self._arrival_times = MappingProxyType(self._arrival_times)
 
     @property
     def choppers(self) -> MappingProxyType[str, Chopper]:
@@ -178,8 +180,13 @@ class Result:
         """The pulse of neutrons."""
         return self._pulse
 
+    def __iter__(self):
+        return chain(self._choppers, self._detectors)
+
     def __getitem__(self, name) -> Union[Chopper, Detector]:
-        return self._choppers.get(name, self._detectors[name])
+        if name not in self:
+            raise KeyError(f"No component with name {name} was found.")
+        return self._choppers.get(name, self._detectors.get(name))
         # if name in self._choppers:
         #     return self._choppers[name]
         # elif name in self._detectors:
