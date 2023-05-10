@@ -7,6 +7,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import scipp as sc
+from scipp.scipy.interpolate import interp1d
 
 from . import facilities
 from .utils import Plot, wavelength_to_speed
@@ -147,55 +148,18 @@ class Pulse:
         sampling:
             Number of points used to sample the probability distributions.
         """
-        pulse = cls(
+        params = getattr(facilities, kind)
+        pulse = cls.from_distribution(
             tmin=tmin,
             tmax=tmax,
             wmin=wmin,
             wmax=wmax,
             neutrons=neutrons,
-            generate=False,
+            p_time=params.time,
+            p_wav=params.wavelength,
+            sampling=sampling,
         )
         pulse.kind = kind
-        params = getattr(facilities, pulse.kind)
-        if pulse.tmin is None:
-            pulse.tmin = params.time.coords['time'].min()
-        if pulse.tmax is None:
-            pulse.tmax = params.time.coords['time'].max()
-        if pulse.wmin is None:
-            pulse.wmin = params.wavelength.coords['wavelength'].min()
-        if pulse.wmax is None:
-            pulse.wmax = params.wavelength.coords['wavelength'].max()
-        pulse.tmin = pulse.tmin.to(unit='s')
-        pulse.tmax = pulse.tmax.to(unit='s')
-        pulse.wmin = pulse.wmin.to(unit='angstrom')
-        pulse.wmax = pulse.wmax.to(unit='angstrom')
-
-        x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
-        x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
-        p_time = np.interp(
-            x_time,
-            params.time.coords['time'].to(unit='s').values,
-            params.time.values,
-        )
-        p_time /= p_time.sum()
-        p_wav = np.interp(
-            x_wav,
-            params.wavelength.coords['wavelength'].to(unit='angstrom').values,
-            params.wavelength.values,
-        )
-        p_wav /= p_wav.sum()
-
-        pulse.birth_times = sc.array(
-            dims=['event'],
-            values=np.random.choice(x_time, size=pulse.neutrons, p=p_time),
-            unit='s',
-        )
-        pulse.wavelengths = sc.array(
-            dims=['event'],
-            values=np.random.choice(x_wav, size=pulse.neutrons, p=p_wav),
-            unit='angstrom',
-        )
-        pulse.speeds = wavelength_to_speed(pulse.wavelengths)
         return pulse
 
     @classmethod
@@ -204,6 +168,10 @@ class Pulse:
         p_time: sc.DataArray,
         p_wav: sc.DataArray,
         neutrons: int = 1_000_000,
+        tmin: Optional[sc.Variable] = None,
+        tmax: Optional[sc.Variable] = None,
+        wmin: Optional[sc.Variable] = None,
+        wmax: Optional[sc.Variable] = None,
         sampling: Optional[int] = None,
     ):
         """
@@ -227,47 +195,74 @@ class Pulse:
             Number of points used to sample the probability distributions. If not set,
             the size of the distributions will be used.
         """
+        t_dim = 'time'
+        w_dim = 'wavelength'
+        t_u = 's'
+        w_u = 'angstrom'
+
+        p_time = p_time.to(dtype=float)
+        p_wav = p_wav.to(dtype=float)
+        p_time.coords[t_dim] = p_time.coords[t_dim].to(unit=t_u)
+        p_wav.coords[w_dim] = p_wav.coords[w_dim].to(unit=w_u)
+
+        if tmin is None:
+            tmin = p_time.coords[t_dim].min()
+        if tmax is None:
+            tmax = p_time.coords[t_dim].max()
+        if wmin is None:
+            wmin = p_wav.coords[w_dim].min()
+        if wmax is None:
+            wmax = p_wav.coords[w_dim].max()
+        tmin = tmin.to(unit=t_u)
+        tmax = tmax.to(unit=t_u)
+        wmin = wmin.to(unit=w_u)
+        wmax = wmax.to(unit=w_u)
         pulse = cls(
-            tmin=p_time.coords['time'].min().to(unit='s'),
-            tmax=p_time.coords['time'].max().to(unit='s'),
-            wmin=p_wav.coords['wavelength'].min().to(unit='angstrom'),
-            wmax=p_wav.coords['wavelength'].max().to(unit='angstrom'),
+            tmin=tmin,
+            tmax=tmax,
+            wmin=wmin,
+            wmax=wmax,
             neutrons=neutrons,
             generate=False,
         )
-        p_time = p_time.to(dtype=float)
-        p_wav = p_wav.to(dtype=float)
+
+        time_interpolator = interp1d(p_time, dim=p_time.dim, fill_value='extrapolate')
+        wav_interpolator = interp1d(p_wav, dim=p_wav.dim, fill_value='extrapolate')
 
         if sampling is None:
-            x_time = p_time.coords['time'].to(dtype=float, unit='s').values
-            p_time = p_time.values
-            x_wav = p_wav.coords['wavelength'].to(dtype=float, unit='angstrom').values
-            p_wav = p_wav.values
+            x_time = p_time.coords[t_dim].to(dtype=float, unit=tmin.unit)
+            x_wav = p_wav.coords[w_dim].to(dtype=float, unit=wmin.unit)
         else:
-            x_time = np.linspace(pulse.tmin.value, pulse.tmax.value, sampling)
-            x_wav = np.linspace(pulse.wmin.value, pulse.wmax.value, sampling)
-            p_time = np.interp(
-                x_time,
-                p_time.coords['time'].to(unit='s').values,
-                p_time.values,
+            x_time = sc.linspace(
+                dim=t_dim,
+                start=tmin.value,
+                stop=tmax.value,
+                num=sampling,
+                unit=tmin.unit,
             )
-            p_wav = np.interp(
-                x_wav,
-                p_wav.coords['wavelength'].to(unit='angstrom').values,
-                p_wav.values,
+            x_wav = sc.linspace(
+                dim=w_dim,
+                start=wmin.value,
+                stop=wmax.value,
+                num=sampling,
+                unit=wmin.unit,
             )
 
-        p_time = p_time / p_time.sum()
-        p_wav = p_wav / p_wav.sum()
+        p_time = time_interpolator(x_time).data
+        p_wav = wav_interpolator(x_wav).data
+        p_time /= p_time.sum()
+        p_wav /= p_wav.sum()
 
         pulse.birth_times = sc.array(
             dims=['event'],
-            values=np.random.choice(x_time, size=pulse.neutrons, p=p_time),
+            values=np.random.choice(
+                x_time.values, size=pulse.neutrons, p=p_time.values
+            ),
             unit='s',
         )
         pulse.wavelengths = sc.array(
             dims=['event'],
-            values=np.random.choice(x_wav, size=pulse.neutrons, p=p_wav),
+            values=np.random.choice(x_wav.values, size=pulse.neutrons, p=p_wav.values),
             unit='angstrom',
         )
         pulse.speeds = wavelength_to_speed(pulse.wavelengths)
