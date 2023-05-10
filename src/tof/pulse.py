@@ -7,10 +7,20 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import scipp as sc
-from scipp.scipy.interpolate import interp1d
+from scipy.interpolate import interp1d
 
 from . import facilities
 from .utils import Plot, wavelength_to_speed
+
+
+class Distribution:
+    def __init__(self, p):
+        self._interpolator = interp1d(
+            p.coords[p.dim].values, p.values, fill_value='extrapolate'
+        )
+
+    def pdf(self, x):
+        return self._interpolator(x)
 
 
 class Pulse:
@@ -51,12 +61,13 @@ class Pulse:
 
     def __init__(
         self,
+        facility: str,
         tmin: Optional[sc.Variable] = None,
         tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
-        generate: bool = True,
+        sampling: int = 100_000,
     ):
         self.birth_times = None
         self.wavelengths = None
@@ -165,9 +176,9 @@ class Pulse:
     @classmethod
     def from_distribution(
         cls,
-        p_time: sc.DataArray,
-        p_wav: sc.DataArray,
         neutrons: int = 1_000_000,
+        p_time: Optional[sc.DataArray] = None,
+        p_wav: Optional[sc.DataArray] = None,
         tmin: Optional[sc.Variable] = None,
         tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
@@ -195,6 +206,17 @@ class Pulse:
             Number of points used to sample the probability distributions. If not set,
             the size of the distributions will be used.
         """
+        if p_time is None:
+            if (tmin is None) and (tmax is None):
+                raise ValueError(
+                    "Either `p_time` or `tmin` and `tmax` must be specified."
+                )
+        if p_wav is None:
+            if (wmin is None) and (wmax is None):
+                raise ValueError(
+                    "Either `p_wav` or `wmin` and `wmax` must be specified."
+                )
+
         t_dim = 'time'
         w_dim = 'wavelength'
         t_u = 's'
