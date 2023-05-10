@@ -10,9 +10,9 @@ import numpy as np
 import scipp as sc
 from matplotlib.collections import LineCollection
 
-from .chopper import Chopper, ReadonlyChopper
+from .chopper import Chopper, ChopperReading
 from .component import ComponentData, Data
-from .detector import Detector, ReadonlyDetector
+from .detector import Detector, DetectorReading
 from .pulse import Pulse
 from .utils import Plot
 
@@ -103,7 +103,7 @@ class Result:
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
             self._arrival_times[name] = chopper['arrival_times']
-            self._choppers[name] = ReadonlyChopper(
+            self._choppers[name] = ChopperReading(
                 distance=chopper['distance'],
                 name=chopper['name'],
                 frequency=chopper['frequency'],
@@ -122,7 +122,7 @@ class Result:
         for name, det in detectors.items():
             self._masks[name] = det['visible_mask']
             self._arrival_times[name] = det['arrival_times']
-            self._detectors[name] = ReadonlyDetector(
+            self._detectors[name] = DetectorReading(
                 distance=det['distance'],
                 name=det['name'],
                 **{

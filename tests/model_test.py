@@ -6,7 +6,7 @@ import scipp as sc
 
 import tof
 
-from .common import make_chopper, make_pulse
+from .common import make_chopper, make_pulse, dummy_chopper, dummy_detector, dummy_pulse
 
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
@@ -222,156 +222,87 @@ def test_neutron_conservation():
 
 
 def test_add_chopper_and_detector():
-    # Make a chopper open from 10-20 ms. Assume zero phase.
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
-    )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    # Make a pulse with 3 neutrons with one neutron going through the chopper opening
-    # and the other two neutrons on either side of the opening.
-    pulse = make_pulse(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-    )
-
-    model = tof.Model(pulse=pulse)
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse())
     model.add(chopper)
-    assert 'chopper' in model.choppers
+    assert 'dummy_chopper' in model.choppers
     model.add(detector)
-    assert 'detector' in model.detectors
+    assert 'dummy_detector' in model.detectors
 
 
 def test_add_components_with_same_name_raises():
-    # Make a chopper open from 10-20 ms. Assume zero phase.
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
-    )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    # Make a pulse with 3 neutrons with one neutron going through the chopper opening
-    # and the other two neutrons on either side of the opening.
-    pulse = make_pulse(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-    )
-
-    model = tof.Model(pulse=pulse)
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse())
     model.add(chopper)
-    with pytest.raises(KeyError, match='Component with name chopper already exists'):
+    with pytest.raises(
+        KeyError, match='Component with name dummy_chopper already exists'
+    ):
         model.add(chopper)
     model.add(detector)
-    with pytest.raises(KeyError, match='Component with name detector already exists'):
+    with pytest.raises(
+        KeyError, match='Component with name dummy_detector already exists'
+    ):
         model.add(detector)
-    detector2 = tof.Detector(distance=22 * meter, name='chopper')
-    with pytest.raises(KeyError, match='Component with name chopper already exists'):
+    detector2 = tof.Detector(distance=22 * meter, name='dummy_chopper')
+    with pytest.raises(
+        KeyError, match='Component with name dummy_chopper already exists'
+    ):
         model.add(detector2)
 
 
-def test_remove():
-    # Make a chopper open from 10-20 ms. Assume zero phase.
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
-    )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    # Make a pulse with 3 neutrons with one neutron going through the chopper opening
-    # and the other two neutrons on either side of the opening.
-    pulse = make_pulse(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-    )
-
-    model = tof.Model(pulse=pulse)
-    model.add(chopper)
-    assert 'chopper' in model.choppers
-    model.add(detector)
-    assert 'detector' in model.detectors
-
-
 def test_iter():
-    # Make a chopper open from 10-20 ms. Assume zero phase.
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
-    )
-    detector = tof.Detector(distance=20 * meter, name='detector')
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse())
+    model.add(chopper)
+    assert 'dummy_chopper' in model.choppers
+    model.add(detector)
+    assert 'dummy_detector' in model.detectors
 
-    # Make a pulse with 3 neutrons with one neutron going through the chopper opening
-    # and the other two neutrons on either side of the opening.
-    pulse = make_pulse(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-    )
 
-    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
-    model.remove('chopper')
-    assert 'chopper' not in model
-    assert 'detector' in model
-    model.remove('detector')
-    assert 'detector' not in model
+def test_remove():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse(), choppers=[chopper], detectors=[detector])
+    del model['dummy_chopper']
+    assert 'dummy_chopper' not in model
+    assert 'dummy_detector' in model
+    del model['dummy_detector']
+    assert 'dummy_detector' not in model
 
 
 def test_getitem():
-    # Make a chopper open from 10-20 ms. Assume zero phase.
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
-    )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    # Make a pulse with 3 neutrons with one neutron going through the chopper opening
-    # and the other two neutrons on either side of the opening.
-    pulse = make_pulse(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-    )
-
-    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
-    assert model['chopper'] is chopper
-    assert model['detector'] is detector
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse(), choppers=[chopper], detectors=[detector])
+    assert model['dummy_chopper'] is chopper
+    assert model['dummy_detector'] is detector
     with pytest.raises(KeyError, match='No component with name foo'):
         model['foo']
+
+
+def test_input_can_be_single_component():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse(), choppers=chopper, detectors=detector)
+    assert 'dummy_chopper' in model.choppers
+    assert 'dummy_detector' in model.detectors
+
+
+def test_bad_input_type_raises():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers='bad chopper')
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers=[chopper], detectors='abc')
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers=[chopper, 'bad chopper'])
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), detectors=(1234, detector))
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers=[detector])
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), detectors=[chopper])

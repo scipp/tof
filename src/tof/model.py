@@ -15,23 +15,29 @@ ComponentType = Union[Chopper, Detector]
 
 
 def _input_to_dict(
-    obj: Optional[
-        Union[
-            Dict[str, ComponentType],
-            List[ComponentType],
-            Tuple[ComponentType, ...],
-            ComponentType,
-        ]
-    ]
+    obj: Union[
+        None,
+        Dict[str, ComponentType],
+        List[ComponentType],
+        Tuple[ComponentType, ...],
+        ComponentType,
+    ],
+    kind: type,
 ):
-    if obj is None:
-        return {}
-    elif isinstance(obj, dict):
-        return obj
-    elif isinstance(obj, (list, tuple)):
-        return {item.name: item for item in obj}
-    else:
+    if isinstance(obj, (list, tuple)):
+        out = {}
+        for item in obj:
+            out.update(_input_to_dict(item, kind=kind))
+        return out
+    elif isinstance(obj, kind):
         return {obj.name: obj}
+    elif obj is None:
+        return {}
+    else:
+        raise TypeError(
+            "Invalid input type. Must be a Chopper or a Detector, "
+            "or a list/tuple of Choppers or Detectors."
+        )
 
 
 class Model:
@@ -52,15 +58,13 @@ class Model:
     def __init__(
         self,
         pulse: Pulse,
-        choppers: Optional[
-            Union[Chopper, List[Chopper], Tuple[Chopper, ...], Dict[str, Chopper]]
-        ] = None,
+        choppers: Optional[Union[Chopper, List[Chopper], Tuple[Chopper, ...]]] = None,
         detectors: Optional[
-            Union[Detector, List[Detector], Tuple[Detector, ...], Dict[str, Detector]]
+            Union[Detector, List[Detector], Tuple[Detector, ...]]
         ] = None,
     ):
-        self.choppers = _input_to_dict(choppers)
-        self.detectors = _input_to_dict(detectors)
+        self.choppers = _input_to_dict(choppers, kind=Chopper)
+        self.detectors = _input_to_dict(detectors, kind=Detector)
         self.pulse = pulse
 
     def add(self, component):

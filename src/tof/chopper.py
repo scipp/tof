@@ -94,7 +94,7 @@ class Chopper:
 
 
 @dataclass(frozen=True)
-class ReadonlyChopper(Component):
+class ChopperReading(Component):
     distance: sc.Variable
     name: str
     frequency: sc.Variable

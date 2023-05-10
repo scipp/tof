@@ -33,7 +33,7 @@ class Detector:
 
 
 @dataclass(frozen=True)
-class ReadonlyDetector(Component):
+class DetectorReading(Component):
     distance: sc.Variable
     name: str
     tofs: ComponentData

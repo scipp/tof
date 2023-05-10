@@ -296,7 +296,7 @@ class Pulse:
         return Plot(fig=fig, ax=ax)
 
     def as_readonly(self):
-        return ReadonlyPulse(
+        return PulseParameters(
             birth_times=self.birth_times,
             wavelengths=self.wavelengths,
             speeds=self.speeds,
@@ -317,7 +317,7 @@ class Pulse:
 
 
 @dataclass(frozen=True)
-class ReadonlyPulse:
+class PulseParameters:
     birth_times: sc.DataArray
     wavelengths: sc.DataArray
     speeds: sc.DataArray
