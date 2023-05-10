@@ -13,7 +13,7 @@ from matplotlib.collections import LineCollection
 from .chopper import Chopper, ChopperReading
 from .component import ComponentData, Data
 from .detector import Detector, DetectorReading
-from .pulse import Pulse
+from .pulse import Pulse, PulseParameters
 from .utils import Plot
 
 
@@ -137,27 +137,27 @@ class Result:
         self._arrival_times = MappingProxyType(self._arrival_times)
 
     @property
-    def choppers(self) -> MappingProxyType[str, Chopper]:
+    def choppers(self) -> MappingProxyType[str, ChopperReading]:
         """The choppers in the model."""
         return self._choppers
 
     @property
-    def detectors(self) -> MappingProxyType[str, Detector]:
+    def detectors(self) -> MappingProxyType[str, DetectorReading]:
         """The detectors in the model."""
         return self._detectors
 
     @property
-    def pulse(self) -> Pulse:
+    def pulse(self) -> PulseParameters:
         """The pulse of neutrons."""
         return self._pulse
 
     def __iter__(self):
         return chain(self._choppers, self._detectors)
 
-    def __getitem__(self, name) -> Union[Chopper, Detector]:
+    def __getitem__(self, name: str) -> Union[ChopperReading, DetectorReading]:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
-        return self._choppers.get(name, self._detectors.get(name))
+        return self._chopper[name] if name in self._choppers else self._detectors[name]
 
     def plot(
         self,

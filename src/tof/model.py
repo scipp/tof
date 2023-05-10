@@ -115,7 +115,7 @@ class Model:
     def __getitem__(self, name) -> Union[Chopper, Detector]:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
-        return self.choppers.get(name, self.detectors.get(name))
+        return self.chopper[name] if name in self.choppers else self.detectors[name]
 
     def __delitem__(self, name):
         self.remove(name)
