@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,9 +13,15 @@ from . import facilities
 from .utils import Plot, wavelength_to_speed
 
 
-def _convert_if_not_none(x, unit):
+def _convert_if_not_none(
+    x: Union[None, sc.Variable, sc.DataArray], unit: str, coord: Optional[str] = None
+) -> Union[None, sc.Variable, sc.DataArray]:
     if x is not None:
-        return x.to(dtype=float, unit=unit)
+        if coord is None:
+            return x.to(dtype=float, unit=unit)
+        out = x.copy()
+        out.coords[coord] = out.coords[coord].to(dtype=float, unit=unit)
+        return out
 
 
 def _make_pulse(
@@ -58,8 +64,8 @@ def _make_pulse(
     tmax = _convert_if_not_none(tmax, unit=t_u)
     wmin = _convert_if_not_none(wmin, unit=w_u)
     wmax = _convert_if_not_none(wmax, unit=w_u)
-    p_time = _convert_if_not_none(p_time, unit=t_u)
-    p_wav = _convert_if_not_none(p_wav, unit=w_u)
+    p_time = _convert_if_not_none(p_time, unit=t_u, coord=t_dim)
+    p_wav = _convert_if_not_none(p_wav, unit=w_u, coord=w_dim)
 
     if p_time is None:
         if (tmin is None) and (tmax is None):
@@ -85,9 +91,6 @@ def _make_pulse(
                 )
             },
         )
-
-    p_time.coords[t_dim] = p_time.coords[t_dim].to(unit=t_u)
-    p_wav.coords[w_dim] = p_wav.coords[w_dim].to(unit=w_u)
 
     if tmin is None:
         tmin = p_time.coords[t_dim].min()
