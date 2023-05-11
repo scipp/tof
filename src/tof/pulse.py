@@ -110,20 +110,40 @@ def _make_pulse(
     dt = 0.5 * (tmax - tmin).value / (p_time.sizes[t_dim] - 1)
     dw = 0.5 * (wmax - wmin).value / (p_wav.sizes[w_dim] - 1)
 
+    # Because of the added noise, some values end up being outside the specified range
+    # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
+    # edges of the range. To avoid this, we remove the outliers and resample until we
+    # have the desired number of neutrons.
+    n = 0
+    times = []
+    wavs = []
+    while n < neutrons:
+        size = neutrons - n
+
+        t = np.random.choice(
+            p_time.coords[t_dim].values, size=size, p=p_time.values
+        ) + np.random.uniform(-dt, dt, size=size)
+        w = np.random.choice(
+            p_wav.coords[w_dim].values, size=size, p=p_wav.values
+        ) + np.random.uniform(-dw, dw, size=size)
+        mask = (
+            (t >= tmin.value)
+            & (t <= tmax.value)
+            & (w >= wmin.value)
+            & (w <= wmax.value)
+        )
+        times.append(t[mask])
+        wavs.append(w[mask])
+        n += mask.sum()
+
     birth_times = sc.array(
         dims=['event'],
-        values=np.random.choice(
-            p_time.coords[t_dim].values, size=neutrons, p=p_time.values
-        )
-        + np.random.uniform(-dt, dt, size=neutrons),
+        values=np.concatenate(times),
         unit='s',
     )
     wavelengths = sc.array(
         dims=['event'],
-        values=np.random.choice(
-            p_wav.coords[w_dim].values, size=neutrons, p=p_wav.values
-        )
-        + np.random.uniform(-dw, dw, size=neutrons),
+        values=np.concatenate(wavs),
         unit='angstrom',
     )
     speeds = wavelength_to_speed(wavelengths)
