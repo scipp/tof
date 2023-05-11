@@ -7,20 +7,10 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import scipp as sc
-from scipy.interpolate import interp1d
+from scipp.scipy.interpolate import interp1d
 
 from . import facilities
 from .utils import Plot, wavelength_to_speed
-
-
-class Distribution:
-    def __init__(self, p):
-        self._interpolator = interp1d(
-            p.coords[p.dim].values, p.values, fill_value='extrapolate'
-        )
-
-    def pdf(self, x):
-        return self._interpolator(x)
 
 
 class Pulse:
@@ -61,18 +51,18 @@ class Pulse:
 
     def __init__(
         self,
-        facility: str,
+        facility: str = None,
         tmin: Optional[sc.Variable] = None,
         tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
-        sampling: int = 100_000,
+        sampling: int = 1000,
     ):
         self.birth_times = None
         self.wavelengths = None
         self.speeds = None
-        self.kind = None
+        self.facility = facility
 
         self.neutrons = neutrons
         self.tmin = tmin
@@ -80,22 +70,22 @@ class Pulse:
         self.wmin = wmin
         self.wmax = wmax
 
-        if generate:
-            self.birth_times = sc.array(
-                dims=['event'],
-                values=np.random.uniform(
-                    self.tmin.value, self.tmax.value, self.neutrons
-                ),
-                unit='s',
-            )
-            self.wavelengths = sc.array(
-                dims=['event'],
-                values=np.random.uniform(
-                    self.wmin.value, self.wmax.value, self.neutrons
-                ),
-                unit='angstrom',
-            )
-            self.speeds = wavelength_to_speed(self.wavelengths)
+        # if generate:
+        #     self.birth_times = sc.array(
+        #         dims=['event'],
+        #         values=np.random.uniform(
+        #             self.tmin.value, self.tmax.value, self.neutrons
+        #         ),
+        #         unit='s',
+        #     )
+        #     self.wavelengths = sc.array(
+        #         dims=['event'],
+        #         values=np.random.uniform(
+        #             self.wmin.value, self.wmax.value, self.neutrons
+        #         ),
+        #         unit='angstrom',
+        #     )
+        #     self.speeds = wavelength_to_speed(self.wavelengths)
 
     def __len__(self) -> int:
         """
@@ -131,13 +121,13 @@ class Pulse:
     @classmethod
     def from_facility(
         cls,
-        kind: str,
+        facility: str,
         tmin: Optional[sc.Variable] = None,
         tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
-        sampling: int = 10000,
+        sampling: int = 1000,
     ):
         """
         Create a pulse from a pre-defined pulse from a neutron facility.
@@ -159,7 +149,7 @@ class Pulse:
         sampling:
             Number of points used to sample the probability distributions.
         """
-        params = getattr(facilities, kind)
+        params = getattr(facilities, facility)
         pulse = cls.from_distribution(
             tmin=tmin,
             tmax=tmax,
@@ -170,7 +160,7 @@ class Pulse:
             p_wav=params.wavelength,
             sampling=sampling,
         )
-        pulse.kind = kind
+        pulse.facility = facility
         return pulse
 
     @classmethod
@@ -183,7 +173,7 @@ class Pulse:
         tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
-        sampling: Optional[int] = None,
+        sampling: Optional[int] = 1000,
     ):
         """
         Create a pulse from time a wavelength probability distributions.
@@ -245,46 +235,56 @@ class Pulse:
             wmin=wmin,
             wmax=wmax,
             neutrons=neutrons,
-            generate=False,
         )
 
-        time_interpolator = interp1d(p_time, dim=p_time.dim, fill_value='extrapolate')
-        wav_interpolator = interp1d(p_wav, dim=p_wav.dim, fill_value='extrapolate')
+        time_interpolator = interp1d(p_time, dim=t_dim, fill_value='extrapolate')
+        wav_interpolator = interp1d(p_wav, dim=w_dim, fill_value='extrapolate')
+        x_time = sc.linspace(
+            dim=t_dim,
+            start=tmin.value,
+            stop=tmax.value,
+            num=sampling,
+            unit=tmin.unit,
+        )
+        x_wav = sc.linspace(
+            dim=w_dim,
+            start=wmin.value,
+            stop=wmax.value,
+            num=sampling,
+            unit=wmin.unit,
+        )
+        p_time = time_interpolator(x_time)
+        p_time /= p_time.data.sum()
+        p_wav = wav_interpolator(x_wav)
+        p_wav /= p_wav.data.sum()
 
-        if sampling is None:
-            x_time = p_time.coords[t_dim].to(dtype=float, unit=tmin.unit)
-            x_wav = p_wav.coords[w_dim].to(dtype=float, unit=wmin.unit)
-        else:
-            x_time = sc.linspace(
-                dim=t_dim,
-                start=tmin.value,
-                stop=tmax.value,
-                num=sampling,
-                unit=tmin.unit,
-            )
-            x_wav = sc.linspace(
-                dim=w_dim,
-                start=wmin.value,
-                stop=wmax.value,
-                num=sampling,
-                unit=wmin.unit,
-            )
-
-        p_time = time_interpolator(x_time).data
-        p_wav = wav_interpolator(x_wav).data
-        p_time /= p_time.sum()
-        p_wav /= p_wav.sum()
+        # In the following, random.choice only allows to select from the values listed
+        # in the coordinate of the probability distribution arrays. This leads to data
+        # grouped into spikes and empty in between because the sampling resolution used
+        # in the linear interpolation above is usually kept low for performance.
+        # To make the distribution more uniform, we add some random noise to the chosen
+        # values, which effectively fills in the gaps between the spikes.
+        # Scipy has some methods to sample from a continuous distribution, but they are
+        # prohibitively slow.
+        # See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more
+        # information.
+        dt = 0.5 * (tmax - tmin).value / p_time.sizes[t_dim]
+        dw = 0.5 * (wmax - wmin).value / p_wav.sizes[w_dim]
 
         pulse.birth_times = sc.array(
             dims=['event'],
             values=np.random.choice(
-                x_time.values, size=pulse.neutrons, p=p_time.values
-            ),
+                p_time.coords[t_dim].values, size=pulse.neutrons, p=p_time.values
+            )
+            + np.random.uniform(-dt, dt, size=pulse.neutrons),
             unit='s',
         )
         pulse.wavelengths = sc.array(
             dims=['event'],
-            values=np.random.choice(x_wav.values, size=pulse.neutrons, p=p_wav.values),
+            values=np.random.choice(
+                p_wav.coords[w_dim].values, size=pulse.neutrons, p=p_wav.values
+            )
+            + np.random.uniform(-dw, dw, size=pulse.neutrons),
             unit='angstrom',
         )
         pulse.speeds = wavelength_to_speed(pulse.wavelengths)
@@ -329,7 +329,7 @@ class Pulse:
         return (
             f"Pulse(tmin={self.tmin:c}, tmax={self.tmax:c}, "
             f"wmin={self.wmin:c}, wmax={self.wmax:c}, "
-            f"neutrons={self.neutrons}, kind={self.kind})"
+            f"neutrons={self.neutrons}, facility='{self.facility}')"
         )
 
 
