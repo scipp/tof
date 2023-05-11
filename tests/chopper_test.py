@@ -50,7 +50,7 @@ def test_open_close_times_three_rotations():
         distance=5.0 * meter,
     )
 
-    topen, tclose = chopper.open_close_times(0.2 * sec)
+    topen, tclose = chopper.open_close_times(0.21 * sec)
     open0 = (10.0 * deg).to(unit='rad')
     close0 = (20.0 * deg).to(unit='rad')
     assert sc.identical(

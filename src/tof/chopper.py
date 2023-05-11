@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
+import uuid
 from typing import Tuple
 
 import scipp as sc
@@ -72,23 +73,19 @@ class Chopper:
         """
         open_times = []
         close_times = []
-        nrot = 0
-        phase = self.phase.to(unit='rad')
         time_limit = time_limit.to(unit='s')
-        while True:
-            nrot += 1
-            open_times.append(
-                (self.open.to(unit='rad', copy=False) + phase) / self.omega
-            )
-            close_times.append(
-                (self.close.to(unit='rad', copy=False) + phase) / self.omega
-            )
-            if close_times[-1].max() > time_limit:
-                break
-            phase += two_pi
+
+        nrot = max(int(sc.ceil(time_limit * self.frequency).value), 1)
+        phases = sc.array(
+            dims=[uuid.uuid4().hex],
+            values=[i * two_pi.value for i in range(nrot)],
+            unit='rad',
+        ) + self.phase.to(unit='rad')
+        open_times = (self.open.to(unit='rad', copy=False) + phases) / self.omega
+        close_times = (self.close.to(unit='rad', copy=False) + phases) / self.omega
         return (
-            sc.concat(open_times, self.open.dim),
-            sc.concat(close_times, self.close.dim),
+            open_times.transpose().flatten(to=self.open.dim),
+            close_times.transpose().flatten(to=self.close.dim),
         )
 
     def __repr__(self) -> str:
