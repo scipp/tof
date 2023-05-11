@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from dataclasses import dataclass
+
 import scipp as sc
 
-from .component import Component
+from .component import Component, ComponentData
 
 
-class Chopper(Component):
+class Chopper:
     """
     A chopper is a rotating device with cutouts that blocks the beam at certain times.
 
@@ -35,11 +37,15 @@ class Chopper(Component):
         phase: sc.Variable,
         name: str = "",
     ):
-        self.frequency = frequency
-        self.open = open if open.dims else open.flatten(to='cutout')
-        self.close = close if close.dims else close.flatten(to='cutout')
-        self.distance = distance
-        self.phase = phase
+        self.frequency = frequency.to(dtype=float, copy=False)
+        self.open = (open if open.dims else open.flatten(to='cutout')).to(
+            dtype=float, copy=False
+        )
+        self.close = (close if close.dims else close.flatten(to='cutout')).to(
+            dtype=float, copy=False
+        )
+        self.distance = distance.to(dtype=float, copy=False)
+        self.phase = phase.to(dtype=float, copy=False)
         self.name = name
         super().__init__()
 
@@ -75,3 +81,52 @@ class Chopper(Component):
             f"frequency={self.frequency:c}, phase={self.phase:c}, "
             f"cutouts={len(self.open)})"
         )
+
+    def as_dict(self):
+        return {
+            'frequency': self.frequency,
+            'open': self.open,
+            'close': self.close,
+            'distance': self.distance,
+            'phase': self.phase,
+            'name': self.name,
+        }
+
+
+@dataclass(frozen=True)
+class ChopperReading(Component):
+    """
+    Read-only container for the neutrons that reach the chopper.
+    """
+
+    distance: sc.Variable
+    name: str
+    frequency: sc.Variable
+    open: sc.Variable
+    close: sc.Variable
+    phase: sc.Variable
+    open_times: sc.Variable
+    close_times: sc.Variable
+    tofs: ComponentData
+    wavelengths: ComponentData
+    birth_times: ComponentData
+    speeds: ComponentData
+
+    def __repr__(self) -> str:
+        out = f"Chopper: '{self.name}'\n"
+        out += f"  distance: {self.distance:c}\n"
+        out += f"  frequency: {self.frequency:c}\n"
+        out += f"  phase: {self.phase:c}\n"
+        out += f"  cutouts: {len(self.open)}\n"
+        for key, dim in {
+            'tofs': 'tof',
+            'wavelengths': 'wavelength',
+            'birth_times': 'time',
+            'speeds': 'speed',
+        }.items():
+            coord = getattr(self, key).visible.data.coords[dim]
+            out += f"  {key}: [{coord.min():c} - {coord.max():c}]\n"
+        return out
+
+    def __str__(self) -> str:
+        return self.__repr__()

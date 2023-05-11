@@ -8,10 +8,14 @@ API Reference
    :toctree: generated
 
    Chopper
+   ChopperReading
    Component
    ComponentData
    Data
    Detector
+   DetectorReading
    Model
    Pulse
+   PulseParameters
+   Result
    utils

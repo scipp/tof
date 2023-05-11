@@ -1,49 +1,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import pytest
 import scipp as sc
 
 import tof
+
+from .common import dummy_chopper, dummy_detector, dummy_pulse, make_chopper, make_pulse
 
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')
 ms = sc.Unit('ms')
-
-
-def make_chopper(topen, tclose, f, phase, distance, name):
-    aopen = (
-        sc.constants.pi
-        * (2.0 * sc.units.rad)
-        * sc.concat(topen, dim='cutout').to(unit='s')
-        * f
-    )
-    aclose = (
-        sc.constants.pi
-        * (2.0 * sc.units.rad)
-        * sc.concat(tclose, dim='cutout').to(unit='s')
-        * f
-    )
-    return tof.Chopper(
-        frequency=f,
-        open=aopen,
-        close=aclose,
-        phase=phase,
-        distance=distance,
-        name=name,
-    )
-
-
-def make_pulse(arrival_times, distance):
-    # Arrival times are distance * alpha * wavelength
-    return tof.Pulse(
-        birth_times=sc.array(
-            dims=['event'],
-            values=[0.0] * len(arrival_times),
-            unit='s',
-        ),
-        wavelengths=arrival_times.to(unit='s') / (distance * tof.utils.alpha),
-    )
 
 
 def test_one_chopper_one_opening():
@@ -56,9 +24,9 @@ def test_one_chopper_one_opening():
         f=10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
-        name="chopper",
+        name='chopper',
     )
-    detector = tof.Detector(distance=20 * meter, name="detector")
+    detector = tof.Detector(distance=20 * meter, name='detector')
 
     # Make a pulse with 3 neutrons with one neutron going through the chopper opening
     # and the other two neutrons on either side of the opening.
@@ -70,23 +38,22 @@ def test_one_chopper_one_opening():
     )
 
     model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
-    model.run()
+    res = model.run()
 
-    assert len(chopper.tofs.visible) == 1
-    assert len(chopper.tofs.blocked) == 2
+    visible = res.choppers['chopper'].tofs.visible
+    blocked = res.choppers['chopper'].tofs.blocked
+
+    assert len(visible) == 1
+    assert len(blocked) == 2
     assert sc.isclose(
-        chopper.tofs.visible.data.coords['tof'][0],
+        visible.data.coords['tof'][0],
         (0.5 * (topen + tclose)).to(unit='us'),
     )
+    assert sc.isclose(blocked.data.coords['tof'][0], (0.9 * topen).to(unit='us'))
+    assert sc.isclose(blocked.data.coords['tof'][1], (1.1 * tclose).to(unit='us'))
+    assert len(res.detectors['detector'].tofs.visible) == 1
     assert sc.isclose(
-        chopper.tofs.blocked.data.coords['tof'][0], (0.9 * topen).to(unit='us')
-    )
-    assert sc.isclose(
-        chopper.tofs.blocked.data.coords['tof'][1], (1.1 * tclose).to(unit='us')
-    )
-    assert len(detector.tofs.visible) == 1
-    assert sc.isclose(
-        detector.tofs.visible.data.coords['tof'][0],
+        res.detectors['detector'].tofs.visible.data.coords['tof'][0],
         (pulse.wavelengths[1] * detector.distance * tof.utils.alpha).to(unit='us'),
     )
 
@@ -101,7 +68,7 @@ def test_two_choppers_one_opening():
         f=10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
-        name="chopper1",
+        name='chopper1',
     )
 
     # Make a second chopper open from 15-20 ms.
@@ -111,10 +78,10 @@ def test_two_choppers_one_opening():
         f=15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
-        name="chopper2",
+        name='chopper2',
     )
 
-    detector = tof.Detector(distance=20 * meter, name="detector")
+    detector = tof.Detector(distance=20 * meter, name='detector')
 
     # Make a pulse with 3 neutrons with 2 neutrons going through the first chopper
     # opening and only one making it through the second chopper.
@@ -126,34 +93,37 @@ def test_two_choppers_one_opening():
     )
 
     model = tof.Model(pulse=pulse, choppers=[chopper1, chopper2], detectors=[detector])
-    model.run()
+    res = model.run()
 
-    assert len(chopper1.tofs.visible) == 2
-    assert len(chopper1.tofs.blocked) == 1
+    ch1_tofs = res.choppers['chopper1'].tofs
+    ch2_tofs = res.choppers['chopper2'].tofs
+
+    assert len(ch1_tofs.visible) == 2
+    assert len(ch1_tofs.blocked) == 1
     assert sc.isclose(
-        chopper1.tofs.visible.data.coords['tof'][0], (1.5 * topen).to(unit='us')
+        ch1_tofs.visible.data.coords['tof'][0], (1.5 * topen).to(unit='us')
     )
     assert sc.isclose(
-        chopper1.tofs.visible.data.coords['tof'][1],
+        ch1_tofs.visible.data.coords['tof'][1],
         (0.5 * (topen + tclose)).to(unit='us'),
     )
     assert sc.isclose(
-        chopper1.tofs.blocked.data.coords['tof'][0], (1.1 * tclose).to(unit='us')
+        ch1_tofs.blocked.data.coords['tof'][0], (1.1 * tclose).to(unit='us')
     )
-    assert len(chopper2.tofs.visible) == 1
+    assert len(ch2_tofs.visible) == 1
     # Blocks only one neutron, the other is blocked by chopper1
-    assert len(chopper2.tofs.blocked) == 1
+    assert len(ch2_tofs.blocked) == 1
     assert sc.isclose(
-        chopper2.tofs.visible.data.coords['tof'][0],
+        ch2_tofs.visible.data.coords['tof'][0],
         (pulse.wavelengths[1] * chopper2.distance * tof.utils.alpha).to(unit='us'),
     )
     assert sc.isclose(
-        chopper2.tofs.blocked.data.coords['tof'][0],
+        ch2_tofs.blocked.data.coords['tof'][0],
         (pulse.wavelengths[0] * chopper2.distance * tof.utils.alpha).to(unit='us'),
     )
-    assert len(detector.tofs.visible) == 1
+    assert len(res.detectors['detector'].tofs.visible) == 1
     assert sc.isclose(
-        detector.tofs.visible.data.coords['tof'][0],
+        res.detectors['detector'].tofs.visible.data.coords['tof'][0],
         (pulse.wavelengths[1] * detector.distance * tof.utils.alpha).to(unit='us'),
     )
 
@@ -167,7 +137,7 @@ def test_two_choppers_one_and_two_openings():
         f=10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
-        name="chopper1",
+        name='chopper1',
     )
 
     chopper2 = make_chopper(
@@ -176,10 +146,10 @@ def test_two_choppers_one_and_two_openings():
         f=15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
-        name="chopper2",
+        name='chopper2',
     )
 
-    detector = tof.Detector(distance=20 * meter, name="detector")
+    detector = tof.Detector(distance=20 * meter, name='detector')
 
     # Make a pulse with 7 neutrons:
     # - 2 neutrons blocked by chopper1
@@ -202,18 +172,18 @@ def test_two_choppers_one_and_two_openings():
     )
 
     model = tof.Model(pulse=pulse, choppers=[chopper1, chopper2], detectors=[detector])
-    model.run()
+    res = model.run()
 
-    assert len(chopper1.tofs.visible) == 5
-    assert len(chopper1.tofs.blocked) == 2
-    assert len(chopper2.tofs.visible) == 2
-    assert len(chopper2.tofs.blocked) == 3
-    assert len(detector.tofs.visible) == 2
+    assert len(res.choppers['chopper1'].tofs.visible) == 5
+    assert len(res.choppers['chopper1'].tofs.blocked) == 2
+    assert len(res.choppers['chopper2'].tofs.visible) == 2
+    assert len(res.choppers['chopper2'].tofs.blocked) == 3
+    assert len(res.detectors['detector'].tofs.visible) == 2
 
 
 def test_neutron_conservation():
     N = 100_000
-    pulse = tof.Pulse(neutrons=N, kind='ess')
+    pulse = tof.Pulse(facility='ess', neutrons=N)
 
     chopper1 = make_chopper(
         topen=[5.0 * ms],
@@ -221,7 +191,7 @@ def test_neutron_conservation():
         f=10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
-        name="chopper1",
+        name='chopper1',
     )
     chopper2 = make_chopper(
         topen=[9.0 * ms, 15.0 * ms],
@@ -229,20 +199,110 @@ def test_neutron_conservation():
         f=15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
-        name="chopper2",
+        name='chopper2',
     )
 
-    detector = tof.Detector(distance=20 * meter, name="detector")
+    detector = tof.Detector(distance=20 * meter, name='detector')
     model = tof.Model(pulse=pulse, choppers=[chopper1, chopper2], detectors=[detector])
-    model.run()
+    res = model.run()
 
     assert (
-        chopper1.tofs.visible.data.sum() + chopper1.tofs.blocked.data.sum()
+        res.choppers['chopper1'].tofs.visible.data.sum()
+        + res.choppers['chopper1'].tofs.blocked.data.sum()
     ).value == N
     assert sc.identical(
-        chopper2.tofs.visible.data.sum() + chopper2.tofs.blocked.data.sum(),
-        chopper1.tofs.visible.data.sum(),
+        res.choppers['chopper2'].tofs.visible.data.sum()
+        + res.choppers['chopper2'].tofs.blocked.data.sum(),
+        res.choppers['chopper1'].tofs.visible.data.sum(),
     )
     assert sc.identical(
-        detector.tofs.visible.data.sum(), chopper2.tofs.visible.data.sum()
+        res.detectors['detector'].tofs.visible.data.sum(),
+        res.choppers['chopper2'].tofs.visible.data.sum(),
     )
+
+
+def test_add_chopper_and_detector():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse())
+    model.add(chopper)
+    assert 'dummy_chopper' in model.choppers
+    model.add(detector)
+    assert 'dummy_detector' in model.detectors
+
+
+def test_add_components_with_same_name_raises():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse())
+    model.add(chopper)
+    with pytest.raises(
+        KeyError, match='Component with name dummy_chopper already exists'
+    ):
+        model.add(chopper)
+    model.add(detector)
+    with pytest.raises(
+        KeyError, match='Component with name dummy_detector already exists'
+    ):
+        model.add(detector)
+    detector2 = tof.Detector(distance=22 * meter, name='dummy_chopper')
+    with pytest.raises(
+        KeyError, match='Component with name dummy_chopper already exists'
+    ):
+        model.add(detector2)
+
+
+def test_iter():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse())
+    model.add(chopper)
+    assert 'dummy_chopper' in model.choppers
+    model.add(detector)
+    assert 'dummy_detector' in model.detectors
+
+
+def test_remove():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse(), choppers=[chopper], detectors=[detector])
+    del model['dummy_chopper']
+    assert 'dummy_chopper' not in model
+    assert 'dummy_detector' in model
+    del model['dummy_detector']
+    assert 'dummy_detector' not in model
+
+
+def test_getitem():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse(), choppers=[chopper], detectors=[detector])
+    assert model['dummy_chopper'] is chopper
+    assert model['dummy_detector'] is detector
+    with pytest.raises(KeyError, match='No component with name foo'):
+        model['foo']
+
+
+def test_input_can_be_single_component():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    model = tof.Model(pulse=dummy_pulse(), choppers=chopper, detectors=detector)
+    assert 'dummy_chopper' in model.choppers
+    assert 'dummy_detector' in model.detectors
+
+
+def test_bad_input_type_raises():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers='bad chopper')
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers=[chopper], detectors='abc')
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers=[chopper, 'bad chopper'])
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), detectors=(1234, detector))
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), choppers=[detector])
+    with pytest.raises(TypeError, match='Invalid input type'):
+        _ = tof.Model(pulse=dummy_pulse(), detectors=[chopper])

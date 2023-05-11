@@ -3,7 +3,7 @@
 
 import scipp as sc
 
-from .facility import FacilityPulse
+from ..utils import FacilityPulse
 
 pulse = FacilityPulse(
     time=sc.DataArray(
