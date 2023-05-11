@@ -194,11 +194,11 @@ class Pulse:
     """
     A class that represents a pulse of neutrons.
     It is defined by the number of neutrons, a wavelength range, and a time range.
-    A probability distribution for the wavelengths and times can be provided (the
-    distribution is flat by default).
-    In addition, some pre-defined pulses from neutron facilities can be used by setting
-    the ``facility`` parameter.
-    Finally, the wavelengths and times of the neutrons can be provided directly.
+    The default way of creating a pulse is to supply the name of a facility
+    (e.g. ``'ess'``) and the number of neutrons. This will create a pulse with the
+    default time and wavelength ranges for that facility.
+    The time and wavelength ranges can be further constrained by setting the ``tmin``,
+    ``tmax``, ``wmin``, and ``wmax`` parameters.
 
     Parameters
     ----------
