@@ -13,6 +13,11 @@ from . import facilities
 from .utils import Plot, wavelength_to_speed
 
 
+def _convert_if_not_none(x, unit):
+    if x is not None:
+        return x.to(dtype=float, unit=unit)
+
+
 def _make_pulse(
     neutrons: int = 1_000_000,
     p_time: Optional[sc.DataArray] = None,
@@ -44,22 +49,43 @@ def _make_pulse(
         Number of points used to sample the probability distributions. If not set,
         the size of the distributions will be used.
     """
-    if p_time is None:
-        if (tmin is None) and (tmax is None):
-            raise ValueError("Either `p_time` or `tmin` and `tmax` must be specified.")
-        # TODO: set p_time to a uniform distribution between tmin and tmax
-    if p_wav is None:
-        if (wmin is None) and (wmax is None):
-            raise ValueError("Either `p_wav` or `wmin` and `wmax` must be specified.")
-        # TODO: set p_wav to a uniform distribution between wmin and wmax
-
     t_dim = 'time'
     w_dim = 'wavelength'
     t_u = 's'
     w_u = 'angstrom'
 
-    p_time = p_time.to(dtype=float)
-    p_wav = p_wav.to(dtype=float)
+    tmin = _convert_if_not_none(tmin, unit=t_u)
+    tmax = _convert_if_not_none(tmax, unit=t_u)
+    wmin = _convert_if_not_none(wmin, unit=w_u)
+    wmax = _convert_if_not_none(wmax, unit=w_u)
+    p_time = _convert_if_not_none(p_time, unit=t_u)
+    p_wav = _convert_if_not_none(p_wav, unit=w_u)
+
+    if p_time is None:
+        if (tmin is None) and (tmax is None):
+            raise ValueError("Either `p_time` or `tmin` and `tmax` must be specified.")
+        dt = (tmax - tmin).value / (sampling - 1)
+        p_time = sc.DataArray(
+            data=sc.array(dims=[t_dim], values=[1.0, 1.0]),
+            coords={
+                t_dim: sc.array(
+                    dims=[t_dim], values=[tmin.value + dt, tmax.value + dt], unit=t_u
+                )
+            },
+        )
+    if p_wav is None:
+        if (wmin is None) and (wmax is None):
+            raise ValueError("Either `p_wav` or `wmin` and `wmax` must be specified.")
+        dw = (wmax - wmin).value / (sampling - 1)
+        p_wav = sc.DataArray(
+            data=sc.array(dims=[w_dim], values=[1.0, 1.0]),
+            coords={
+                w_dim: sc.array(
+                    dims=[w_dim], values=[wmin.value + dw, wmax.value + dw], unit=w_u
+                )
+            },
+        )
+
     p_time.coords[t_dim] = p_time.coords[t_dim].to(unit=t_u)
     p_wav.coords[w_dim] = p_wav.coords[w_dim].to(unit=w_u)
 
@@ -71,10 +97,6 @@ def _make_pulse(
         wmin = p_wav.coords[w_dim].min()
     if wmax is None:
         wmax = p_wav.coords[w_dim].max()
-    tmin = tmin.to(unit=t_u)
-    tmax = tmax.to(unit=t_u)
-    wmin = wmin.to(unit=w_u)
-    wmax = wmax.to(unit=w_u)
 
     time_interpolator = interp1d(p_time, dim=t_dim, fill_value='extrapolate')
     wav_interpolator = interp1d(p_wav, dim=w_dim, fill_value='extrapolate')
@@ -170,6 +192,8 @@ class Pulse:
 
     Parameters
     ----------
+    facility:
+        Name of a pre-defined pulse from a neutron facility.
     tmin:
         Start time of the pulse.
     tmax:
@@ -180,18 +204,8 @@ class Pulse:
         Maximum wavelength of the pulse.
     neutrons:
         Number of neutrons in the pulse.
-    kind:
-        Name of a pre-defined pulse from a neutron facility.
-    p_wav:
-        Probability distribution for the wavelengths.
-    p_time:
-        Probability distribution for the times.
-    sampling_resolution:
-        Number of points used to sample the probability distributions.
-    birth_times:
-        Birth times of neutrons in the pulse.
-    wavelengths:
-        Wavelengths of neutrons in the pulse.
+    sampling:
+        Number of points used to interpolate the probability distributions.
     """
 
     def __init__(
@@ -280,15 +294,22 @@ class Pulse:
 
         Parameters
         ----------
+        neutrons:
+            Number of neutrons in the pulse.
         p_time:
             Time probability distribution.
         p_wav:
             Wavelength probability distribution.
-        neutrons:
-            Number of neutrons in the pulse.
+        tmin:
+            Start time of the pulse.
+        tmax:
+            End time of the pulse.
+        wmin:
+            Minimum wavelength of the pulse.
+        wmax:
+            Maximum wavelength of the pulse.
         sampling:
-            Number of points used to sample the probability distributions. If not set,
-            the size of the distributions will be used.
+            Number of points used to interpolate the probability distributions.
         """
 
         pulse = cls(facility=None, neutrons=neutrons)
