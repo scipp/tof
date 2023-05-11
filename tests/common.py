@@ -5,7 +5,6 @@ import scipp as sc
 
 import tof
 
-
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')
