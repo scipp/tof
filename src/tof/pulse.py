@@ -152,13 +152,12 @@ def _make_pulse(
     wavs = []
     while n < neutrons:
         size = neutrons - n
-
         t = np.random.choice(
             p_time.coords[t_dim].values, size=size, p=p_time.values
-        ) + np.random.uniform(-dt, dt, size=size)
+        ) + np.random.normal(scale=dt, size=size)
         w = np.random.choice(
             p_wav.coords[w_dim].values, size=size, p=p_wav.values
-        ) + np.random.uniform(-dw, dw, size=size)
+        ) + np.random.normal(scale=dw, size=size)
         mask = (
             (t >= tmin.value)
             & (t <= tmax.value)
