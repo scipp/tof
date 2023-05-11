@@ -131,3 +131,20 @@ def test_pulse_length():
     N = 31245
     pulse = tof.Pulse(facility='ess', neutrons=N)
     assert len(pulse) == N
+
+
+def test_non_integer_sampling():
+    N = 1_000_000
+    pulse_float = tof.Pulse(facility='ess', neutrons=N, sampling=1e4)
+    pulse_int = tof.Pulse(facility='ess', neutrons=N, sampling=10_000)
+    assert pulse_float.neutrons == pulse_int.neutrons == N
+    tedges = sc.linspace('time', 0.0, 5.0e-3, 301, unit='s')
+    wedges = sc.linspace('wavelength', 0.0, 20.0, 301, unit='angstrom')
+
+    a = pulse_float.birth_times.hist(time=tedges).data
+    b = pulse_int.birth_times.hist(time=tedges).data
+    c = pulse_float.wavelengths.hist(wavelength=wedges).data
+    d = pulse_int.wavelengths.hist(wavelength=wedges).data
+
+    assert sc.allclose(a, b, atol=0.1 * a.max())
+    assert sc.allclose(c, d, atol=0.1 * c.max())

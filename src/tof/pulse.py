@@ -74,6 +74,7 @@ def _make_pulse(
     wmax = _convert_if_not_none(wmax, unit=w_u)
     p_time = _convert_if_not_none(p_time, unit=t_u, coord=t_dim)
     p_wav = _convert_if_not_none(p_wav, unit=w_u, coord=w_dim)
+    sampling = int(sampling)
 
     if p_time is None:
         if (tmin is None) and (tmax is None):
