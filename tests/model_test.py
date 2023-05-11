@@ -6,7 +6,7 @@ import scipp as sc
 
 import tof
 
-from .common import make_chopper, make_pulse, dummy_chopper, dummy_detector, dummy_pulse
+from .common import dummy_chopper, dummy_detector, dummy_pulse, make_chopper, make_pulse
 
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
