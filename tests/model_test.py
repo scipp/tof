@@ -183,7 +183,7 @@ def test_two_choppers_one_and_two_openings():
 
 def test_neutron_conservation():
     N = 100_000
-    pulse = tof.Pulse.from_facility('ess', neutrons=N)
+    pulse = tof.Pulse(facility='ess', neutrons=N)
 
     chopper1 = make_chopper(
         topen=[5.0 * ms],

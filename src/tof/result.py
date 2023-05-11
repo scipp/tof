@@ -157,7 +157,7 @@ class Result:
     def __getitem__(self, name: str) -> Union[ChopperReading, DetectorReading]:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
-        return self._chopper[name] if name in self._choppers else self._detectors[name]
+        return self._choppers[name] if name in self._choppers else self._detectors[name]
 
     def plot(
         self,

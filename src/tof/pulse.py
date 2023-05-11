@@ -45,12 +45,20 @@ def _make_pulse(
 
     Parameters
     ----------
+    neutrons:
+        Number of neutrons in the pulse.
     p_time:
         Time probability distribution.
     p_wav:
         Wavelength probability distribution.
-    neutrons:
-        Number of neutrons in the pulse.
+    tmin:
+        Start time of the pulse.
+    tmax:
+        End time of the pulse.
+    wmin:
+        Minimum wavelength of the pulse.
+    wmax:
+        Maximum wavelength of the pulse.
     sampling:
         Number of points used to sample the probability distributions. If not set,
         the size of the distributions will be used.
