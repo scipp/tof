@@ -388,6 +388,10 @@ class Pulse:
 
 @dataclass(frozen=True)
 class PulseParameters:
+    """
+    Read-only container for the parameters of a pulse.
+    """
+
     birth_times: sc.DataArray
     wavelengths: sc.DataArray
     speeds: sc.DataArray

@@ -34,6 +34,10 @@ class Detector:
 
 @dataclass(frozen=True)
 class DetectorReading(Component):
+    """
+    Read-only container for the neutrons that reach the detector.
+    """
+
     distance: sc.Variable
     name: str
     tofs: ComponentData

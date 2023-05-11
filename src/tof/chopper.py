@@ -95,6 +95,10 @@ class Chopper:
 
 @dataclass(frozen=True)
 class ChopperReading(Component):
+    """
+    Read-only container for the neutrons that reach the chopper.
+    """
+
     distance: sc.Variable
     name: str
     frequency: sc.Variable
