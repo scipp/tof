@@ -141,6 +141,9 @@ class Model:
 
         result_choppers = {}
         result_detectors = {}
+        time_limit = (
+            self.pulse.birth_times + components[-1].distance / self.pulse.speeds
+        ).max()
         for c in components:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
@@ -157,8 +160,7 @@ class Model:
                 container[c.name]['visible_mask'] = initial_mask
                 continue
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
-            to = c.open_times
-            tc = c.close_times
+            to, tc = c.open_close_times(time_limit=time_limit)
             container[c.name].update({'open_times': to, 'close_times': tc})
             for i in range(len(to)):
                 m |= (t > to[i]) & (t < tc[i])
