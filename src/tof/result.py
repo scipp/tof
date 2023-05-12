@@ -269,10 +269,7 @@ class Result:
             x[0::3] = x0
             x[1::3] = 0.5 * (x0 + x1)
             x[2::3] = x1
-            pieces = [[0], x]
-            if x[-1] < tof_max:
-                pieces.append([tof_max + dx])
-            x = np.concatenate(pieces)
+            x = np.concatenate([[0], x] + ([[tof_max + dx]] if x[-1] < tof_max else []))
             y = np.full_like(x, ch.distance.value)
             y[2::3] = None
             ax.plot(x, y, color="k")
