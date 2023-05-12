@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import uuid
 from dataclasses import dataclass
+from typing import Tuple
 
 import scipp as sc
 
 from .component import Component, ComponentData
+from .utils import two_pi
 
 
 class Chopper:
@@ -54,26 +57,31 @@ class Chopper:
         """
         The angular velocity of the chopper.
         """
-        return sc.constants.pi * (2.0 * sc.units.rad) * self.frequency
+        return two_pi * self.frequency
 
-    @property
-    def open_times(self) -> sc.Variable:
+    def open_close_times(
+        self, time_limit: sc.Variable
+    ) -> Tuple[sc.Variable, sc.Variable]:
         """
-        The times at which the chopper is open.
-        """
-        return (
-            self.open.to(unit='rad', copy=False) + self.phase.to(unit='rad', copy=False)
-        ) / self.omega
+        The times at which the chopper opens and closes.
 
-    @property
-    def close_times(self) -> sc.Variable:
+        Parameters
+        ----------
+        time_limit:
+            Determines how many rotations the chopper needs to perform to reach the time
+            limit.
         """
-        The times at which the chopper is closed.
-        """
+        time_limit = time_limit.to(unit='s')
+        nrot = max(int(sc.ceil(time_limit * self.frequency).value), 1)
+        phases = sc.arange(uuid.uuid4().hex, nrot) * two_pi + self.phase.to(unit='rad')
+        # Note that the order is important here: we need (phases + open/close) to get
+        # the correct dimension order when we flatten below.
+        open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
+        close_times = (phases + self.close.to(unit='rad', copy=False)) / self.omega
         return (
-            self.close.to(unit='rad', copy=False)
-            + self.phase.to(unit='rad', copy=False)
-        ) / self.omega
+            open_times.flatten(to=self.open.dim),
+            close_times.flatten(to=self.close.dim),
+        )
 
     def __repr__(self) -> str:
         return (
