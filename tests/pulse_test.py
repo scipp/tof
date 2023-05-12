@@ -148,3 +148,8 @@ def test_non_integer_sampling():
 
     assert sc.allclose(a, b, atol=0.1 * a.max())
     assert sc.allclose(c, d, atol=0.1 * c.max())
+
+
+def test_non_integer_neutrons():
+    pulse = tof.Pulse(facility='ess', neutrons=1e5)
+    assert pulse.neutrons == 100_000
