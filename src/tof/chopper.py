@@ -71,17 +71,16 @@ class Chopper:
             Determines how many rotations the chopper needs to perform to reach the time
             limit.
         """
-        open_times = []
-        close_times = []
         time_limit = time_limit.to(unit='s')
-
         nrot = max(int(sc.ceil(time_limit * self.frequency).value), 1)
         phases = sc.arange(uuid.uuid4().hex, nrot) * two_pi + self.phase.to(unit='rad')
-        open_times = (self.open.to(unit='rad', copy=False) + phases) / self.omega
-        close_times = (self.close.to(unit='rad', copy=False) + phases) / self.omega
+        # Note that the order is important here: we need (phases + open/close) to get
+        # the correct dimension order when we flatten below.
+        open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
+        close_times = (phases + self.close.to(unit='rad', copy=False)) / self.omega
         return (
-            open_times.transpose().flatten(to=self.open.dim),
-            close_times.transpose().flatten(to=self.close.dim),
+            open_times.flatten(to=self.open.dim),
+            close_times.flatten(to=self.close.dim),
         )
 
     def __repr__(self) -> str:
