@@ -230,16 +230,16 @@ class Pulse:
         sampling: int = 1000,
     ):
         self.facility = facility
-        self.neutrons = neutrons
+        self.neutrons = int(neutrons)
 
         if facility is not None:
-            dists = getattr(facilities, facility)
+            dists = getattr(facilities, self.facility)
             params = _make_pulse(
                 tmin=tmin,
                 tmax=tmax,
                 wmin=wmin,
                 wmax=wmax,
-                neutrons=neutrons,
+                neutrons=self.neutrons,
                 p_time=dists.time,
                 p_wav=dists.wavelength,
                 sampling=sampling,
