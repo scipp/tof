@@ -260,6 +260,7 @@ class Result:
             )
 
         tof_max = tofs.max().value
+        dx = 0.05 * tof_max
         # Plot choppers
         for ch in self._choppers.values():
             x0 = ch.open_times.to(unit='us').values
@@ -268,7 +269,7 @@ class Result:
             x[0::3] = x0
             x[1::3] = 0.5 * (x0 + x1)
             x[2::3] = x1
-            x = np.concatenate([[0], x])
+            x = np.concatenate([[0], x] + ([[tof_max + dx]] if x[-1] < tof_max else []))
             y = np.full_like(x, ch.distance.value)
             y[2::3] = None
             ax.plot(x, y, color="k")
@@ -295,7 +296,6 @@ class Result:
 
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")
-        dx = 0.05 * tof_max
         ax.set_xlim(0 - dx, tof_max + dx)
         fig.tight_layout()
         return Plot(fig=fig, ax=ax)
