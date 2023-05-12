@@ -76,11 +76,7 @@ class Chopper:
         time_limit = time_limit.to(unit='s')
 
         nrot = max(int(sc.ceil(time_limit * self.frequency).value), 1)
-        phases = sc.array(
-            dims=[uuid.uuid4().hex],
-            values=[i * two_pi.value for i in range(nrot)],
-            unit='rad',
-        ) + self.phase.to(unit='rad')
+        phases = sc.arange(uuid.uuid4().hex, nrot) * two_pi + self.phase.to(unit='rad')
         open_times = (self.open.to(unit='rad', copy=False) + phases) / self.omega
         close_times = (self.close.to(unit='rad', copy=False) + phases) / self.omega
         return (
