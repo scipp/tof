@@ -32,7 +32,9 @@ def _make_pulse(
     tmax: Optional[sc.Variable] = None,
     wmin: Optional[sc.Variable] = None,
     wmax: Optional[sc.Variable] = None,
+    frequency: Optional[sc.Variable] = None,
     sampling: Optional[int] = 1000,
+    nrepeat: int = 1,
 ):
     """
     Create a pulse from time a wavelength probability distributions.
@@ -151,8 +153,9 @@ def _make_pulse(
     n = 0
     times = []
     wavs = []
-    while n < neutrons:
-        size = neutrons - n
+    ntot = nrepeat * neutrons
+    while n < ntot:
+        size = ntot - n
         t = np.random.choice(
             p_time.coords[t_dim].values, size=size, p=p_time.values
         ) + np.random.normal(scale=dt, size=size)
@@ -169,16 +172,20 @@ def _make_pulse(
         wavs.append(w[mask])
         n += mask.sum()
 
+    dim = 'event'
     birth_times = sc.array(
-        dims=['event'],
+        dims=[dim],
         values=np.concatenate(times),
         unit='s',
-    )
+    ).fold(
+        dim=dim, sizes={'pulse': nrepeat, dim: neutrons}
+    ) + (sc.arange('pulse', nrepeat) / frequency)
+
     wavelengths = sc.array(
-        dims=['event'],
+        dims=[dim],
         values=np.concatenate(wavs),
         unit='angstrom',
-    )
+    ).fold(dim=dim, sizes={'pulse': nrepeat, dim: neutrons})
     speeds = wavelength_to_speed(wavelengths)
     return {
         'birth_times': birth_times,
@@ -226,31 +233,35 @@ class Pulse:
         tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
+        frequency: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
         sampling: int = 1000,
+        nrepeat: int = 1,
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
 
         if facility is not None:
-            dists = getattr(facilities, self.facility)
-            params = _make_pulse(
+            facility_params = getattr(facilities, self.facility)
+            pulse_params = _make_pulse(
                 tmin=tmin,
                 tmax=tmax,
                 wmin=wmin,
                 wmax=wmax,
                 neutrons=self.neutrons,
-                p_time=dists.time,
-                p_wav=dists.wavelength,
+                p_time=facility_params.time,
+                p_wav=facility_params.wavelength,
                 sampling=sampling,
+                frequency=facility_params.frequency,
+                nrepeat=nrepeat,
             )
-            self.birth_times = params['birth_times']
-            self.wavelengths = params['wavelengths']
-            self.speeds = params['speeds']
-            self.tmin = params['tmin']
-            self.tmax = params['tmax']
-            self.wmin = params['wmin']
-            self.wmax = params['wmax']
+            self.birth_times = pulse_params['birth_times']
+            self.wavelengths = pulse_params['wavelengths']
+            self.speeds = pulse_params['speeds']
+            self.tmin = pulse_params['tmin']
+            self.tmax = pulse_params['tmax']
+            self.wmin = pulse_params['wmin']
+            self.wmax = pulse_params['wmax']
 
     def __len__(self) -> int:
         """

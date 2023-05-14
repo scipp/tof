@@ -28,8 +28,18 @@ def _make_data(array, dim):
 
 def _make_component_data(component, key, dim, blocked=False):
     return ComponentData(
-        visible=_make_data(component[key][component['visible_mask']], dim=dim),
-        blocked=_make_data(component[key][component['blocked_mask']], dim=dim)
+        visible=_make_data(
+            component[key].flatten(to='event')[
+                component['visible_mask'].flatten(to='event')
+            ],
+            dim=dim,
+        ),
+        blocked=_make_data(
+            component[key].flatten(to='event')[
+                component['blocked_mask'].flatten(to='event')
+            ],
+            dim=dim,
+        )
         if blocked
         else None,
     )
