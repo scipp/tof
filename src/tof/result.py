@@ -137,10 +137,11 @@ class Result:
             self._detectors[name] = DetectorReading(
                 distance=det['distance'],
                 name=det['name'],
-                **{
-                    key: _make_component_data(det, field, dim)
-                    for key, (field, dim) in fields.items()
-                },
+                data=det['data']
+                # **{
+                #     key: _make_component_data(det, field, dim)
+                #     for key, (field, dim) in fields.items()
+                # },
             )
 
         self._choppers = MappingProxyType(self._choppers)

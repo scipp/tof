@@ -189,7 +189,7 @@ def _make_pulse(
     ).fold(dim=dim, sizes={'pulse': nrepeat, dim: neutrons})
     speed = wavelength_to_speed(wavelength)
     return {
-        'birth_time': birth_time,
+        'time': birth_time,
         'wavelength': wavelength,
         'speed': speed,
         'tmin': tmin,
@@ -396,9 +396,10 @@ class Pulse:
 
     def as_readonly(self):
         return PulseParameters(
-            birth_times=self.birth_times,
-            wavelengths=self.wavelengths,
-            speeds=self.speeds,
+            # birth_times=self.birth_times,
+            # wavelengths=self.wavelengths,
+            # speeds=self.speeds,
+            data=self.data,
             facility=self.facility,
             neutrons=self.neutrons,
             tmin=self.tmin,
@@ -421,9 +422,10 @@ class PulseParameters:
     Read-only container for the parameters of a pulse.
     """
 
-    birth_times: sc.DataArray
-    wavelengths: sc.DataArray
-    speeds: sc.DataArray
+    # birth_times: sc.DataArray
+    # wavelengths: sc.DataArray
+    # speeds: sc.DataArray
+    data: sc.DataArray
     facility: Optional[str]
     neutrons: int
     tmin: sc.Variable

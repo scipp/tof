@@ -40,10 +40,11 @@ class DetectorReading(Component):
 
     distance: sc.Variable
     name: str
-    tofs: ComponentData
-    wavelengths: ComponentData
-    birth_times: ComponentData
-    speeds: ComponentData
+    data: sc.DataArray
+    # tofs: ComponentData
+    # wavelengths: ComponentData
+    # birth_times: ComponentData
+    # speeds: ComponentData
 
     def __repr__(self) -> str:
         out = f"Detector: '{self.name}'\n"

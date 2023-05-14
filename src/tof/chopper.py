@@ -115,10 +115,11 @@ class ChopperReading(Component):
     phase: sc.Variable
     open_times: sc.Variable
     close_times: sc.Variable
-    tofs: ComponentData
-    wavelengths: ComponentData
-    birth_times: ComponentData
-    speeds: ComponentData
+    data: sc.DataArray
+    # tofs: ComponentData
+    # wavelengths: ComponentData
+    # birth_times: ComponentData
+    # speeds: ComponentData
 
     def __repr__(self) -> str:
         out = f"Chopper: '{self.name}'\n"
