@@ -6,6 +6,7 @@ from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+import plopp as pp
 import scipp as sc
 from scipp.scipy.interpolate import interp1d
 
@@ -173,7 +174,7 @@ def _make_pulse(
         n += mask.sum()
 
     dim = 'event'
-    birth_times = sc.array(
+    birth_time = sc.array(
         dims=[dim],
         values=np.concatenate(times),
         unit='s',
@@ -181,16 +182,16 @@ def _make_pulse(
         dim=dim, sizes={'pulse': nrepeat, dim: neutrons}
     ) + (sc.arange('pulse', nrepeat) / frequency)
 
-    wavelengths = sc.array(
+    wavelength = sc.array(
         dims=[dim],
         values=np.concatenate(wavs),
         unit='angstrom',
     ).fold(dim=dim, sizes={'pulse': nrepeat, dim: neutrons})
-    speeds = wavelength_to_speed(wavelengths)
+    speed = wavelength_to_speed(wavelength)
     return {
-        'birth_times': birth_times,
-        'wavelengths': wavelengths,
-        'speeds': speeds,
+        'birth_time': birth_time,
+        'wavelength': wavelength,
+        'speed': speed,
         'tmin': tmin,
         'tmax': tmax,
         'wmin': wmin,
@@ -240,6 +241,7 @@ class Pulse:
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
+        self.data = None
 
         if facility is not None:
             facility_params = getattr(facilities, self.facility)
@@ -255,9 +257,17 @@ class Pulse:
                 frequency=facility_params.frequency,
                 nrepeat=nrepeat,
             )
-            self.birth_times = pulse_params['birth_times']
-            self.wavelengths = pulse_params['wavelengths']
-            self.speeds = pulse_params['speeds']
+            # self.birth_times = pulse_params['birth_times']
+            # self.wavelengths = pulse_params['wavelengths']
+            # self.speeds = pulse_params['speeds']
+            self.data = sc.DataArray(
+                data=sc.ones(sizes=pulse_params['time'].sizes, unit='counts'),
+                coords={
+                    'time': pulse_params['time'],
+                    'wavelength': pulse_params['wavelength'],
+                    'speed': pulse_params['speed'],
+                },
+            )
             self.tmin = pulse_params['tmin']
             self.tmax = pulse_params['tmax']
             self.wmin = pulse_params['wmin']
@@ -369,8 +379,16 @@ class Pulse:
             Number of bins to use for histogramming the neutrons.
         """
         fig, ax = plt.subplots(1, 2)
-        self.birth_times.hist(time=bins).plot(ax=ax[0])
-        self.wavelengths.hist(wavelength=bins).plot(ax=ax[1])
+        collapsed = sc.collapse(self.data, keep='event')
+        pp.plot(
+            {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
+            ax=ax[0],
+        )
+        pp.plot(
+            {k: da.hist(wavelength=bins) for k, da in collapsed.items()},
+            ax=ax[1],
+        )
+        # self.wavelengths.hist(wavelength=bins).plot(ax=ax[1])
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
         fig.tight_layout()

@@ -135,27 +135,26 @@ class Model:
             key=lambda c: c.distance.value,
         )
 
-        initial_mask = sc.ones(
-            sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
-        )
+        birth_time = self.pulse.data.coords['time']
+        speed = self.pulse.data.coords['speed']
+        initial_mask = sc.ones(sizes=birth_time.sizes, unit=None, dtype=bool)
 
         result_choppers = {}
         result_detectors = {}
-        time_limit = (
-            self.pulse.birth_times + components[-1].distance / self.pulse.speeds
-        ).max()
+        time_limit = (birth_time + components[-1].distance / speed).max()
         for c in components:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
-            container[c.name].update(
-                {
-                    'birth_times': self.pulse.birth_times,
-                    'speeds': self.pulse.speeds,
-                    'wavelengths': self.pulse.wavelengths,
-                }
-            )
-            t = self.pulse.birth_times + c.distance / self.pulse.speeds
-            container[c.name]['arrival_times'] = t.to(unit='us')
+            container[c.name]['data'] = self.pulse.data.copy(deep=False)
+            # container[c.name].update(
+            #     {
+            #         'birth_times': self.pulse.birth_times,
+            #         'speeds': self.pulse.speeds,
+            #         'wavelengths': self.pulse.wavelengths,
+            #     }
+            # )
+            t = birth_time + c.distance / speed
+            container[c.name]['data'].coords['tof'] = t.to(unit='us')
             if isinstance(c, Detector):
                 container[c.name]['visible_mask'] = initial_mask
                 continue
@@ -168,6 +167,7 @@ class Model:
             container[c.name].update(
                 {'visible_mask': combined, 'blocked_mask': ~m & initial_mask}
             )
+            container[c.name]['data'].masks['blocked'] = ~combined
             initial_mask = combined
 
         return Result(

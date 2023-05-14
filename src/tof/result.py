@@ -104,12 +104,13 @@ class Result:
         self._masks = {}
         self._arrival_times = {}
         self._choppers = {}
-        fields = {
-            'tofs': ('arrival_times', 'tof'),
-            'wavelengths': ('wavelengths', 'wavelength'),
-            'birth_times': ('birth_times', 'time'),
-            'speeds': ('speeds', 'speed'),
-        }
+        # fields = {
+        #     'tofs': ('arrival_times', 'tof'),
+        #     'wavelengths': ('wavelengths', 'wavelength'),
+        #     'birth_times': ('birth_times', 'time'),
+        #     'speeds': ('speeds', 'speed'),
+        # }
+        fields = ['tof', 'wavelength', 'time', 'speed']
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
             self._arrival_times[name] = chopper['arrival_times']
@@ -122,10 +123,11 @@ class Result:
                 phase=chopper['phase'],
                 open_times=chopper['open_times'],
                 close_times=chopper['close_times'],
-                **{
-                    key: _make_component_data(chopper, field, dim, blocked=True)
-                    for key, (field, dim) in fields.items()
-                },
+                data=chopper['data'],
+                # **{
+                #     key: _make_component_data(chopper, field, dim, blocked=True)
+                #     for key, (field, dim) in fields.items()
+                # },
             )
 
         self._detectors = {}
