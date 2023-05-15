@@ -2,6 +2,8 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
+from functools import reduce
+from typing import Dict
 
 import matplotlib.pyplot as plt
 import scipp as sc
@@ -65,6 +67,18 @@ def energy_to_speed(x: sc.Variable, unit='m/s') -> sc.Variable:
         The unit of the output speeds.
     """
     return sc.sqrt(x / const.m_n).to(unit=unit)
+
+
+def merge_masks(masks: Dict[str, sc.Variable]) -> sc.Variable:
+    """
+    Combine all masks into a single one using the OR operation.
+
+    Parameters
+    ----------
+    masks:
+        The dict holding the masks to be combined.
+    """
+    return reduce(lambda a, b: a | b, masks.values())
 
 
 @dataclass(frozen=True)

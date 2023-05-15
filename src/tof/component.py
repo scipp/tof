@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import plopp as pp
 import scipp as sc
 
-from .utils import Plot
+from .utils import Plot, merge_masks
 
 
 @dataclass(frozen=True)
@@ -27,6 +27,9 @@ class Data:
 
     data: sc.DataArray
     dim: str
+
+    def __getitem__(self, ind):
+        return self.__class__(data=self.data[f'pulse:{ind}'], dim=self.dim)
 
     @property
     def shape(self) -> Tuple[int]:
@@ -94,7 +97,28 @@ class ComponentData:
     @property
     def visible(self):
         # Data should contain a data group for the different pulses
-        return Data(self.data, self.dim)
+        out = {}
+        for name, da in sc.collapse(self.data, keep='event').items():
+            msk = ~merge_masks(da.masks)
+            sel = da[msk]
+            out[name] = sc.DataArray(
+                data=sel.data, coords={self.dim: sel.coords[self.dim]}
+            )
+
+        return Data(data=sc.DataGroup(out), dim=self.dim)
+
+    @property
+    def blocked(self):
+        # Data should contain a data group for the different pulses
+        out = {}
+        for name, da in sc.collapse(self.data, keep='event').items():
+            # msk = ~merge_masks(da.masks)
+            sel = da[da.masks['blocked_by_me']]
+            out[name] = sc.DataArray(
+                data=sel.data, coords={self.dim: sel.coords[self.dim]}
+            )
+
+        return Data(data=sc.DataGroup(out), dim=self.dim)
 
     # @property
     # def data(self) -> sc.DataGroup:
