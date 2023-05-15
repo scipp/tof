@@ -147,17 +147,17 @@ class Component:
     passed through it.
     """
 
-    @property
-    def data(self) -> sc.DataGroup:
-        """ """
-        return sc.DataGroup(
-            {
-                'tofs': self.tofs.data,
-                'wavelengths': self.wavelengths.data,
-                'birth_times': self.birth_times.data,
-                'speeds': self.speeds.data,
-            }
-        )
+    # @property
+    # def data(self) -> sc.DataGroup:
+    #     """ """
+    #     return sc.DataGroup(
+    #         {
+    #             'tofs': self.tofs.data,
+    #             'wavelengths': self.wavelengths.data,
+    #             'birth_times': self.birth_times.data,
+    #             'speeds': self.speeds.data,
+    #         }
+    #     )
 
     def plot(self, bins: int = 300) -> Plot:
         """

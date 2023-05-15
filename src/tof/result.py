@@ -113,7 +113,7 @@ class Result:
         fields = ['tof', 'wavelength', 'time', 'speed']
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
-            self._arrival_times[name] = chopper['arrival_times']
+            self._arrival_times[name] = chopper['data'].coords['tof']
             self._choppers[name] = ChopperReading(
                 distance=chopper['distance'],
                 name=chopper['name'],
@@ -133,7 +133,7 @@ class Result:
         self._detectors = {}
         for name, det in detectors.items():
             self._masks[name] = det['visible_mask']
-            self._arrival_times[name] = det['arrival_times']
+            self._arrival_times[name] = det['data'].coords['tof']
             self._detectors[name] = DetectorReading(
                 distance=det['distance'],
                 name=det['name'],
@@ -249,28 +249,42 @@ class Result:
 
         # Normal rays
         if max_rays > 0:
-            tofs = furthest_detector.tofs.visible.data.coords['tof']
-            if (max_rays is not None) and (len(tofs) > max_rays):
-                inds = np.random.choice(len(tofs), size=max_rays, replace=False)
-            else:
-                inds = slice(None)
-            birth_times = furthest_detector.birth_times.visible.data.coords['time'][
-                inds
-            ]
-            wavelengths = furthest_detector.wavelengths.visible.data.coords[
-                'wavelength'
-            ][inds]
-            distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
-            _add_rays(
-                ax=ax,
-                tofs=tofs[inds],
-                birth_times=birth_times,
-                distances=distances,
-                cbar=cbar,
-                wavelengths=wavelengths,
-                wmin=self._pulse.wmin,
-                wmax=self._pulse.wmax,
-            )
+            for i, da in enumerate(
+                sc.collapse(furthest_detector.data, keep='event').values()
+            ):
+                # tofs = furthest_detector.tofs.visible.data.coords['tof']
+                # da = furthest_detector.data['pulse', i]
+                visible = da[~da.masks['blocked_by_others']]
+                tofs = visible.coords['tof']
+                if (max_rays is not None) and (len(tofs) > max_rays):
+                    inds = np.random.choice(len(tofs), size=max_rays, replace=False)
+                else:
+                    inds = slice(None)
+                birth_times = visible.coords['time'][inds]
+                wavelengths = visible.coords['wavelength'][inds]
+                distances = furthest_detector.distance.broadcast(
+                    sizes=birth_times.sizes
+                )
+                _add_rays(
+                    ax=ax,
+                    tofs=tofs[inds],
+                    birth_times=birth_times,
+                    distances=distances,
+                    cbar=cbar and (i == 0),
+                    wavelengths=wavelengths,
+                    wmin=self._pulse.wmin,
+                    wmax=self._pulse.wmax,
+                )
+
+                # Plot pulse
+                tmin = visible.coords['time'].min().to(unit='us').value
+                ax.plot(
+                    [tmin, visible.coords['time'].max().to(unit='us').value],
+                    [0, 0],
+                    color="gray",
+                    lw=3,
+                )
+                ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
 
         tof_max = tofs.max().value
         dx = 0.05 * tof_max
@@ -297,19 +311,27 @@ class Result:
                 0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
             )
 
-        # Plot pulse
-        tmin = self.pulse.tmin.to(unit='us').value
-        ax.plot(
-            [tmin, self.pulse.tmax.to(unit='us').value],
-            [0, 0],
-            color="gray",
-            lw=3,
-        )
-        ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
+        # # Plot pulse
+        # tmin = self.pulse.tmin.to(unit='us').value
+        # ax.plot(
+        #     [tmin, self.pulse.tmax.to(unit='us').value],
+        #     [0, 0],
+        #     color="gray",
+        #     lw=3,
+        # )
+        # ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
 
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")
         ax.set_xlim(0 - dx, tof_max + dx)
+        if figsize is None:
+            inches = fig.get_size_inches()
+            fig.set_size_inches(
+                (
+                    max(inches[0] * furthest_detector.data.sizes['pulse'], 12.0),
+                    inches[1],
+                )
+            )
         fig.tight_layout()
         return Plot(fig=fig, ax=ax)
 

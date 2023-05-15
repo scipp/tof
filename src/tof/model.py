@@ -146,6 +146,7 @@ class Model:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
             container[c.name]['data'] = self.pulse.data.copy(deep=False)
+            # container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
             # container[c.name].update(
             #     {
             #         'birth_times': self.pulse.birth_times,
@@ -157,6 +158,7 @@ class Model:
             container[c.name]['data'].coords['tof'] = t.to(unit='us')
             if isinstance(c, Detector):
                 container[c.name]['visible_mask'] = initial_mask
+                container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
                 continue
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
             to, tc = c.open_close_times(time_limit=time_limit)
