@@ -170,7 +170,7 @@ class Model:
                 {'visible_mask': combined, 'blocked_mask': ~m & initial_mask}
             )
             container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
-            container[c.name]['data'].masks['blocked_by_me'] = ~m
+            container[c.name]['data'].masks['blocked_by_me'] = ~m & initial_mask
             initial_mask = combined
 
         return Result(

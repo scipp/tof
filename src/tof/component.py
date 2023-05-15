@@ -88,19 +88,24 @@ class ComponentData:
         since a :class:`Detector` does not block any neutrons).
     """
 
-    visible: Data
-    blocked: Optional[Data]
+    data: sc.DataArray
+    dim: str
 
     @property
-    def data(self) -> sc.DataGroup:
-        """
-        The neutrons that reach the component, split up into those that are blocked by
-        the component and those that are not.
-        """
-        out = {'visible': self.visible.data}
-        if self.blocked is not None:
-            out['blocked'] = self.blocked.data
-        return sc.DataGroup(out)
+    def visible(self):
+        # Data should contain a data group for the different pulses
+        return Data(self.data, self.dim)
+
+    # @property
+    # def data(self) -> sc.DataGroup:
+    #     """
+    #     The neutrons that reach the component, split up into those that are blocked by
+    #     the component and those that are not.
+    #     """
+    #     out = {'visible': self.visible.data}
+    #     if self.blocked is not None:
+    #         out['blocked'] = self.blocked.data
+    #     return sc.DataGroup(out)
 
     def __repr__(self) -> str:
         return (
@@ -159,6 +164,18 @@ class Component:
     #         }
     #     )
 
+    # @property
+    # def visible(self) -> ComponentData:
+    #     return
+
+    @property
+    def tofs(self):
+        """ """
+        return ComponentData(
+            data=self.data,
+            dim='tof',
+        )
+
     def plot(self, bins: int = 300) -> Plot:
         """
         Plot both the tof and wavelength data side by side.
@@ -169,7 +186,7 @@ class Component:
             Number of bins to use for histogramming the neutrons.
         """
         fig, ax = plt.subplots(1, 2)
-        self.tofs.plot(bins=bins, ax=ax[0])
+        self.data.hist(tof=bins).plot(ax=ax[0])
         self.wavelengths.plot(bins=bins, ax=ax[1])
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
