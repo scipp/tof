@@ -244,6 +244,7 @@ class Pulse:
                 p_wav=dists.wavelength,
                 sampling=sampling,
             )
+            self.frequency = dists.frequency
             self.birth_times = params['birth_times']
             self.wavelengths = params['wavelengths']
             self.speeds = params['speeds']

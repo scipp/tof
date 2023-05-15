@@ -10,6 +10,7 @@ from .chopper import Chopper
 from .detector import Detector
 from .pulse import Pulse
 from .result import Result
+from .source import Source
 
 ComponentType = Union[Chopper, Detector]
 
@@ -57,7 +58,7 @@ class Model:
 
     def __init__(
         self,
-        pulse: Pulse,
+        source: Source,
         choppers: Optional[Union[Chopper, List[Chopper], Tuple[Chopper, ...]]] = None,
         detectors: Optional[
             Union[Detector, List[Detector], Tuple[Detector, ...]]
@@ -65,7 +66,7 @@ class Model:
     ):
         self.choppers = _input_to_dict(choppers, kind=Chopper)
         self.detectors = _input_to_dict(detectors, kind=Detector)
-        self.pulse = pulse
+        self.source = source
 
     def add(self, component):
         """
@@ -135,8 +136,10 @@ class Model:
             key=lambda c: c.distance.value,
         )
 
+        neutrons = self.source.neutrons * npulses
+
         initial_mask = sc.ones(
-            sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
+            dims=self.pulse.birth_times.dims, shape=[neutrons], unit=None, dtype=bool
         )
 
         result_choppers = {}

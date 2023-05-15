@@ -71,6 +71,7 @@ def energy_to_speed(x: sc.Variable, unit='m/s') -> sc.Variable:
 class FacilityPulse:
     time: sc.DataArray
     wavelength: sc.DataArray
+    frequency: sc.Variable
 
 
 @dataclass
