@@ -142,7 +142,7 @@ class Result:
                 name=det['name'],
                 # data=det['data']
                 **{
-                    key: _make_component_data(det, dim=dim)
+                    key: _make_component_data(det['data'], dim=dim)
                     for key, dim in fields.items()
                 },
             )

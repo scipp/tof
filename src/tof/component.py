@@ -78,6 +78,15 @@ class Data:
         return self.__repr__()
 
 
+def _field_to_string(field: Data) -> str:
+    out = [str(len(field[0]))]
+    if len(field) > 2:
+        out.append('...')
+    if len(field) > 1:
+        out.append(str(len(field[-1])))
+    return ', '.join(out)
+
+
 @dataclass(frozen=True)
 class ComponentData:
     """
@@ -140,17 +149,21 @@ class ComponentData:
     #     return sc.DataGroup(out)
 
     def _repr_string_body(self) -> str:
-        visible = self.visible
-        vis = [str(len(visible[0])), str(len(visible[-1]))]
-        if len(visible) > 2:
-            vis.insert(1, '...')
-        blocked = self.blocked
-        out = f"visible=[{', '.join(vis)}]"
-        if blocked is not None:
-            blk = [str(len(blocked[0])), str(len(blocked[-1]))]
-            if len(visible) > 2:
-                blk.insert(1, '...')
-            out += f", blocked=[{', '.join(blk)}]"
+        # visible = self.visible
+        # vis = [str(len(visible[0]))]
+        # if len(visible) > 2:
+        #     vis.append('...')
+        # if len(visible) > 1:
+        #     vis.append(str(len(visible[-1])))
+        out = f"visible=[{_field_to_string(self.visible)}]"
+        if self.blocked is not None:
+            out += f", blocked=[{_field_to_string(self.blocked)}]"
+        # blocked = self.blocked
+        # if blocked is not None:
+        #     blk = [str(len(blocked[0])), str(len(blocked[-1]))]
+        #     if len(visible) > 2:
+        #         blk.insert(1, '...')
+        #     out += f", blocked=[{', '.join(blk)}]"
         return out
 
     def __repr__(self) -> str:
