@@ -96,7 +96,6 @@ class ComponentData:
 
     @property
     def visible(self):
-        # Data should contain a data group for the different pulses
         out = {}
         for name, da in sc.collapse(self.data, keep='event').items():
             msk = ~merge_masks(da.masks)
@@ -109,10 +108,8 @@ class ComponentData:
 
     @property
     def blocked(self):
-        # Data should contain a data group for the different pulses
         out = {}
         for name, da in sc.collapse(self.data, keep='event').items():
-            # msk = ~merge_masks(da.masks)
             sel = da[da.masks['blocked_by_me']]
             out[name] = sc.DataArray(
                 data=sel.data, coords={self.dim: sel.coords[self.dim]}
@@ -152,21 +149,32 @@ class ComponentData:
         visible = self.visible.data
         blocked = self.blocked.data
         dim = self.visible.dim
-        if isinstance(bins, int):
-            bins = sc.linspace(
-                dim=dim,
-                start=min(visible.coords[dim].min(), blocked.coords[dim].min()).value,
-                stop=max(visible.coords[dim].max(), blocked.coords[dim].max()).value,
-                num=bins,
-                unit=visible.coords[dim].unit,
-            )
-        return pp.plot(
-            {
-                'visible': visible.hist({dim: bins}),
-                'blocked': blocked.hist({dim: bins}),
-            },
-            **{**{'color': {'blocked': 'gray'}}, **kwargs},
+        to_plot = {}
+        colors = {}
+        edges = bins
+        for p in visible:
+            if isinstance(bins, int):
+                edges = sc.linspace(
+                    dim=dim,
+                    start=min(
+                        visible[p].coords[dim].min(), blocked[p].coords[dim].min()
+                    ).value,
+                    stop=max(
+                        visible[p].coords[dim].max(), blocked[p].coords[dim].max()
+                    ).value,
+                    num=bins,
+                    unit=visible[p].coords[dim].unit,
+                )
+            to_plot[f'visible-{p}'] = visible[p].hist({dim: edges})
+            to_plot[f'blocked-{p}'] = blocked[p].hist({dim: edges})
+            colors[f'blocked-{p}'] = 'gray'
+        out = pp.plot(
+            to_plot,
+            **{**{'color': colors}, **kwargs},
         )
+        # TODO: remove this once https://github.com/scipp/plopp/issues/206 is done.
+        out.ax.get_legend().remove()
+        return out
 
 
 class Component:
@@ -198,6 +206,30 @@ class Component:
         return ComponentData(
             data=self.data,
             dim='tof',
+        )
+
+    @property
+    def wavelengths(self):
+        """ """
+        return ComponentData(
+            data=self.data,
+            dim='wavelength',
+        )
+
+    @property
+    def birth_times(self):
+        """ """
+        return ComponentData(
+            data=self.data,
+            dim='time',
+        )
+
+    @property
+    def speeds(self):
+        """ """
+        return ComponentData(
+            data=self.data,
+            dim='speed',
         )
 
     def plot(self, bins: int = 300) -> Plot:
