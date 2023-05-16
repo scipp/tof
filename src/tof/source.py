@@ -35,7 +35,7 @@ def _make_pulses(
     wmax: Optional[sc.Variable] = None,
     frequency: Optional[sc.Variable] = None,
     sampling: Optional[int] = 1000,
-    nrepeat: int = 1,
+    npulses: int = 1,
 ):
     """
     Create a pulse from time a wavelength probability distributions.
@@ -154,7 +154,7 @@ def _make_pulses(
     n = 0
     times = []
     wavs = []
-    ntot = nrepeat * neutrons
+    ntot = npulses * neutrons
     while n < ntot:
         size = ntot - n
         t = np.random.choice(
@@ -179,14 +179,14 @@ def _make_pulses(
         values=np.concatenate(times),
         unit='s',
     ).fold(
-        dim=dim, sizes={'pulse': nrepeat, dim: neutrons}
-    ) + (sc.arange('pulse', nrepeat) / frequency)
+        dim=dim, sizes={'pulse': npulses, dim: neutrons}
+    ) + (sc.arange('pulse', npulses) / frequency)
 
     wavelength = sc.array(
         dims=[dim],
         values=np.concatenate(wavs),
         unit='angstrom',
-    ).fold(dim=dim, sizes={'pulse': nrepeat, dim: neutrons})
+    ).fold(dim=dim, sizes={'pulse': npulses, dim: neutrons})
     speed = wavelength_to_speed(wavelength)
     return {
         'time': birth_time,
@@ -236,11 +236,11 @@ class Source:
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
         sampling: int = 1000,
-        nrepeat: int = 1,
+        npulses: int = 1,
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
-        self.nrepeat = int(nrepeat)
+        self.npulses = int(npulses)
         self.data = None
         self.frequency = None
 
@@ -256,7 +256,7 @@ class Source:
                 p_wav=facility_params.wavelength,
                 sampling=sampling,
                 frequency=facility_params.frequency,
-                nrepeat=nrepeat,
+                npulses=npulses,
             )
             # self.birth_times = pulse_params['birth_times']
             # self.wavelengths = pulse_params['wavelengths']
@@ -405,7 +405,7 @@ class Source:
             facility=self.facility,
             neutrons=self.neutrons,
             frequency=self.frequency,
-            nrepeat=self.nrepeat,
+            npulses=self.npulses,
             tmin=self.tmin,
             tmax=self.tmax,
             wmin=self.wmin,
@@ -416,7 +416,7 @@ class Source:
         return (
             f"Source:\n  tmin={self.tmin:c}, tmax={self.tmax:c}\n"
             f"  wmin={self.wmin:c}, wmax={self.wmax:c}\n"
-            f"  npulses={self.nrepeat}, neutrons per pulse={self.neutrons}\n"
+            f"  npulses={self.npulses}, neutrons per pulse={self.neutrons}\n"
             f"  frequency={self.frequency:c}\n  facility='{self.facility}'"
         )
 
@@ -434,7 +434,7 @@ class SourceParameters:
     facility: Optional[str]
     neutrons: int
     frequency: sc.Variable
-    nrepeat: int
+    npulses: int
     tmin: sc.Variable
     tmax: sc.Variable
     wmin: sc.Variable
