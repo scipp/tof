@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
+from functools import reduce
 from typing import Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -29,6 +30,8 @@ class Data:
     dim: str
 
     def __getitem__(self, ind):
+        if ind < 0:
+            ind += len(self)
         return self.__class__(data=self.data[f'pulse:{ind}'], dim=self.dim)
 
     @property
@@ -63,11 +66,16 @@ class Data:
         return self.data.hist({self.dim: bins}).plot(**kwargs)
 
     def __repr__(self) -> str:
+        if isinstance(self.data, sc.DataGroup):
+            return "\n".join(f'{name}: {self[i]}' for (i, name) in enumerate(self.data))
         coord = self.data.coords[self.dim]
         return (
             f"Data(dim='{self.dim}', events={len(self)}, "
             f"min={coord.min():c}, max={coord.max():c})"
         )
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
 
 @dataclass(frozen=True)
@@ -91,31 +99,34 @@ class ComponentData:
         since a :class:`Detector` does not block any neutrons).
     """
 
-    data: sc.DataArray
-    dim: str
+    # data: sc.DataArray
+    visible: Data
+    blocked: Optional[Data] = None
 
-    @property
-    def visible(self):
-        out = {}
-        for name, da in sc.collapse(self.data, keep='event').items():
-            msk = ~merge_masks(da.masks)
-            sel = da[msk]
-            out[name] = sc.DataArray(
-                data=sel.data, coords={self.dim: sel.coords[self.dim]}
-            )
+    # @property
+    # def visible(self):
+    #     out = {}
+    #     for name, da in sc.collapse(self.data, keep='event').items():
+    #         msk = ~merge_masks(da.masks)
+    #         sel = da[msk]
+    #         out[name] = sc.DataArray(
+    #             data=sel.data, coords={self.dim: sel.coords[self.dim]}
+    #         )
 
-        return Data(data=sc.DataGroup(out), dim=self.dim)
+    #     return Data(data=sc.DataGroup(out), dim=self.dim)
 
-    @property
-    def blocked(self):
-        out = {}
-        for name, da in sc.collapse(self.data, keep='event').items():
-            sel = da[da.masks['blocked_by_me']]
-            out[name] = sc.DataArray(
-                data=sel.data, coords={self.dim: sel.coords[self.dim]}
-            )
-
-        return Data(data=sc.DataGroup(out), dim=self.dim)
+    # @property
+    # def blocked(self):
+    #     out = {}
+    #     msk = 'blocked_by_me'
+    #     for name, da in sc.collapse(self.data, keep='event').items():
+    #         if msk not in da.masks:
+    #             return
+    #         sel = da[da.masks['blocked_by_me']]
+    #         out[name] = sc.DataArray(
+    #             data=sel.data, coords={self.dim: sel.coords[self.dim]}
+    #         )
+    #     return Data(data=sc.DataGroup(out), dim=self.dim)
 
     # @property
     # def data(self) -> sc.DataGroup:
@@ -128,11 +139,22 @@ class ComponentData:
     #         out['blocked'] = self.blocked.data
     #     return sc.DataGroup(out)
 
+    def _repr_string_body(self) -> str:
+        visible = self.visible
+        vis = [str(len(visible[0])), str(len(visible[-1]))]
+        if len(visible) > 2:
+            vis.insert(1, '...')
+        blocked = self.blocked
+        out = f"visible=[{', '.join(vis)}]"
+        if blocked is not None:
+            blk = [str(len(blocked[0])), str(len(blocked[-1]))]
+            if len(visible) > 2:
+                blk.insert(1, '...')
+            out += f", blocked=[{', '.join(blk)}]"
+        return out
+
     def __repr__(self) -> str:
-        return (
-            f"ComponentData(dim='{self.visible.dim}', visible={len(self.visible)}, "
-            f"blocked={len(self.blocked) if self.blocked is not None else None})"
-        )
+        return f"ComponentData(dim='{self.visible.dim}', {self._repr_string_body()})"
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -200,37 +222,37 @@ class Component:
     # def visible(self) -> ComponentData:
     #     return
 
-    @property
-    def tofs(self):
-        """ """
-        return ComponentData(
-            data=self.data,
-            dim='tof',
-        )
+    # @property
+    # def tofs(self):
+    #     """ """
+    #     return ComponentData(
+    #         data=self.data,
+    #         dim='tof',
+    #     )
 
-    @property
-    def wavelengths(self):
-        """ """
-        return ComponentData(
-            data=self.data,
-            dim='wavelength',
-        )
+    # @property
+    # def wavelengths(self):
+    #     """ """
+    #     return ComponentData(
+    #         data=self.data,
+    #         dim='wavelength',
+    #     )
 
-    @property
-    def birth_times(self):
-        """ """
-        return ComponentData(
-            data=self.data,
-            dim='time',
-        )
+    # @property
+    # def birth_times(self):
+    #     """ """
+    #     return ComponentData(
+    #         data=self.data,
+    #         dim='time',
+    #     )
 
-    @property
-    def speeds(self):
-        """ """
-        return ComponentData(
-            data=self.data,
-            dim='speed',
-        )
+    # @property
+    # def speeds(self):
+    #     """ """
+    #     return ComponentData(
+    #         data=self.data,
+    #         dim='speed',
+    #     )
 
     def plot(self, bins: int = 300) -> Plot:
         """
@@ -242,7 +264,7 @@ class Component:
             Number of bins to use for histogramming the neutrons.
         """
         fig, ax = plt.subplots(1, 2)
-        self.data.hist(tof=bins).plot(ax=ax[0])
+        self.tofs.plot(ax=ax[0])
         self.wavelengths.plot(bins=bins, ax=ax[1])
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])

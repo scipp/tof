@@ -14,34 +14,31 @@ from .chopper import Chopper, ChopperReading
 from .component import ComponentData, Data
 from .detector import Detector, DetectorReading
 from .source import Source, SourceParameters
-from .utils import Plot
+from .utils import Plot, merge_masks
 
 
-def _make_data(array, dim):
-    return Data(
-        data=sc.DataArray(
-            data=sc.ones(sizes=array.sizes, unit='counts'), coords={dim: array}
-        ),
-        dim=dim,
-    )
+# def _make_data(array, dim):
+#     return Data(
+#         data=sc.DataArray(
+#             data=sc.ones(sizes=array.sizes, unit='counts'), coords={dim: array}
+#         ),
+#         dim=dim,
+#     )
 
 
-def _make_component_data(component, key, dim, blocked=False):
+def _make_component_data(component, dim, is_chopper=False):
+    visible = {}
+    blocked = {} if is_chopper else None
+    for name, da in sc.collapse(component, keep='event').items():
+        msk = ~merge_masks(da.masks)
+        vsel = da[msk]
+        visible[name] = sc.DataArray(data=vsel.data, coords={dim: vsel.coords[dim]})
+        if is_chopper:
+            bsel = da[da.masks['blocked_by_me']]
+            blocked[name] = sc.DataArray(data=bsel.data, coords={dim: bsel.coords[dim]})
     return ComponentData(
-        visible=_make_data(
-            component[key].flatten(to='event')[
-                component['visible_mask'].flatten(to='event')
-            ],
-            dim=dim,
-        ),
-        blocked=_make_data(
-            component[key].flatten(to='event')[
-                component['blocked_mask'].flatten(to='event')
-            ],
-            dim=dim,
-        )
-        if blocked
-        else None,
+        visible=Data(data=sc.DataGroup(visible), dim=dim),
+        blocked=Data(data=sc.DataGroup(blocked), dim=dim) if is_chopper else None,
     )
 
 
@@ -110,7 +107,13 @@ class Result:
         #     'birth_times': ('birth_times', 'time'),
         #     'speeds': ('speeds', 'speed'),
         # }
-        fields = ['tof', 'wavelength', 'time', 'speed']
+        # fields = ['tof', 'wavelength', 'time', 'speed']
+        fields = {
+            'tofs': 'tof',
+            'wavelengths': 'wavelength',
+            'birth_times': 'time',
+            'speeds': 'speed',
+        }
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
             self._arrival_times[name] = chopper['data'].coords['tof']
@@ -123,11 +126,11 @@ class Result:
                 phase=chopper['phase'],
                 open_times=chopper['open_times'],
                 close_times=chopper['close_times'],
-                data=chopper['data'],
-                # **{
-                #     key: _make_component_data(chopper, field, dim, blocked=True)
-                #     for key, (field, dim) in fields.items()
-                # },
+                # data=chopper['data'],
+                **{
+                    key: _make_component_data(chopper['data'], dim=dim, is_chopper=True)
+                    for key, dim in fields.items()
+                },
             )
 
         self._detectors = {}
@@ -137,11 +140,11 @@ class Result:
             self._detectors[name] = DetectorReading(
                 distance=det['distance'],
                 name=det['name'],
-                data=det['data']
-                # **{
-                #     key: _make_component_data(det, field, dim)
-                #     for key, (field, dim) in fields.items()
-                # },
+                # data=det['data']
+                **{
+                    key: _make_component_data(det, dim=dim)
+                    for key, dim in fields.items()
+                },
             )
 
         self._choppers = MappingProxyType(self._choppers)
@@ -343,13 +346,19 @@ class Result:
         )
         for name, ch in self._choppers.items():
             tofs = ch.tofs
-            out += (
-                f"    {name}: visible={len(tofs.visible)}, "
-                f"blocked={len(tofs.blocked)}\n"
-            )
+            # vis = [str(len(tofs.visible[0])), str(len(tofs.visible[-1]))]
+            # blk = [str(len(tofs.blocked[0])), str(len(tofs.blocked[-1]))]
+            # if source_sizes['pulse'] > 2:
+            #     vis.insert(1, '...')
+            #     blk.insert(1, '...')
+            out += f"    {name}: {ch.tofs._repr_string_body()}\n"
         out += "  Detectors:\n"
         for name, det in self._detectors.items():
-            out += f"    {name}: visible={len(det.tofs.visible)}\n"
+            tofs = det.tofs
+            vis = [str(len(tofs.visible[0])), str(len(tofs.visible[-1]))]
+            if source_sizes['pulse'] > 2:
+                vis.insert(1, '...')
+            out += f"    {name}: visible=[{', '.join(vis)}]\n"
         return out
 
     def __str__(self) -> str:
