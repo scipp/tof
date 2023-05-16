@@ -13,7 +13,7 @@ from matplotlib.collections import LineCollection
 from .chopper import Chopper, ChopperReading
 from .component import ComponentData, Data
 from .detector import Detector, DetectorReading
-from .pulse import Pulse, PulseParameters
+from .source import Source, SourceParameters
 from .utils import Plot
 
 
@@ -86,8 +86,8 @@ class Result:
 
     Parameters
     ----------
-    pulse:
-        The pulse of neutrons.
+    source:
+        The source of neutrons.
     choppers:
         The choppers in the model.
     detectors:
@@ -96,11 +96,11 @@ class Result:
 
     def __init__(
         self,
-        pulse: Pulse,
+        source: Source,
         choppers: Dict[str, Chopper],
         detectors: Dict[str, Detector],
     ):
-        self._pulse = pulse.as_readonly()
+        self._source = source.as_readonly()
         self._masks = {}
         self._arrival_times = {}
         self._choppers = {}
@@ -160,9 +160,9 @@ class Result:
         return self._detectors
 
     @property
-    def pulse(self) -> PulseParameters:
-        """The pulse of neutrons."""
-        return self._pulse
+    def source(self) -> SourceParameters:
+        """The source of neutrons."""
+        return self._source
 
     def __iter__(self):
         return chain(self._choppers, self._detectors)
@@ -272,8 +272,8 @@ class Result:
                     distances=distances,
                     cbar=cbar and (i == 0),
                     wavelengths=wavelengths,
-                    wmin=self._pulse.wmin,
-                    wmax=self._pulse.wmax,
+                    wmin=self._source.wmin,
+                    wmax=self._source.wmax,
                 )
 
                 # Plot pulse
@@ -336,7 +336,11 @@ class Result:
         return Plot(fig=fig, ax=ax)
 
     def __repr__(self) -> str:
-        out = f"Result:\n  Pulse: {self._pulse.neutrons} neutrons.\n  Choppers:\n"
+        source_sizes = self._source.data.sizes
+        out = (
+            f"Result:\n  Source: {source_sizes['pulse']} pulses, "
+            f"{source_sizes['event']} neutrons per pulse.\n  Choppers:\n"
+        )
         for name, ch in self._choppers.items():
             tofs = ch.tofs
             out += (

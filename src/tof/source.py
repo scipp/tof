@@ -25,7 +25,7 @@ def _convert_if_not_none(
         return out
 
 
-def _make_pulse(
+def _make_pulses(
     neutrons: int = 1_000_000,
     p_time: Optional[sc.DataArray] = None,
     p_wav: Optional[sc.DataArray] = None,
@@ -49,7 +49,7 @@ def _make_pulse(
     Parameters
     ----------
     neutrons:
-        Number of neutrons in the pulse.
+        Number of neutrons per pulse.
     p_time:
         Time probability distribution.
     p_wav:
@@ -199,9 +199,9 @@ def _make_pulse(
     }
 
 
-class Pulse:
+class Source:
     """
-    A class that represents a pulse of neutrons.
+    A class that represents a source of neutrons.
     It is defined by the number of neutrons, a wavelength range, and a time range.
     The default way of creating a pulse is to supply the name of a facility
     (e.g. ``'ess'``) and the number of neutrons. This will create a pulse with the
@@ -234,18 +234,19 @@ class Pulse:
         tmax: Optional[sc.Variable] = None,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
-        frequency: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
         sampling: int = 1000,
         nrepeat: int = 1,
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
+        self.nrepeat = int(nrepeat)
         self.data = None
+        self.frequency = None
 
         if facility is not None:
             facility_params = getattr(facilities, self.facility)
-            pulse_params = _make_pulse(
+            pulse_params = _make_pulses(
                 tmin=tmin,
                 tmax=tmax,
                 wmin=wmin,
@@ -272,6 +273,7 @@ class Pulse:
             self.tmax = pulse_params['tmax']
             self.wmin = pulse_params['wmin']
             self.wmax = pulse_params['wmax']
+            self.frequency = facility_params.frequency
 
     def __len__(self) -> int:
         """
@@ -345,7 +347,7 @@ class Pulse:
         """
 
         pulse = cls(facility=None, neutrons=neutrons)
-        params = _make_pulse(
+        params = _make_pulses(
             tmin=tmin,
             tmax=tmax,
             wmin=wmin,
@@ -371,7 +373,7 @@ class Pulse:
 
     def plot(self, bins: int = 300) -> tuple:
         """
-        Plot the pulse.
+        Plot the pulses of the source.
 
         Parameters
         ----------
@@ -395,13 +397,15 @@ class Pulse:
         return Plot(fig=fig, ax=ax)
 
     def as_readonly(self):
-        return PulseParameters(
+        return SourceParameters(
             # birth_times=self.birth_times,
             # wavelengths=self.wavelengths,
             # speeds=self.speeds,
             data=self.data,
             facility=self.facility,
             neutrons=self.neutrons,
+            frequency=self.frequency,
+            nrepeat=self.nrepeat,
             tmin=self.tmin,
             tmax=self.tmax,
             wmin=self.wmin,
@@ -410,16 +414,17 @@ class Pulse:
 
     def __repr__(self) -> str:
         return (
-            f"Pulse(tmin={self.tmin:c}, tmax={self.tmax:c}, "
-            f"wmin={self.wmin:c}, wmax={self.wmax:c}, "
-            f"neutrons={self.neutrons}, facility='{self.facility}')"
+            f"Source:\n  tmin={self.tmin:c}, tmax={self.tmax:c}\n"
+            f"  wmin={self.wmin:c}, wmax={self.wmax:c}\n"
+            f"  npulses={self.nrepeat}, neutrons per pulse={self.neutrons}\n"
+            f"  frequency={self.frequency:c}\n  facility='{self.facility}'"
         )
 
 
 @dataclass(frozen=True)
-class PulseParameters:
+class SourceParameters:
     """
-    Read-only container for the parameters of a pulse.
+    Read-only container for the parameters of a source.
     """
 
     # birth_times: sc.DataArray
@@ -428,6 +433,8 @@ class PulseParameters:
     data: sc.DataArray
     facility: Optional[str]
     neutrons: int
+    frequency: sc.Variable
+    nrepeat: int
     tmin: sc.Variable
     tmax: sc.Variable
     wmin: sc.Variable
