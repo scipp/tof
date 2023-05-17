@@ -37,6 +37,8 @@ def _make_pulses(
     p_time: sc.DataArray,
     p_wav: sc.DataArray,
     sampling: int,
+    wmin: Optional[sc.Variable] = None,
+    wmax: Optional[sc.Variable] = None,
 ):
     """
     Create pulses from time a wavelength probability distributions.
@@ -61,6 +63,10 @@ def _make_pulses(
         Wavelength probability distribution for a single pulse.
     sampling:
         Number of points used to sample the probability distributions.
+    wmin:
+        Minimum neutron wavelength.
+    wmax:
+        Maximum neutron wavelength.
     """
     t_dim = 'time'
     w_dim = 'wavelength'
@@ -73,8 +79,10 @@ def _make_pulses(
 
     tmin = p_time.coords[t_dim].min()
     tmax = p_time.coords[t_dim].max()
-    wmin = p_wav.coords[w_dim].min()
-    wmax = p_wav.coords[w_dim].max()
+    if wmin is None:
+        wmin = p_wav.coords[w_dim].min()
+    if wmax is None:
+        wmax = p_wav.coords[w_dim].max()
 
     time_interpolator = interp1d(p_time, dim=t_dim, fill_value='extrapolate')
     wav_interpolator = interp1d(p_wav, dim=w_dim, fill_value='extrapolate')
@@ -176,6 +184,10 @@ class Source:
         Number of pulses.
     sampling:
         Number of points used to interpolate the probability distributions.
+    wmin:
+        Minimum neutron wavelength.
+    wmax:
+        Maximum neutron wavelength.
     """
 
     def __init__(
@@ -184,6 +196,8 @@ class Source:
         neutrons: int = 1_000_000,
         pulses: int = 1,
         sampling: int = 1000,
+        wmin: Optional[sc.Variable] = None,
+        wmax: Optional[sc.Variable] = None,
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
@@ -200,6 +214,8 @@ class Source:
                 sampling=sampling,
                 frequency=self.frequency,
                 pulses=pulses,
+                wmin=wmin,
+                wmax=wmax,
             )
             self.data = sc.DataArray(
                 data=sc.ones(sizes=pulse_params['time'].sizes, unit='counts'),

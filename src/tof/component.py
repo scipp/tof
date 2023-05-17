@@ -153,6 +153,9 @@ class ComponentData:
             return self.visible.plot(bins=bins, **kwargs)
         visible = self.visible.data
         blocked = self.blocked.data
+        if isinstance(visible, sc.DataArray):
+            visible = sc.DataGroup({'onepulse': visible})
+            blocked = sc.DataGroup({'onepulse': blocked})
         dim = self.visible.dim
         to_plot = {}
         colors = {}
