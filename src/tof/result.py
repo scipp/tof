@@ -17,19 +17,11 @@ from .source import Source, SourceParameters
 from .utils import Plot, merge_masks
 
 
-# def _make_data(array, dim):
-#     return Data(
-#         data=sc.DataArray(
-#             data=sc.ones(sizes=array.sizes, unit='counts'), coords={dim: array}
-#         ),
-#         dim=dim,
-#     )
-
-
 def _make_component_data(component, dim, is_chopper=False):
     visible = {}
     blocked = {} if is_chopper else None
-    for name, da in sc.collapse(component, keep='event').items():
+    keep_dim = (set(component.dims) - {'pulse'}).pop()
+    for name, da in sc.collapse(component, keep=keep_dim).items():
         msk = ~merge_masks(da.masks)
         vsel = da[msk]
         visible[name] = sc.DataArray(data=vsel.data, coords={dim: vsel.coords[dim]})
@@ -101,13 +93,6 @@ class Result:
         self._masks = {}
         self._arrival_times = {}
         self._choppers = {}
-        # fields = {
-        #     'tofs': ('arrival_times', 'tof'),
-        #     'wavelengths': ('wavelengths', 'wavelength'),
-        #     'birth_times': ('birth_times', 'time'),
-        #     'speeds': ('speeds', 'speed'),
-        # }
-        # fields = ['tof', 'wavelength', 'time', 'speed']
         fields = {
             'tofs': 'tof',
             'wavelengths': 'wavelength',
@@ -252,11 +237,10 @@ class Result:
 
         # Normal rays
         if max_rays > 0:
+            keep_dim = (set(furthest_detector.data.dims) - {'pulse'}).pop()
             for i, da in enumerate(
-                sc.collapse(furthest_detector.data, keep='event').values()
+                sc.collapse(furthest_detector.data, keep=keep_dim).values()
             ):
-                # tofs = furthest_detector.tofs.visible.data.coords['tof']
-                # da = furthest_detector.data['pulse', i]
                 visible = da[~da.masks['blocked_by_others']]
                 tofs = visible.coords['tof']
                 if (max_rays is not None) and (len(tofs) > max_rays):
@@ -314,16 +298,6 @@ class Result:
                 0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
             )
 
-        # # Plot pulse
-        # tmin = self.pulse.tmin.to(unit='us').value
-        # ax.plot(
-        #     [tmin, self.pulse.tmax.to(unit='us').value],
-        #     [0, 0],
-        #     color="gray",
-        #     lw=3,
-        # )
-        # ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
-
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")
         ax.set_xlim(0 - dx, tof_max + dx)
@@ -340,17 +314,13 @@ class Result:
 
     def __repr__(self) -> str:
         source_sizes = self._source.data.sizes
+        other_dim = (set(source_sizes) - {'pulse'}).pop()
         out = (
             f"Result:\n  Source: {source_sizes['pulse']} pulses, "
-            f"{source_sizes['event']} neutrons per pulse.\n  Choppers:\n"
+            f"{source_sizes[other_dim]} neutrons per pulse.\n  Choppers:\n"
         )
         for name, ch in self._choppers.items():
             tofs = ch.tofs
-            # vis = [str(len(tofs.visible[0])), str(len(tofs.visible[-1]))]
-            # blk = [str(len(tofs.blocked[0])), str(len(tofs.blocked[-1]))]
-            # if source_sizes['pulse'] > 2:
-            #     vis.insert(1, '...')
-            #     blk.insert(1, '...')
             out += f"    {name}: {ch.tofs._repr_string_body()}\n"
         out += "  Detectors:\n"
         for name, det in self._detectors.items():

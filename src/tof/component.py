@@ -108,34 +108,8 @@ class ComponentData:
         since a :class:`Detector` does not block any neutrons).
     """
 
-    # data: sc.DataArray
     visible: Data
     blocked: Optional[Data] = None
-
-    # @property
-    # def visible(self):
-    #     out = {}
-    #     for name, da in sc.collapse(self.data, keep='event').items():
-    #         msk = ~merge_masks(da.masks)
-    #         sel = da[msk]
-    #         out[name] = sc.DataArray(
-    #             data=sel.data, coords={self.dim: sel.coords[self.dim]}
-    #         )
-
-    #     return Data(data=sc.DataGroup(out), dim=self.dim)
-
-    # @property
-    # def blocked(self):
-    #     out = {}
-    #     msk = 'blocked_by_me'
-    #     for name, da in sc.collapse(self.data, keep='event').items():
-    #         if msk not in da.masks:
-    #             return
-    #         sel = da[da.masks['blocked_by_me']]
-    #         out[name] = sc.DataArray(
-    #             data=sel.data, coords={self.dim: sel.coords[self.dim]}
-    #         )
-    #     return Data(data=sc.DataGroup(out), dim=self.dim)
 
     @property
     def data(self) -> sc.DataGroup:
@@ -149,21 +123,9 @@ class ComponentData:
         return sc.DataGroup(out)
 
     def _repr_string_body(self) -> str:
-        # visible = self.visible
-        # vis = [str(len(visible[0]))]
-        # if len(visible) > 2:
-        #     vis.append('...')
-        # if len(visible) > 1:
-        #     vis.append(str(len(visible[-1])))
         out = f"visible=[{_field_to_string(self.visible)}]"
         if self.blocked is not None:
             out += f", blocked=[{_field_to_string(self.blocked)}]"
-        # blocked = self.blocked
-        # if blocked is not None:
-        #     blk = [str(len(blocked[0])), str(len(blocked[-1]))]
-        #     if len(visible) > 2:
-        #         blk.insert(1, '...')
-        #     out += f", blocked=[{', '.join(blk)}]"
         return out
 
     def __repr__(self) -> str:
@@ -187,7 +149,7 @@ class ComponentData:
         to_plot = {}
         colors = {}
         edges = bins
-        for p in visible:
+        for i, p in enumerate(visible):
             if isinstance(bins, int):
                 edges = sc.linspace(
                     dim=dim,
@@ -200,9 +162,12 @@ class ComponentData:
                     num=bins,
                     unit=visible[p].coords[dim].unit,
                 )
-            to_plot[f'visible-{p}'] = visible[p].hist({dim: edges})
-            to_plot[f'blocked-{p}'] = blocked[p].hist({dim: edges})
-            colors[f'blocked-{p}'] = 'gray'
+            vk = f'visible-{p}'
+            bk = f'blocked-{p}'
+            to_plot.update(
+                {vk: visible[p].hist({dim: edges}), bk: blocked[p].hist({dim: edges})}
+            )
+            colors.update({vk: f'C{i}', bk: 'gray'})
         out = pp.plot(
             to_plot,
             **{**{'color': colors}, **kwargs},
@@ -218,54 +183,6 @@ class Component:
     will have a record of the arrival times and wavelengths of the neutrons that
     passed through it.
     """
-
-    # @property
-    # def data(self) -> sc.DataGroup:
-    #     """ """
-    #     return sc.DataGroup(
-    #         {
-    #             'tofs': self.tofs.data,
-    #             'wavelengths': self.wavelengths.data,
-    #             'birth_times': self.birth_times.data,
-    #             'speeds': self.speeds.data,
-    #         }
-    #     )
-
-    # @property
-    # def visible(self) -> ComponentData:
-    #     return
-
-    # @property
-    # def tofs(self):
-    #     """ """
-    #     return ComponentData(
-    #         data=self.data,
-    #         dim='tof',
-    #     )
-
-    # @property
-    # def wavelengths(self):
-    #     """ """
-    #     return ComponentData(
-    #         data=self.data,
-    #         dim='wavelength',
-    #     )
-
-    # @property
-    # def birth_times(self):
-    #     """ """
-    #     return ComponentData(
-    #         data=self.data,
-    #         dim='time',
-    #     )
-
-    # @property
-    # def speeds(self):
-    #     """ """
-    #     return ComponentData(
-    #         data=self.data,
-    #         dim='speed',
-    #     )
 
     def plot(self, bins: int = 300) -> Plot:
         """
