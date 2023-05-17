@@ -26,7 +26,7 @@ class Data:
         The dimension label of the data.
     """
 
-    data: sc.DataArray
+    data: Union[sc.DataArray, sc.DataGroup]
     dim: str
 
     def __getitem__(self, ind):
@@ -137,16 +137,16 @@ class ComponentData:
     #         )
     #     return Data(data=sc.DataGroup(out), dim=self.dim)
 
-    # @property
-    # def data(self) -> sc.DataGroup:
-    #     """
-    #     The neutrons that reach the component, split up into those that are blocked by
-    #     the component and those that are not.
-    #     """
-    #     out = {'visible': self.visible.data}
-    #     if self.blocked is not None:
-    #         out['blocked'] = self.blocked.data
-    #     return sc.DataGroup(out)
+    @property
+    def data(self) -> sc.DataGroup:
+        """
+        The neutrons that reach the component, split up into those that are blocked by
+        the component and those that are not.
+        """
+        out = {'visible': self.visible.data}
+        if self.blocked is not None:
+            out['blocked'] = self.blocked.data
+        return sc.DataGroup(out)
 
     def _repr_string_body(self) -> str:
         # visible = self.visible

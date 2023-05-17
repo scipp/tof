@@ -115,7 +115,7 @@ class ChopperReading(Component):
     phase: sc.Variable
     open_times: sc.Variable
     close_times: sc.Variable
-    # data: sc.DataArray
+    data: sc.DataArray
     tofs: ComponentData
     wavelengths: ComponentData
     birth_times: ComponentData

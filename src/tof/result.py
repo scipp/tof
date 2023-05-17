@@ -126,7 +126,7 @@ class Result:
                 phase=chopper['phase'],
                 open_times=chopper['open_times'],
                 close_times=chopper['close_times'],
-                # data=chopper['data'],
+                data=chopper['data'],
                 **{
                     key: _make_component_data(chopper['data'], dim=dim, is_chopper=True)
                     for key, dim in fields.items()
@@ -140,7 +140,7 @@ class Result:
             self._detectors[name] = DetectorReading(
                 distance=det['distance'],
                 name=det['name'],
-                # data=det['data']
+                data=det['data'],
                 **{
                     key: _make_component_data(det['data'], dim=dim)
                     for key, dim in fields.items()

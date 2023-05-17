@@ -35,7 +35,7 @@ def _make_pulses(
     wmax: Optional[sc.Variable] = None,
     frequency: Optional[sc.Variable] = None,
     sampling: Optional[int] = 1000,
-    npulses: int = 1,
+    pulses: int = 1,
 ):
     """
     Create a pulse from time a wavelength probability distributions.
@@ -154,7 +154,7 @@ def _make_pulses(
     n = 0
     times = []
     wavs = []
-    ntot = npulses * neutrons
+    ntot = pulses * neutrons
     while n < ntot:
         size = ntot - n
         t = np.random.choice(
@@ -179,14 +179,14 @@ def _make_pulses(
         values=np.concatenate(times),
         unit='s',
     ).fold(
-        dim=dim, sizes={'pulse': npulses, dim: neutrons}
-    ) + (sc.arange('pulse', npulses) / frequency)
+        dim=dim, sizes={'pulse': pulses, dim: neutrons}
+    ) + (sc.arange('pulse', pulses) / frequency)
 
     wavelength = sc.array(
         dims=[dim],
         values=np.concatenate(wavs),
         unit='angstrom',
-    ).fold(dim=dim, sizes={'pulse': npulses, dim: neutrons})
+    ).fold(dim=dim, sizes={'pulse': pulses, dim: neutrons})
     speed = wavelength_to_speed(wavelength)
     return {
         'time': birth_time,
@@ -236,11 +236,11 @@ class Source:
         wmax: Optional[sc.Variable] = None,
         neutrons: int = 1_000_000,
         sampling: int = 1000,
-        npulses: int = 1,
+        pulses: int = 1,
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
-        self.npulses = int(npulses)
+        self.pulses = int(pulses)
         self.data = None
         self.frequency = None
 
@@ -256,7 +256,7 @@ class Source:
                 p_wav=facility_params.wavelength,
                 sampling=sampling,
                 frequency=facility_params.frequency,
-                npulses=npulses,
+                pulses=pulses,
             )
             # self.birth_times = pulse_params['birth_times']
             # self.wavelengths = pulse_params['wavelengths']
@@ -383,7 +383,7 @@ class Source:
         fig, ax = plt.subplots(1, 2)
         collapsed = sc.collapse(self.data, keep='event')
         pp.plot(
-            {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
+            {k: da.hist(time=bins) for k, da in collapsed.items()},
             ax=ax[0],
         )
         pp.plot(
@@ -405,7 +405,7 @@ class Source:
             facility=self.facility,
             neutrons=self.neutrons,
             frequency=self.frequency,
-            npulses=self.npulses,
+            pulses=self.pulses,
             tmin=self.tmin,
             tmax=self.tmax,
             wmin=self.wmin,
@@ -416,7 +416,7 @@ class Source:
         return (
             f"Source:\n  tmin={self.tmin:c}, tmax={self.tmax:c}\n"
             f"  wmin={self.wmin:c}, wmax={self.wmax:c}\n"
-            f"  npulses={self.npulses}, neutrons per pulse={self.neutrons}\n"
+            f"  pulses={self.pulses}, neutrons per pulse={self.neutrons}\n"
             f"  frequency={self.frequency:c}\n  facility='{self.facility}'"
         )
 
@@ -434,7 +434,7 @@ class SourceParameters:
     facility: Optional[str]
     neutrons: int
     frequency: sc.Variable
-    npulses: int
+    pulses: int
     tmin: sc.Variable
     tmax: sc.Variable
     wmin: sc.Variable
