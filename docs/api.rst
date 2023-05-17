@@ -15,7 +15,7 @@ API Reference
    Detector
    DetectorReading
    Model
-   Pulse
-   PulseParameters
    Result
+   Source
+   SourceParameters
    utils
