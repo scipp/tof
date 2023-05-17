@@ -167,6 +167,8 @@ class Result:
         furthest_detector: DetectorReading,
         ax: plt.Axes,
         cbar: bool,
+        wmin: sc.Variable,
+        wmax: sc.Variable,
     ):
         if max_rays <= 0:
             return
@@ -185,10 +187,10 @@ class Result:
             tofs=tofs[inds],
             birth_times=birth_times,
             distances=distances,
-            cbar=cbar and (pulse_index == 0),
+            cbar=cbar,
             wavelengths=wavelengths,
-            wmin=self._source.data.coords['wavelength'].min(),
-            wmax=self._source.data.coords['wavelength'].max(),
+            wmin=wmin,
+            wmax=wmax,
         )
 
     def _plot_blocked_rays(
@@ -285,6 +287,10 @@ class Result:
         else:
             fig = ax.get_figure()
         furthest_detector = max(self._detectors.values(), key=lambda d: d.distance)
+        wavelengths = sc.DataArray(
+            data=furthest_detector.data.coords['wavelength'],
+            masks=furthest_detector.data.masks,
+        )
         for i in range(self._source.data.sizes['pulse']):
             self._plot_blocked_rays(
                 blocked_rays=blocked_rays,
@@ -297,7 +303,9 @@ class Result:
                 pulse_index=i,
                 furthest_detector=furthest_detector,
                 ax=ax,
-                cbar=cbar,
+                cbar=cbar and (i == 0),
+                wmin=wavelengths.min(),
+                wmax=wavelengths.max(),
             )
             self._plot_pulse(pulse_index=i, ax=ax)
 
