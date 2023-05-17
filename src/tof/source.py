@@ -14,6 +14,16 @@ from . import facilities
 from .utils import Plot, wavelength_to_speed
 
 
+def _default_frequency(frequency: Optional[sc.Variable], pulses: int) -> sc.Variable:
+    if frequency is None:
+        if pulses > 1:
+            raise ValueError(
+                'If pulses is greater than one, a frequency must be supplied.'
+            )
+        frequency = 1.0 * sc.Unit('Hz')
+    return frequency
+
+
 def _convert_coord(da: sc.DataArray, unit: str, coord: str) -> sc.DataArray:
     out = da.copy(deep=False)
     out.coords[coord] = out.coords[coord].to(dtype=float, unit=unit)
@@ -21,12 +31,12 @@ def _convert_coord(da: sc.DataArray, unit: str, coord: str) -> sc.DataArray:
 
 
 def _make_pulses(
-    neutrons: int = 1_000_000,
-    frequency: Optional[sc.Variable] = None,
-    pulses: int = 1,
-    p_time: Optional[sc.DataArray] = None,
-    p_wav: Optional[sc.DataArray] = None,
-    sampling: Optional[int] = 1000,
+    neutrons: int,
+    frequency: sc.Variable,
+    pulses: int,
+    p_time: sc.DataArray,
+    p_wav: sc.DataArray,
+    sampling: int,
 ):
     """
     Create pulses from time a wavelength probability distributions.
@@ -179,7 +189,6 @@ class Source:
         self.neutrons = int(neutrons)
         self.pulses = int(pulses)
         self.data = None
-        self.frequency = None
 
         if facility is not None:
             facility_params = getattr(facilities, self.facility)
@@ -206,7 +215,7 @@ class Source:
         cls,
         birth_times: sc.Variable,
         wavelengths: sc.Variable,
-        frequency: sc.Variable,
+        frequency: Optional[sc.Variable] = None,
         pulses: int = 1,
     ):
         """
@@ -226,10 +235,11 @@ class Source:
         pulses:
             Number of pulses.
         """
-        source = cls(facility=None, neutrons=len(birth_times))
+        source = cls(facility=None, neutrons=len(birth_times), pulses=pulses)
+        source.frequency = _default_frequency(frequency, pulses)
 
         birth_times = birth_times.to(unit='s', copy=False) + (
-            sc.arange('pulse', pulses) / frequency
+            sc.arange('pulse', pulses) / source.frequency
         )
         wavelengths = sc.broadcast(
             wavelengths.to(unit='angstrom', copy=False), sizes=birth_times.sizes
@@ -249,9 +259,11 @@ class Source:
     @classmethod
     def from_distribution(
         cls,
+        p_time: sc.DataArray,
+        p_wav: sc.DataArray,
         neutrons: int = 1_000_000,
-        p_time: Optional[sc.DataArray] = None,
-        p_wav: Optional[sc.DataArray] = None,
+        pulses: int = 1,
+        frequency: Optional[sc.Variable] = None,
         sampling: Optional[int] = 1000,
     ):
         """
@@ -265,29 +277,28 @@ class Source:
 
         Parameters
         ----------
-        neutrons:
-            Number of neutrons in the pulse.
         p_time:
             Time probability distribution.
         p_wav:
             Wavelength probability distribution.
-        tmin:
-            Start time of the pulse.
-        tmax:
-            End time of the pulse.
-        wmin:
-            Minimum wavelength of the pulse.
-        wmax:
-            Maximum wavelength of the pulse.
+        neutrons:
+            Number of neutrons in the pulse.
+        pulses:
+            Number of pulses.
+        frequency:
+            Frequency of the pulse.
         sampling:
             Number of points used to interpolate the probability distributions.
         """
 
-        source = cls(facility=None, neutrons=neutrons)
+        source = cls(facility=None, neutrons=neutrons, pulses=pulses)
+        source.frequency = _default_frequency(frequency, pulses)
         pulse_params = _make_pulses(
             neutrons=neutrons,
             p_time=p_time,
             p_wav=p_wav,
+            frequency=source.frequency,
+            pulses=pulses,
             sampling=sampling,
         )
         source.data = sc.DataArray(
