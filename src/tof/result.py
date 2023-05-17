@@ -3,7 +3,7 @@
 
 from itertools import chain
 from types import MappingProxyType
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -160,13 +160,104 @@ class Result:
             raise KeyError(f"No component with name {name} was found.")
         return self._choppers[name] if name in self._choppers else self._detectors[name]
 
+    def _plot_visible_rays(
+        self,
+        max_rays: int,
+        pulse_index: int,
+        furthest_detector: DetectorReading,
+        ax: plt.Axes,
+        cbar: bool,
+    ):
+        if max_rays <= 0:
+            return
+        da = furthest_detector.data['pulse', pulse_index]
+        visible = da[~da.masks['blocked_by_others']]
+        tofs = visible.coords['tof']
+        if (max_rays is not None) and (len(tofs) > max_rays):
+            inds = np.random.choice(len(tofs), size=max_rays, replace=False)
+        else:
+            inds = slice(None)
+        birth_times = visible.coords['time'][inds]
+        wavelengths = visible.coords['wavelength'][inds]
+        distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
+        _add_rays(
+            ax=ax,
+            tofs=tofs[inds],
+            birth_times=birth_times,
+            distances=distances,
+            cbar=cbar and (pulse_index == 0),
+            wavelengths=wavelengths,
+            wmin=self._source.data.coords['wavelength'].min(),
+            wmax=self._source.data.coords['wavelength'].max(),
+        )
+
+    def _plot_blocked_rays(
+        self,
+        blocked_rays: int,
+        pulse_index: int,
+        furthest_detector: DetectorReading,
+        ax: plt.Axes,
+    ):
+        if blocked_rays <= 0:
+            return
+        slc = ('pulse', pulse_index)
+        inv_mask = ~self._masks[furthest_detector.name][slc]
+        nrays = int(inv_mask.sum())
+        if nrays > blocked_rays:
+            inds = np.random.choice(nrays, size=blocked_rays, replace=False)
+        else:
+            inds = slice(None)
+        birth_times = self._source.data.coords['time'][slc][inv_mask][inds]
+
+        components = sorted(
+            chain(self._choppers.values(), [furthest_detector]),
+            key=lambda c: c.distance.value,
+        )
+        dim = 'component'
+        tofs = sc.concat(
+            [
+                self._arrival_times[comp.name][slc][inv_mask][inds]
+                for comp in components
+            ],
+            dim=dim,
+        )
+        distances = sc.concat(
+            [comp.distance.broadcast(sizes=birth_times.sizes) for comp in components],
+            dim=dim,
+        )
+        masks = sc.concat(
+            [sc.ones(sizes=birth_times.sizes, dtype=bool)]
+            + [self._masks[comp.name][slc][inv_mask][inds] for comp in components],
+            dim=dim,
+        )
+
+        diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
+        diff.unit = ''
+        _add_rays(
+            ax=ax,
+            tofs=(tofs * diff).max(dim=dim),
+            birth_times=birth_times,
+            distances=(distances * diff).max(dim=dim),
+        )
+
+    def _plot_pulse(self, pulse_index: int, ax: plt.Axes):
+        time_coord = self.source.data.coords['time']['pulse', pulse_index]
+        tmin = time_coord.min().to(unit='us').value
+        ax.plot(
+            [tmin, time_coord.max().to(unit='us').value],
+            [0, 0],
+            color="gray",
+            lw=3,
+        )
+        ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
+
     def plot(
         self,
         max_rays: int = 1000,
         blocked_rays: int = 0,
-        figsize=None,
-        ax=None,
-        cbar=True,
+        figsize: Optional[Tuple[float, float]] = None,
+        ax: Optional[plt.Axes] = None,
+        cbar: bool = True,
     ) -> Plot:
         """
         Plot the time-distance diagram for the instrument, including the rays of
@@ -194,86 +285,23 @@ class Result:
         else:
             fig = ax.get_figure()
         furthest_detector = max(self._detectors.values(), key=lambda d: d.distance)
-
-        if blocked_rays > 0:
-            inv_mask = ~self._masks[furthest_detector.name]
-            nrays = int(inv_mask.sum())
-            if nrays > blocked_rays:
-                inds = np.random.choice(nrays, size=blocked_rays, replace=False)
-            else:
-                inds = slice(None)
-            birth_times = self.pulse.birth_times[inv_mask][inds]
-
-            components = sorted(
-                chain(self._choppers.values(), [furthest_detector]),
-                key=lambda c: c.distance.value,
-            )
-            dim = 'component'
-            tofs = sc.concat(
-                [self._arrival_times[comp.name][inv_mask][inds] for comp in components],
-                dim=dim,
-            )
-            distances = sc.concat(
-                [
-                    comp.distance.broadcast(sizes=birth_times.sizes)
-                    for comp in components
-                ],
-                dim=dim,
-            )
-            masks = sc.concat(
-                [sc.ones(sizes=birth_times.sizes, dtype=bool)]
-                + [self._masks[comp.name][inv_mask][inds] for comp in components],
-                dim=dim,
-            )
-
-            diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
-            diff.unit = ''
-            _add_rays(
+        for i in range(self._source.data.sizes['pulse']):
+            self._plot_blocked_rays(
+                blocked_rays=blocked_rays,
+                pulse_index=i,
+                furthest_detector=furthest_detector,
                 ax=ax,
-                tofs=(tofs * diff).max(dim=dim),
-                birth_times=birth_times,
-                distances=(distances * diff).max(dim=dim),
             )
+            self._plot_visible_rays(
+                max_rays=max_rays,
+                pulse_index=i,
+                furthest_detector=furthest_detector,
+                ax=ax,
+                cbar=cbar,
+            )
+            self._plot_pulse(pulse_index=i, ax=ax)
 
-        # Normal rays
-        if max_rays > 0:
-            keep_dim = (set(furthest_detector.data.dims) - {'pulse'}).pop()
-            for i, da in enumerate(
-                sc.collapse(furthest_detector.data, keep=keep_dim).values()
-            ):
-                visible = da[~da.masks['blocked_by_others']]
-                tofs = visible.coords['tof']
-                if (max_rays is not None) and (len(tofs) > max_rays):
-                    inds = np.random.choice(len(tofs), size=max_rays, replace=False)
-                else:
-                    inds = slice(None)
-                birth_times = visible.coords['time'][inds]
-                wavelengths = visible.coords['wavelength'][inds]
-                distances = furthest_detector.distance.broadcast(
-                    sizes=birth_times.sizes
-                )
-                _add_rays(
-                    ax=ax,
-                    tofs=tofs[inds],
-                    birth_times=birth_times,
-                    distances=distances,
-                    cbar=cbar and (i == 0),
-                    wavelengths=wavelengths,
-                    wmin=self._source.data.coords['wavelength'].min(),
-                    wmax=self._source.data.coords['wavelength'].max(),
-                )
-
-                # Plot pulse
-                tmin = visible.coords['time'].min().to(unit='us').value
-                ax.plot(
-                    [tmin, visible.coords['time'].max().to(unit='us').value],
-                    [0, 0],
-                    color="gray",
-                    lw=3,
-                )
-                ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
-
-        tof_max = tofs.max().value
+        tof_max = furthest_detector.tofs.visible[-1].data.coords['tof'].max().value
         dx = 0.05 * tof_max
         # Plot choppers
         for ch in self._choppers.values():
