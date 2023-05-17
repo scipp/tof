@@ -140,14 +140,6 @@ class Model:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
             container[c.name]['data'] = self.source.data.copy(deep=False)
-            # container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
-            # container[c.name].update(
-            #     {
-            #         'birth_times': self.pulse.birth_times,
-            #         'speeds': self.pulse.speeds,
-            #         'wavelengths': self.pulse.wavelengths,
-            #     }
-            # )
             t = birth_time + c.distance / speed
             container[c.name]['data'].coords['tof'] = t.to(unit='us')
             if isinstance(c, Detector):

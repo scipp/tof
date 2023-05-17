@@ -79,12 +79,14 @@ class Data:
 
 
 def _field_to_string(field: Data) -> str:
+    if isinstance(field.data, sc.DataArray):
+        return str(len(field))
     out = [str(len(field[0]))]
     if len(field) > 2:
         out.append('...')
     if len(field) > 1:
         out.append(str(len(field[-1])))
-    return ', '.join(out)
+    return '[' + ', '.join(out) + ']'
 
 
 @dataclass(frozen=True)
@@ -122,10 +124,16 @@ class ComponentData:
             out['blocked'] = self.blocked.data
         return sc.DataGroup(out)
 
+    def __getitem__(self, ind):
+        return self.__class__(
+            visible=self.visible[ind],
+            blocked=self.blocked[ind] if self.blocked is not None else None,
+        )
+
     def _repr_string_body(self) -> str:
-        out = f"visible=[{_field_to_string(self.visible)}]"
+        out = f"visible={_field_to_string(self.visible)}"
         if self.blocked is not None:
-            out += f", blocked=[{_field_to_string(self.blocked)}]"
+            out += f", blocked={_field_to_string(self.blocked)}"
         return out
 
     def __repr__(self) -> str:

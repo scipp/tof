@@ -259,8 +259,8 @@ class Result:
                     distances=distances,
                     cbar=cbar and (i == 0),
                     wavelengths=wavelengths,
-                    wmin=self._source.wmin,
-                    wmax=self._source.wmax,
+                    wmin=self._source.data.coords['wavelength'].min(),
+                    wmax=self._source.data.coords['wavelength'].max(),
                 )
 
                 # Plot pulse
@@ -305,7 +305,7 @@ class Result:
             inches = fig.get_size_inches()
             fig.set_size_inches(
                 (
-                    max(inches[0] * furthest_detector.data.sizes['pulse'], 12.0),
+                    min(inches[0] * furthest_detector.data.sizes['pulse'], 12.0),
                     inches[1],
                 )
             )
