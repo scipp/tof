@@ -25,7 +25,7 @@ def make_chopper(topen, tclose, f, phase, distance, name):
     )
 
 
-def make_source(arrival_times, distance):
+def make_source(arrival_times, distance, pulses=1, frequency=None):
     # Arrival times are distance * alpha * wavelength
     return tof.Source.from_neutrons(
         birth_times=sc.array(
@@ -34,6 +34,8 @@ def make_source(arrival_times, distance):
             unit='s',
         ),
         wavelengths=arrival_times.to(unit='s') / (distance * tof.utils.alpha),
+        pulses=pulses,
+        frequency=frequency,
     )
 
 

@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+
 import numpy as np
+import pytest
 import scipp as sc
 
 import tof
@@ -223,3 +225,46 @@ def test_source_length():
     N = 17
     source = tof.Source(facility='ess', neutrons=3124, pulses=N)
     assert len(source) == N
+
+
+def test_multiple_pulses_from_distribution_no_frequency_raises():
+    v = np.ones(9) * 0.1
+    v[3:6] = 1.0
+    p_time = sc.DataArray(
+        data=sc.array(dims=['time'], values=v),
+        coords={'time': sc.linspace('time', 0.0, 8.0, len(v), unit='ms')},
+    )
+    p_wav = sc.DataArray(
+        data=sc.array(dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0]),
+        coords={
+            'wavelength': sc.array(
+                dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0], unit='angstrom'
+            )
+        },
+    )
+    with pytest.raises(
+        ValueError, match='If pulses is greater than one, a frequency must be supplied.'
+    ):
+        tof.Source.from_distribution(
+            neutrons=22696,
+            p_time=p_time,
+            p_wav=p_wav,
+            pulses=3,
+        )
+
+
+def test_multiple_pulses_from_neutrons_no_frequency_raises():
+    birth_times = sc.array(
+        dims=['event'], values=[1111.0, 1567.0, 856.0, 2735.0], unit='us'
+    )
+    wavelengths = sc.array(
+        dims=['event'], values=[1.0, 5.0, 8.0, 10.0], unit='angstrom'
+    )
+    with pytest.raises(
+        ValueError, match='If pulses is greater than one, a frequency must be supplied.'
+    ):
+        tof.Source.from_neutrons(
+            birth_times=birth_times,
+            wavelengths=wavelengths,
+            pulses=3,
+        )

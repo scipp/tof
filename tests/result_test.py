@@ -16,7 +16,7 @@ meter = sc.Unit('m')
 ms = sc.Unit('ms')
 
 
-def test_pulse_results_are_read_only():
+def test_source_results_are_read_only():
     topen = 10.0 * ms
     tclose = 20.0 * ms
     chopper = make_chopper(
@@ -29,26 +29,27 @@ def test_pulse_results_are_read_only():
     )
     detector = tof.Detector(distance=20 * meter, name='detector')
 
-    pulse = make_pulse(
+    source = make_source(
         arrival_times=sc.concat(
             [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
         ),
         distance=chopper.distance,
     )
 
-    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
+    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
     res = model.run()
 
     # Check that basic properties are accessible
-    assert res.pulse.neutrons == 3
-    assert sc.identical(res.pulse.wavelengths, pulse.wavelengths)
+    assert res.source.neutrons == 3
+    assert sc.identical(
+        res.source.data['pulse', 0].coords['wavelength'],
+        source.data['pulse', 0].coords['wavelength'],
+    )
     # Check that values cannot be overwritten
     with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
-        res.pulse.neutrons = 5
+        res.source.neutrons = 5
     with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
-        res.pulse.wavelengths = 'corrupted'
-    with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
-        res.pulse.birth_times = sc.ones_like(res.pulse.birth_times)
+        res.source.data = 'corrupted'
 
 
 def test_chopper_results_are_read_only():
@@ -64,20 +65,20 @@ def test_chopper_results_are_read_only():
     )
     detector = tof.Detector(distance=20 * meter, name='detector')
 
-    pulse = make_pulse(
+    source = make_source(
         arrival_times=sc.concat(
             [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
         ),
         distance=chopper.distance,
     )
 
-    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
+    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
     res = model.run()
     ch = res.choppers['chopper']
 
     # Check that basic properties are accessible
-    assert len(ch.tofs.visible) == 1
-    assert len(ch.tofs.blocked) == 2
+    assert len(ch.tofs.visible[0]) == 1
+    assert len(ch.tofs.blocked[0]) == 2
     assert sc.identical(ch.distance, chopper.distance)
     assert sc.identical(ch.phase, chopper.phase)
     # Check that values cannot be overwritten
@@ -107,20 +108,20 @@ def test_detector_results_are_read_only():
     )
     detector = tof.Detector(distance=20 * meter, name='detector')
 
-    pulse = make_pulse(
+    source = make_source(
         arrival_times=sc.concat(
             [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
         ),
         distance=chopper.distance,
     )
 
-    model = tof.Model(pulse=pulse, choppers=[chopper], detectors=[detector])
+    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
     res = model.run()
 
     det = res.detectors['detector']
 
     # Check that basic properties are accessible
-    assert len(det.tofs.visible) == 1
+    assert len(det.tofs.visible[0]) == 1
     assert sc.identical(det.distance, detector.distance)
     # Check that values cannot be overwritten
     with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
@@ -132,3 +133,73 @@ def test_detector_results_are_read_only():
         res.detectors['detector2'] = detector
     with pytest.raises(TypeError, match='object does not support item deletion'):
         del res.detectors['detector']
+
+
+def test_component_results_data_access():
+    topen = 10.0 * ms
+    tclose = 20.0 * ms
+    chopper = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='chopper',
+    )
+    detector = tof.Detector(distance=20 * meter, name='detector')
+
+    source = make_source(
+        arrival_times=sc.concat(
+            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
+        ),
+        distance=chopper.distance,
+        pulses=3,
+        frequency=14.0 * Hz,
+    )
+
+    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
+    res = model.run()
+    ch = res.choppers['chopper']
+    det = res.detectors['detector']
+
+    for field in ('tofs', 'wavelengths', 'birth_times', 'speeds'):
+        assert 'visible' in getattr(ch, field).data
+        assert 'blocked' in getattr(ch, field).data
+        assert 'visible' in getattr(det, field).data
+        assert 'blocked' not in getattr(det, field).data
+
+    assert list(ch.tofs.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
+    assert list(det.wavelengths.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
+
+
+def test_component_results_data_slicing():
+    topen = 10.0 * ms
+    tclose = 20.0 * ms
+    chopper = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='chopper',
+    )
+    detector = tof.Detector(distance=20 * meter, name='detector')
+
+    source = make_source(
+        arrival_times=sc.concat(
+            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
+        ),
+        distance=chopper.distance,
+        pulses=3,
+        frequency=14.0 * Hz,
+    )
+
+    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
+    res = model.run()
+    ch = res.choppers['chopper']
+
+    tofs = ch.tofs[0]
+    assert 'visible' in tofs.data
+    assert 'blocked' in tofs.data
+    vis = ch.tofs.visible[1]
+    assert sc.identical(vis.data, ch.tofs.visible.data['pulse:1'])

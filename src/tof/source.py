@@ -254,8 +254,8 @@ class Source:
         source = cls(facility=None, neutrons=len(birth_times), pulses=pulses)
         source.frequency = _default_frequency(frequency, pulses)
 
-        birth_times = birth_times.to(unit='s', copy=False) + (
-            sc.arange('pulse', pulses) / source.frequency
+        birth_times = (sc.arange('pulse', pulses) / source.frequency) + birth_times.to(
+            unit='s', copy=False
         )
         wavelengths = sc.broadcast(
             wavelengths.to(unit='angstrom', copy=False), sizes=birth_times.sizes
