@@ -2,14 +2,13 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
-from functools import reduce
 from typing import Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import plopp as pp
 import scipp as sc
 
-from .utils import Plot, merge_masks
+from .utils import Plot
 
 
 @dataclass(frozen=True)

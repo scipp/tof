@@ -14,7 +14,7 @@ from . import facilities
 from .utils import Plot, wavelength_to_speed
 
 
-def _default_frequency(frequency: Optional[sc.Variable], pulses: int) -> sc.Variable:
+def _default_frequency(frequency: Union[None, sc.Variable], pulses: int) -> sc.Variable:
     if frequency is None:
         if pulses > 1:
             raise ValueError(
