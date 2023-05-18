@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from functools import reduce
 from itertools import chain
 from types import MappingProxyType
 from typing import Dict, Optional, Tuple, Union
@@ -14,7 +15,7 @@ from .chopper import Chopper, ChopperReading
 from .component import ComponentData, Data
 from .detector import Detector, DetectorReading
 from .source import Source, SourceParameters
-from .utils import Plot, merge_masks
+from .utils import Plot
 
 
 def _make_component_data(component, dim, is_chopper=False):
@@ -22,8 +23,8 @@ def _make_component_data(component, dim, is_chopper=False):
     blocked = {} if is_chopper else None
     keep_dim = (set(component.dims) - {'pulse'}).pop()
     for name, da in sc.collapse(component, keep=keep_dim).items():
-        msk = ~merge_masks(da.masks)
-        vsel = da[msk]
+        one_mask = ~reduce(lambda a, b: a | b, da.masks.values())
+        vsel = da[one_mask]
         visible[name] = sc.DataArray(data=vsel.data, coords={dim: vsel.coords[dim]})
         if is_chopper:
             bsel = da[da.masks['blocked_by_me']]
