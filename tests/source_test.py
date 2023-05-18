@@ -59,6 +59,12 @@ def test_creation_from_distribution_flat():
 
     assert source.neutrons == N
     assert source.data.sizes['event'] == N
+    h = source.data['pulse', 0].hist(time=10)
+    assert sc.allclose(
+        h.data,
+        sc.full(value=N / 10.0, sizes={'time': 10}, unit='counts'),
+        rtol=sc.scalar(0.05),
+    )
 
 
 def test_creation_from_distribution():
@@ -78,22 +84,23 @@ def test_creation_from_distribution():
         },
     )
 
-    pulse = tof.Pulse.from_distribution(neutrons=100_000, p_time=p_time, p_wav=p_wav)
-    assert pulse.neutrons == 100_000
-    assert pulse.birth_times.hist(
+    source = tof.Source.from_distribution(neutrons=100_000, p_time=p_time, p_wav=p_wav)
+    assert source.neutrons == 100_000
+    da = source.data['pulse', 0]
+    assert da.hist(
         time=sc.array(dims=['time'], values=[2.1, 2.9], unit='ms').to(unit='s')
     ).data.sum() > sc.scalar(0.0, unit='counts')
-    assert pulse.birth_times.hist(
+    assert da.hist(
         time=sc.array(dims=['time'], values=[5.1, 5.9], unit='ms').to(unit='s')
     ).data.sum() > sc.scalar(0.0, unit='counts')
 
-    left = pulse.birth_times.hist(
+    left = da.hist(
         time=sc.array(dims=['time'], values=[0.0, 2.0], unit='ms').to(unit='s')
     ).data.sum()
-    mid = pulse.birth_times.hist(
+    mid = da.hist(
         time=sc.array(dims=['time'], values=[3.0, 5.0], unit='ms').to(unit='s')
     ).data.sum()
-    right = pulse.birth_times.hist(
+    right = da.hist(
         time=sc.array(dims=['time'], values=[6.0, 8.0], unit='ms').to(unit='s')
     ).data.sum()
     rtol = sc.scalar(0.05)
@@ -104,14 +111,14 @@ def test_creation_from_distribution():
     locs = np.linspace(1.0, 4.0, 20)
     step = 0.5 * (locs[1] - locs[0])
     for i in range(len(locs) - 2):
-        a = pulse.wavelengths.hist(
+        a = da.hist(
             wavelength=sc.array(
                 dims=['wavelength'],
                 values=[locs[i] - step, locs[i] + step],
                 unit='angstrom',
             )
         ).data.sum()
-        b = pulse.wavelengths.hist(
+        b = da.hist(
             wavelength=sc.array(
                 dims=['wavelength'],
                 values=[locs[i + 1] - step, locs[i + 1] + step],
@@ -121,41 +128,98 @@ def test_creation_from_distribution():
         assert b > a
 
 
-def test_duration():
-    N = 1234
-    tmin = sc.scalar(0.5e-3, unit='s')
-    tmax = sc.scalar(2.7e-3, unit='s')
-    wmin = sc.scalar(1.0, unit='angstrom')
-    wmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse.from_distribution(
-        neutrons=N, tmin=tmin, tmax=tmax, wmin=wmin, wmax=wmax
-    )
-    assert pulse.duration == tmax - tmin
-
-
-def test_pulse_length():
-    N = 31245
-    pulse = tof.Pulse(facility='ess', neutrons=N)
-    assert len(pulse) == N
-
-
 def test_non_integer_sampling():
     N = 1_000_000
-    pulse_float = tof.Pulse(facility='ess', neutrons=N, sampling=1e4)
-    pulse_int = tof.Pulse(facility='ess', neutrons=N, sampling=10_000)
-    assert pulse_float.neutrons == pulse_int.neutrons == N
+    source_float = tof.Source(facility='ess', neutrons=N, sampling=1e4)
+    source_int = tof.Source(facility='ess', neutrons=N, sampling=10_000)
+    assert source_float.neutrons == source_int.neutrons == N
     tedges = sc.linspace('time', 0.0, 5.0e-3, 301, unit='s')
     wedges = sc.linspace('wavelength', 0.0, 20.0, 301, unit='angstrom')
 
-    a = pulse_float.birth_times.hist(time=tedges).data
-    b = pulse_int.birth_times.hist(time=tedges).data
-    c = pulse_float.wavelengths.hist(wavelength=wedges).data
-    d = pulse_int.wavelengths.hist(wavelength=wedges).data
+    da_f = source_float.data['pulse', 0]
+    da_i = source_int.data['pulse', 0]
+
+    a = da_f.hist(time=tedges).data
+    b = da_i.hist(time=tedges).data
+    c = da_f.hist(wavelength=wedges).data
+    d = da_i.hist(wavelength=wedges).data
 
     assert sc.allclose(a, b, atol=0.1 * a.max())
     assert sc.allclose(c, d, atol=0.1 * c.max())
 
 
 def test_non_integer_neutrons():
-    pulse = tof.Pulse(facility='ess', neutrons=1e5)
-    assert pulse.neutrons == 100_000
+    source = tof.Source(facility='ess', neutrons=1e5)
+    assert source.neutrons == 100_000
+
+
+def test_multiple_pulses_ess():
+    source = tof.Source(facility='ess', neutrons=100_000, pulses=3)
+    assert source.data.sizes['pulse'] == 3
+    assert source.data.sizes['event'] == 100_000
+    assert sc.identical(source.frequency, sc.scalar(14.0, unit='Hz'))
+    bins = sc.arange('time', 4) / source.frequency
+    h = source.data.flatten(to='event').hist(time=bins)
+    assert sc.allclose(h.data, sc.full(value=1e5, sizes={'time': 3}, unit='counts'))
+
+
+def test_multiple_pulses_from_distribution():
+    v = np.ones(9) * 0.1
+    v[3:6] = 1.0
+
+    p_time = sc.DataArray(
+        data=sc.array(dims=['time'], values=v),
+        coords={'time': sc.linspace('time', 0.0, 8.0, len(v), unit='ms')},
+    )
+    p_wav = sc.DataArray(
+        data=sc.array(dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0]),
+        coords={
+            'wavelength': sc.array(
+                dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0], unit='angstrom'
+            )
+        },
+    )
+
+    source = tof.Source.from_distribution(
+        neutrons=123_987,
+        p_time=p_time,
+        p_wav=p_wav,
+        pulses=2,
+        frequency=sc.scalar(100.0, unit='Hz'),
+    )
+    assert source.data.sizes['pulse'] == 2
+    assert source.data.sizes['event'] == 123_987
+    bins = sc.arange('time', 3) / source.frequency
+    h = source.data.flatten(to='event').hist(time=bins)
+    assert sc.allclose(
+        h.data, sc.full(value=123987.0, sizes={'time': 2}, unit='counts')
+    )
+
+
+def test_multiple_pulses_from_neutrons():
+    birth_times = sc.array(
+        dims=['event'], values=[1111.0, 1567.0, 856.0, 2735.0], unit='us'
+    )
+    wavelengths = sc.array(
+        dims=['event'], values=[1.0, 5.0, 8.0, 10.0], unit='angstrom'
+    )
+    source = tof.Source.from_neutrons(
+        birth_times=birth_times,
+        wavelengths=wavelengths,
+        pulses=3,
+        frequency=sc.scalar(50.0, unit='Hz'),
+    )
+    assert source.data.sizes['pulse'] == 3
+    assert source.data.sizes['event'] == 4
+    offsets = sc.arange('pulse', 3) / source.frequency
+    assert sc.allclose(source.data.coords['time'], birth_times.to(unit='s') + offsets)
+    assert sc.allclose(
+        source.data.coords['wavelength'],
+        sc.broadcast(wavelengths, sizes={'pulse': 3, 'event': 4}),
+    )
+
+
+def test_source_length():
+    N = 17
+    source = tof.Source(facility='ess', neutrons=3124, pulses=N)
+    assert len(source) == N

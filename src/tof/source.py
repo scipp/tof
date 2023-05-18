@@ -327,6 +327,9 @@ class Source:
         )
         return source
 
+    def __len__(self) -> int:
+        return self.data.sizes['pulse']
+
     def plot(self, bins: int = 300) -> tuple:
         """
         Plot the pulses of the source.
