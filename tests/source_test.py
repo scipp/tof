@@ -34,10 +34,6 @@ def test_creation_from_neutrons():
         source.data['pulse', 0].coords['time'], birth_times.to(unit='s')
     )
     assert sc.identical(source.data['pulse', 0].coords['wavelength'], wavelengths)
-    # assert pulse.tmin == sc.scalar(1.0e-3, unit='s')
-    # assert pulse.tmax == sc.scalar(2.0e-3, unit='s')
-    # assert pulse.wmin == sc.scalar(1.0, unit='angstrom')
-    # assert pulse.wmax == sc.scalar(10.0, unit='angstrom')
 
 
 def test_creation_from_distribution_flat():
