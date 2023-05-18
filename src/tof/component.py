@@ -204,7 +204,7 @@ class Component:
             Number of bins to use for histogramming the neutrons.
         """
         fig, ax = plt.subplots(1, 2)
-        self.tofs.plot(ax=ax[0])
+        self.tofs.plot(bins=bins, ax=ax[0])
         self.wavelengths.plot(bins=bins, ax=ax[1])
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
