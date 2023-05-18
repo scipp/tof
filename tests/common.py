@@ -25,9 +25,9 @@ def make_chopper(topen, tclose, f, phase, distance, name):
     )
 
 
-def make_pulse(arrival_times, distance):
+def make_source(arrival_times, distance):
     # Arrival times are distance * alpha * wavelength
-    return tof.Pulse.from_neutrons(
+    return tof.Source.from_neutrons(
         birth_times=sc.array(
             dims=['event'],
             values=[0.0] * len(arrival_times),
@@ -55,8 +55,8 @@ def dummy_detector():
     )
 
 
-def dummy_pulse():
-    return tof.Pulse.from_neutrons(
+def dummy_source():
+    return tof.Source.from_neutrons(
         birth_times=sc.array(
             dims=['event'],
             values=[0.0],

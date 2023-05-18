@@ -8,7 +8,7 @@ import scipp as sc
 
 import tof
 
-from .common import make_chopper, make_pulse
+from .common import make_chopper, make_source
 
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')

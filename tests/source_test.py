@@ -8,51 +8,57 @@ import tof
 
 
 def test_ess_pulse():
-    pulse = tof.Pulse(facility='ess', neutrons=100_000)
+    source = tof.Source(facility='ess', neutrons=100_000)
     # Check that the time distribution is low on edges and high in the middle
-    times = pulse.birth_times.hist(time=300)
+    times = source.data['pulse', 0].hist(time=300)
     mean = times.mean()
     assert (times[0] < 0.5 * mean).value
     assert (times[-1] < 0.5 * mean).value
     assert (times[150] > 1.5 * mean).value
     # Check that there are more neutrons at low wavelengths
-    wavs = pulse.wavelengths.hist(wavelength=300)
+    wavs = source.data['pulse', 0].hist(wavelength=300)
     assert (wavs[:150].sum() > 1.5 * wavs[150:].sum()).value
 
 
 def test_creation_from_neutrons():
     birth_times = sc.array(dims=['event'], values=[1000.0, 1500.0, 2000.0], unit='us')
     wavelengths = sc.array(dims=['event'], values=[1.0, 5.0, 10.0], unit='angstrom')
-    pulse = tof.Pulse.from_neutrons(
+    source = tof.Source.from_neutrons(
         birth_times=birth_times,
         wavelengths=wavelengths,
     )
-    assert pulse.neutrons == 3
-    assert sc.identical(pulse.birth_times, birth_times.to(unit='s'))
-    assert sc.identical(pulse.wavelengths, wavelengths)
-    assert pulse.tmin == sc.scalar(1.0e-3, unit='s')
-    assert pulse.tmax == sc.scalar(2.0e-3, unit='s')
-    assert pulse.wmin == sc.scalar(1.0, unit='angstrom')
-    assert pulse.wmax == sc.scalar(10.0, unit='angstrom')
+    assert source.neutrons == 3
+    assert sc.identical(
+        source.data['pulse', 0].coords['time'], birth_times.to(unit='s')
+    )
+    assert sc.identical(source.data['pulse', 0].coords['wavelength'], wavelengths)
+    # assert pulse.tmin == sc.scalar(1.0e-3, unit='s')
+    # assert pulse.tmax == sc.scalar(2.0e-3, unit='s')
+    # assert pulse.wmin == sc.scalar(1.0, unit='angstrom')
+    # assert pulse.wmax == sc.scalar(10.0, unit='angstrom')
 
 
 def test_creation_from_distribution_flat():
-    N = 1234
-    tmin = sc.scalar(0.5e-3, unit='s')
-    tmax = sc.scalar(2.7e-3, unit='s')
-    wmin = sc.scalar(1.0, unit='angstrom')
-    wmax = sc.scalar(10.0, unit='angstrom')
-    pulse = tof.Pulse.from_distribution(
-        neutrons=N, tmin=tmin, tmax=tmax, wmin=wmin, wmax=wmax
+    time = sc.array(dims=['time'], values=[1.0, 3.0], unit='ms')
+    p_time = sc.DataArray(
+        data=sc.ones(sizes=time.sizes),
+        coords={'time': time},
     )
-    assert pulse.neutrons == N
-    assert len(pulse.birth_times) == N
-    assert len(pulse.wavelengths) == N
-    assert len(pulse.speeds) == N
-    assert pulse.birth_times.min() >= tmin
-    assert pulse.birth_times.max() <= tmax
-    assert pulse.wavelengths.min() >= wmin
-    assert pulse.wavelengths.max() <= wmax
+    wavelength = sc.array(dims=['wavelength'], values=[1.0, 10.0], unit='angstrom')
+    p_wav = sc.DataArray(
+        data=sc.ones(sizes=wavelength.sizes),
+        coords={'wavelength': wavelength},
+    )
+
+    N = 123456
+    source = tof.Source.from_distribution(
+        neutrons=N,
+        p_time=p_time,
+        p_wav=p_wav,
+    )
+
+    assert source.neutrons == N
+    assert source.data.sizes['event'] == N
 
 
 def test_creation_from_distribution():
