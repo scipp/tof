@@ -65,7 +65,7 @@ def test_one_chopper_one_opening():
         (
             source.data.coords['wavelength']['pulse', 0][1]
             * detector.distance
-            * tof.utils.alpha
+            * tof.utils.m_over_h
         ).to(unit='us'),
     )
 
@@ -131,16 +131,16 @@ def test_two_choppers_one_opening():
     assert len(ch2_tofs.blocked) == 1
     assert sc.isclose(
         ch2_tofs.visible.data.coords['tof'][0],
-        (wavs[1] * chopper2.distance * tof.utils.alpha).to(unit='us'),
+        (wavs[1] * chopper2.distance * tof.utils.m_over_h).to(unit='us'),
     )
     assert sc.isclose(
         ch2_tofs.blocked.data.coords['tof'][0],
-        (wavs[0] * chopper2.distance * tof.utils.alpha).to(unit='us'),
+        (wavs[0] * chopper2.distance * tof.utils.m_over_h).to(unit='us'),
     )
     assert len(det) == 1
     assert sc.isclose(
         det.data.coords['tof'][0],
-        (wavs[1] * detector.distance * tof.utils.alpha).to(unit='us'),
+        (wavs[1] * detector.distance * tof.utils.m_over_h).to(unit='us'),
     )
 
 
