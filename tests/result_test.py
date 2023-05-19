@@ -10,16 +10,18 @@ import tof
 
 from .common import make_chopper, make_source
 
+
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')
 ms = sc.Unit('ms')
+topen = 10.0 * ms
+tclose = 20.0 * ms
 
 
-def test_source_results_are_read_only():
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
+@pytest.fixture
+def chopper():
+    return make_chopper(
         topen=[topen],
         tclose=[tclose],
         f=10.0 * Hz,
@@ -27,16 +29,41 @@ def test_source_results_are_read_only():
         distance=10 * meter,
         name='chopper',
     )
-    detector = tof.Detector(distance=20 * meter, name='detector')
 
-    source = make_source(
+
+@pytest.fixture
+def detector():
+    return tof.Detector(distance=20 * meter, name='detector')
+
+
+@pytest.fixture
+def source(chopper):
+    return make_source(
         arrival_times=sc.concat(
             [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
         ),
         distance=chopper.distance,
     )
 
-    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
+
+@pytest.fixture
+def multi_pulse_source(chopper):
+    return make_source(
+        arrival_times=sc.concat(
+            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
+        ),
+        distance=chopper.distance,
+        pulses=3,
+        frequency=14.0 * Hz,
+    )
+
+
+@pytest.fixture
+def model(chopper, detector, source):
+    return tof.Model(source=source, choppers=[chopper], detectors=[detector])
+
+
+def test_source_results_are_read_only(source, model):
     res = model.run()
 
     # Check that basic properties are accessible
@@ -52,27 +79,7 @@ def test_source_results_are_read_only():
         res.source.data = 'corrupted'
 
 
-def test_chopper_results_are_read_only():
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
-    )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    source = make_source(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-    )
-
-    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
+def test_chopper_results_are_read_only(chopper, model):
     res = model.run()
     ch = res.choppers['chopper']
 
@@ -95,29 +102,8 @@ def test_chopper_results_are_read_only():
         del res.choppers['chopper']
 
 
-def test_detector_results_are_read_only():
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
-    )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    source = make_source(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-    )
-
-    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
+def test_detector_results_are_read_only(detector, model):
     res = model.run()
-
     det = res.detectors['detector']
 
     # Check that basic properties are accessible
@@ -135,29 +121,10 @@ def test_detector_results_are_read_only():
         del res.detectors['detector']
 
 
-def test_component_results_data_access():
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
+def test_component_results_data_access(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
     )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    source = make_source(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-        pulses=3,
-        frequency=14.0 * Hz,
-    )
-
-    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
     res = model.run()
     ch = res.choppers['chopper']
     det = res.detectors['detector']
@@ -172,29 +139,10 @@ def test_component_results_data_access():
     assert list(det.wavelengths.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
 
 
-def test_component_results_data_slicing():
-    topen = 10.0 * ms
-    tclose = 20.0 * ms
-    chopper = make_chopper(
-        topen=[topen],
-        tclose=[tclose],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper',
+def test_component_results_data_slicing(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
     )
-    detector = tof.Detector(distance=20 * meter, name='detector')
-
-    source = make_source(
-        arrival_times=sc.concat(
-            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
-        ),
-        distance=chopper.distance,
-        pulses=3,
-        frequency=14.0 * Hz,
-    )
-
-    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
     res = model.run()
     ch = res.choppers['chopper']
 
