@@ -13,7 +13,6 @@ from scipp.scipy.interpolate import interp1d
 from . import facilities
 from .utils import Plot, wavelength_to_speed
 
-
 TIME_UNIT = 'us'
 WAV_UNIT = 'angstrom'
 
