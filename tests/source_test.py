@@ -30,9 +30,7 @@ def test_creation_from_neutrons():
         wavelengths=wavelengths,
     )
     assert source.neutrons == 3
-    assert sc.identical(
-        source.data['pulse', 0].coords['time'], birth_times.to(unit='s')
-    )
+    assert sc.identical(source.data['pulse', 0].coords['time'], birth_times)
     assert sc.identical(source.data['pulse', 0].coords['wavelength'], wavelengths)
 
 
@@ -71,7 +69,7 @@ def test_creation_from_distribution():
 
     p_time = sc.DataArray(
         data=sc.array(dims=['time'], values=v),
-        coords={'time': sc.linspace('time', 0.0, 8.0, len(v), unit='ms')},
+        coords={'time': sc.linspace('time', 0.0, 8000.0, len(v), unit='us')},
     )
     p_wav = sc.DataArray(
         data=sc.array(dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0]),
@@ -86,20 +84,20 @@ def test_creation_from_distribution():
     assert source.neutrons == 100_000
     da = source.data['pulse', 0]
     assert da.hist(
-        time=sc.array(dims=['time'], values=[2.1, 2.9], unit='ms').to(unit='s')
+        time=sc.array(dims=['time'], values=[2100.0, 2900.0], unit='us')
     ).data.sum() > sc.scalar(0.0, unit='counts')
     assert da.hist(
-        time=sc.array(dims=['time'], values=[5.1, 5.9], unit='ms').to(unit='s')
+        time=sc.array(dims=['time'], values=[5100.0, 5900.0], unit='us')
     ).data.sum() > sc.scalar(0.0, unit='counts')
 
     left = da.hist(
-        time=sc.array(dims=['time'], values=[0.0, 2.0], unit='ms').to(unit='s')
+        time=sc.array(dims=['time'], values=[0.0, 2000.0], unit='us')
     ).data.sum()
     mid = da.hist(
-        time=sc.array(dims=['time'], values=[3.0, 5.0], unit='ms').to(unit='s')
+        time=sc.array(dims=['time'], values=[3000.0, 5000.0], unit='us')
     ).data.sum()
     right = da.hist(
-        time=sc.array(dims=['time'], values=[6.0, 8.0], unit='ms').to(unit='s')
+        time=sc.array(dims=['time'], values=[6000.0, 8000.0], unit='us')
     ).data.sum()
     rtol = sc.scalar(0.05)
     assert sc.isclose(mid / left, sc.scalar(10.0), rtol=rtol)
@@ -131,7 +129,7 @@ def test_non_integer_sampling():
     source_float = tof.Source(facility='ess', neutrons=N, sampling=1e4)
     source_int = tof.Source(facility='ess', neutrons=N, sampling=10_000)
     assert source_float.neutrons == source_int.neutrons == N
-    tedges = sc.linspace('time', 0.0, 5.0e-3, 301, unit='s')
+    tedges = sc.linspace('time', 0.0, 5.0e3, 301, unit='us')
     wedges = sc.linspace('wavelength', 0.0, 20.0, 301, unit='angstrom')
 
     da_f = source_float.data['pulse', 0]
@@ -156,7 +154,7 @@ def test_multiple_pulses_ess():
     assert source.data.sizes['pulse'] == 3
     assert source.data.sizes['event'] == 100_000
     assert sc.identical(source.frequency, sc.scalar(14.0, unit='Hz'))
-    bins = sc.arange('time', 4) / source.frequency
+    bins = (sc.arange('time', 4) / source.frequency).to(unit='us')
     h = source.data.flatten(to='event').hist(time=bins)
     assert sc.allclose(h.data, sc.full(value=1e5, sizes={'time': 3}, unit='counts'))
 
@@ -167,7 +165,7 @@ def test_multiple_pulses_from_distribution():
 
     p_time = sc.DataArray(
         data=sc.array(dims=['time'], values=v),
-        coords={'time': sc.linspace('time', 0.0, 8.0, len(v), unit='ms')},
+        coords={'time': sc.linspace('time', 0.0, 8000.0, len(v), unit='us')},
     )
     p_wav = sc.DataArray(
         data=sc.array(dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0]),
@@ -187,7 +185,7 @@ def test_multiple_pulses_from_distribution():
     )
     assert source.data.sizes['pulse'] == 2
     assert source.data.sizes['event'] == 123_987
-    bins = sc.arange('time', 3) / source.frequency
+    bins = (sc.arange('time', 3) / source.frequency).to(unit='us')
     h = source.data.flatten(to='event').hist(time=bins)
     assert sc.allclose(
         h.data, sc.full(value=123987.0, sizes={'time': 2}, unit='counts')
@@ -209,8 +207,8 @@ def test_multiple_pulses_from_neutrons():
     )
     assert source.data.sizes['pulse'] == 3
     assert source.data.sizes['event'] == 4
-    offsets = sc.arange('pulse', 3) / source.frequency
-    assert sc.allclose(source.data.coords['time'], birth_times.to(unit='s') + offsets)
+    offsets = (sc.arange('pulse', 3) / source.frequency).to(unit='us')
+    assert sc.allclose(source.data.coords['time'], birth_times + offsets)
     assert sc.allclose(
         source.data.coords['wavelength'],
         sc.broadcast(wavelengths, sizes={'pulse': 3, 'event': 4}),

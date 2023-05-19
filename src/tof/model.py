@@ -135,13 +135,15 @@ class Model:
 
         result_choppers = {}
         result_detectors = {}
-        time_limit = (birth_time + components[-1].distance / speed).max()
+        time_limit = (
+            birth_time + (components[-1].distance / speed).to(unit=birth_time.unit)
+        ).max()
         for c in components:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
             container[c.name]['data'] = self.source.data.copy(deep=False)
-            t = birth_time + c.distance / speed
-            container[c.name]['data'].coords['tof'] = t.to(unit='us')
+            t = birth_time + (c.distance / speed).to(unit=birth_time.unit, copy=False)
+            container[c.name]['data'].coords['tof'] = t
             if isinstance(c, Detector):
                 container[c.name]['visible_mask'] = initial_mask
                 container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask

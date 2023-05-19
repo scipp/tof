@@ -3,7 +3,7 @@
 
 import uuid
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Optional, Tuple
 
 import scipp as sc
 
@@ -60,7 +60,7 @@ class Chopper:
         return two_pi * self.frequency
 
     def open_close_times(
-        self, time_limit: sc.Variable
+        self, time_limit: sc.Variable, unit: Optional[str] = None
     ) -> Tuple[sc.Variable, sc.Variable]:
         """
         The times at which the chopper opens and closes.
@@ -70,17 +70,22 @@ class Chopper:
         time_limit:
             Determines how many rotations the chopper needs to perform to reach the time
             limit.
+        unit:
+            The unit of the returned times. If not specified, the unit of `time_limit`
+            is used.
         """
-        time_limit = time_limit.to(unit='s')
-        nrot = max(int(sc.ceil(time_limit * self.frequency).value), 1)
+        if unit is None:
+            unit = time_limit.unit
+        funit = (1 / time_limit).unit
+        nrot = max(int(sc.ceil(time_limit * self.frequency.to(unit=funit)).value), 1)
         phases = sc.arange(uuid.uuid4().hex, nrot) * two_pi + self.phase.to(unit='rad')
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
         open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
         close_times = (phases + self.close.to(unit='rad', copy=False)) / self.omega
         return (
-            open_times.flatten(to=self.open.dim),
-            close_times.flatten(to=self.close.dim),
+            open_times.flatten(to=self.open.dim).to(unit=unit, copy=False),
+            close_times.flatten(to=self.close.dim).to(unit=unit, copy=False),
         )
 
     def __repr__(self) -> str:

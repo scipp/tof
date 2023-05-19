@@ -45,8 +45,8 @@ def _add_rays(
     wmin: Optional[sc.Variable] = None,
     wmax: Optional[sc.Variable] = None,
 ):
-    x0 = birth_times.to(unit='us', copy=False).values.reshape(-1, 1)
-    x1 = tofs.to(unit='us', copy=False).values.reshape(-1, 1)
+    x0 = birth_times.values.reshape(-1, 1)
+    x1 = tofs.values.reshape(-1, 1)
     y0 = np.zeros(x0.size).reshape(-1, 1)
     y1 = distances.values.reshape(-1, 1)
     segments = np.concatenate(
@@ -245,9 +245,9 @@ class Result:
 
     def _plot_pulse(self, pulse_index: int, ax: plt.Axes):
         time_coord = self.source.data.coords['time']['pulse', pulse_index]
-        tmin = time_coord.min().to(unit='us').value
+        tmin = time_coord.min().value
         ax.plot(
-            [tmin, time_coord.max().to(unit='us').value],
+            [tmin, time_coord.max().value],
             [0, 0],
             color="gray",
             lw=3,
@@ -314,8 +314,8 @@ class Result:
         dx = 0.05 * tof_max
         # Plot choppers
         for ch in self._choppers.values():
-            x0 = ch.open_times.to(unit='us').values
-            x1 = ch.close_times.to(unit='us').values
+            x0 = ch.open_times.values
+            x1 = ch.close_times.values
             x = np.empty(3 * x0.size, dtype=x0.dtype)
             x[0::3] = x0
             x[1::3] = 0.5 * (x0 + x1)

@@ -14,6 +14,10 @@ from . import facilities
 from .utils import Plot, wavelength_to_speed
 
 
+TIME_UNIT = 'us'
+WAV_UNIT = 'angstrom'
+
+
 def _default_frequency(frequency: Union[None, sc.Variable], pulses: int) -> sc.Variable:
     if frequency is None:
         if pulses > 1:
@@ -70,11 +74,9 @@ def _make_pulses(
     """
     t_dim = 'time'
     w_dim = 'wavelength'
-    t_u = 's'
-    w_u = 'angstrom'
 
-    p_time = _convert_coord(p_time, unit=t_u, coord=t_dim)
-    p_wav = _convert_coord(p_wav, unit=w_u, coord=w_dim)
+    p_time = _convert_coord(p_time, unit=TIME_UNIT, coord=t_dim)
+    p_wav = _convert_coord(p_wav, unit=WAV_UNIT, coord=w_dim)
     sampling = int(sampling)
 
     tmin = p_time.coords[t_dim].min()
@@ -91,14 +93,14 @@ def _make_pulses(
         start=tmin.value,
         stop=tmax.value,
         num=sampling,
-        unit=tmin.unit,
+        unit=TIME_UNIT,
     )
     x_wav = sc.linspace(
         dim=w_dim,
         start=wmin.value,
         stop=wmax.value,
         num=sampling,
-        unit=wmin.unit,
+        unit=WAV_UNIT,
     )
     p_time = time_interpolator(x_time)
     p_time /= p_time.data.sum()
@@ -148,15 +150,17 @@ def _make_pulses(
     birth_time = sc.array(
         dims=[dim],
         values=np.concatenate(times),
-        unit='s',
-    ).fold(
-        dim=dim, sizes={'pulse': pulses, dim: neutrons}
-    ) + (sc.arange('pulse', pulses) / frequency)
+        unit=TIME_UNIT,
+    ).fold(dim=dim, sizes={'pulse': pulses, dim: neutrons}) + (
+        sc.arange('pulse', pulses) / frequency
+    ).to(
+        unit=TIME_UNIT, copy=False
+    )
 
     wavelength = sc.array(
         dims=[dim],
         values=np.concatenate(wavs),
-        unit='angstrom',
+        unit=WAV_UNIT,
     ).fold(dim=dim, sizes={'pulse': pulses, dim: neutrons})
     speed = wavelength_to_speed(wavelength)
     return {
@@ -254,11 +258,11 @@ class Source:
         source = cls(facility=None, neutrons=len(birth_times), pulses=pulses)
         source.frequency = _default_frequency(frequency, pulses)
 
-        birth_times = (sc.arange('pulse', pulses) / source.frequency) + birth_times.to(
-            unit='s', copy=False
-        )
+        birth_times = (sc.arange('pulse', pulses) / source.frequency).to(
+            unit=TIME_UNIT, copy=False
+        ) + birth_times.to(unit=TIME_UNIT, copy=False)
         wavelengths = sc.broadcast(
-            wavelengths.to(unit='angstrom', copy=False), sizes=birth_times.sizes
+            wavelengths.to(unit=WAV_UNIT, copy=False), sizes=birth_times.sizes
         )
 
         source.data = sc.DataArray(
