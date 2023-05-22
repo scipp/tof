@@ -83,8 +83,9 @@ def test_chopper_results_are_read_only(chopper, model):
     ch = res.choppers['chopper']
 
     # Check that basic properties are accessible
-    assert len(ch.tofs.visible[0]) == 1
-    assert len(ch.tofs.blocked[0]) == 2
+    key = 'pulse:0'
+    assert len(ch.tofs.visible.data[key]) == 1
+    assert len(ch.tofs.blocked.data[key]) == 2
     assert sc.identical(ch.distance, chopper.distance)
     assert sc.identical(ch.phase, chopper.phase)
     # Check that values cannot be overwritten
@@ -106,7 +107,7 @@ def test_detector_results_are_read_only(detector, model):
     det = res.detectors['detector']
 
     # Check that basic properties are accessible
-    assert len(det.tofs.visible[0]) == 1
+    assert len(det.tofs.visible.data['pulse:0']) == 1
     assert sc.identical(det.distance, detector.distance)
     # Check that values cannot be overwritten
     with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
@@ -136,17 +137,3 @@ def test_component_results_data_access(chopper, detector, multi_pulse_source):
 
     assert list(ch.tofs.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
     assert list(det.wavelengths.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
-
-
-def test_component_results_data_slicing(chopper, detector, multi_pulse_source):
-    model = tof.Model(
-        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
-    )
-    res = model.run()
-    ch = res.choppers['chopper']
-
-    tofs = ch.tofs[0]
-    assert 'visible' in tofs.data
-    assert 'blocked' in tofs.data
-    vis = ch.tofs.visible[1]
-    assert sc.identical(vis.data, ch.tofs.visible.data['pulse:1'])

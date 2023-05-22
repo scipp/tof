@@ -28,11 +28,6 @@ class Data:
     data: Union[sc.DataArray, sc.DataGroup]
     dim: str
 
-    def __getitem__(self, ind):
-        if ind < 0:
-            ind += len(self)
-        return self.__class__(data=self.data[f'pulse:{ind}'], dim=self.dim)
-
     @property
     def shape(self) -> Tuple[int]:
         """
@@ -46,12 +41,6 @@ class Data:
         The sizes of the data.
         """
         return self.data.sizes
-
-    def __len__(self) -> int:
-        """
-        The length of the data.
-        """
-        return len(self.data)
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -122,12 +111,6 @@ class ComponentData:
         if self.blocked is not None:
             out['blocked'] = self.blocked.data
         return sc.DataGroup(out)
-
-    def __getitem__(self, ind):
-        return self.__class__(
-            visible=self.visible[ind],
-            blocked=self.blocked[ind] if self.blocked is not None else None,
-        )
 
     def _repr_string_body(self) -> str:
         out = f"visible={_field_to_string(self.visible)}"
