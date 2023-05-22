@@ -35,9 +35,19 @@ class Data:
         return len(self.data)
 
     def __getitem__(self, val: Union[int, slice]):
+        """
+        Get the data for a single pulse or a range of pulses.
+
+        Parameters
+        ----------
+        val:
+            The index or slice of the pulse(s) to get.
+        """
         if isinstance(val, int):
             val = slice(val, val + 1)
-        inds = list(range(len(self))[val])
+        # Convert the slice to a list of indices, which can then be used to create
+        # DataGroup keys in the form 'pulse:0', 'pulse:1', etc.
+        inds = range(len(self))[val]
         return self.__class__(
             data=sc.DataGroup(
                 {f'pulse:{ind}': self.data[f'pulse:{ind}'] for ind in inds}
