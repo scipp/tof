@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import plopp as pp
@@ -25,28 +25,35 @@ class Data:
         The dimension label of the data.
     """
 
-    data: sc.DataArray
+    data: sc.DataGroup
     dim: str
-
-    @property
-    def shape(self) -> Tuple[int]:
-        """
-        The shape of the data.
-        """
-        return self.data.shape
-
-    @property
-    def sizes(self) -> Dict[str, int]:
-        """
-        The sizes of the data.
-        """
-        return self.data.sizes
 
     def __len__(self) -> int:
         """
-        The length of the data.
+        The number of pulses in the data.
         """
         return len(self.data)
+
+    def __getitem__(self, val: Union[int, slice]):
+        """
+        Get the data for a single pulse or a range of pulses.
+
+        Parameters
+        ----------
+        val:
+            The index or slice of the pulse(s) to get.
+        """
+        if isinstance(val, int):
+            val = slice(val, val + 1)
+        # Convert the slice to a list of indices, which can then be used to create
+        # DataGroup keys in the form 'pulse:0', 'pulse:1', etc.
+        inds = range(len(self))[val]
+        return self.__class__(
+            data=sc.DataGroup(
+                {f'pulse:{ind}': self.data[f'pulse:{ind}'] for ind in inds}
+            ),
+            dim=self.dim,
+        )
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -60,11 +67,30 @@ class Data:
         return self.data.hist({self.dim: bins}).plot(**kwargs)
 
     def __repr__(self) -> str:
-        coord = self.data.coords[self.dim]
-        return (
-            f"Data(dim='{self.dim}', events={len(self)}, "
-            f"min={coord.min():c}, max={coord.max():c})"
-        )
+        out = f"Data(dim='{self.dim}')\n"
+        for name, da in self.data.items():
+            out += f"  {name}: events={len(da)}"
+            if len(da) > 0:
+                coord = da.coords[self.dim]
+                out += f", min={coord.min():c}, max={coord.max():c})"
+            out += "\n"
+        return out
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+
+def _field_to_string(field: Data) -> str:
+    if isinstance(field.data, sc.DataArray):
+        return str(len(field))
+    data = field.data
+    out = [str(len(data['pulse:0']))]
+    npulses = len(data)
+    if npulses > 2:
+        out.append('...')
+    if npulses > 1:
+        out.append(str(len(data[f'pulse:{npulses - 1}'])))
+    return '[' + ', '.join(out) + ']'
 
 
 @dataclass(frozen=True)
@@ -89,7 +115,7 @@ class ComponentData:
     """
 
     visible: Data
-    blocked: Optional[Data]
+    blocked: Optional[Data] = None
 
     @property
     def data(self) -> sc.DataGroup:
@@ -102,11 +128,20 @@ class ComponentData:
             out['blocked'] = self.blocked.data
         return sc.DataGroup(out)
 
-    def __repr__(self) -> str:
-        return (
-            f"ComponentData(dim='{self.visible.dim}', visible={len(self.visible)}, "
-            f"blocked={len(self.blocked) if self.blocked is not None else None})"
+    def __getitem__(self, val):
+        return self.__class__(
+            visible=self.visible[val],
+            blocked=self.blocked[val] if self.blocked is not None else None,
         )
+
+    def _repr_string_body(self) -> str:
+        out = f"visible={_field_to_string(self.visible)}"
+        if self.blocked is not None:
+            out += f", blocked={_field_to_string(self.blocked)}"
+        return out
+
+    def __repr__(self) -> str:
+        return f"ComponentData(dim='{self.visible.dim}', {self._repr_string_body()})"
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -122,22 +157,39 @@ class ComponentData:
             return self.visible.plot(bins=bins, **kwargs)
         visible = self.visible.data
         blocked = self.blocked.data
+        if isinstance(visible, sc.DataArray):
+            visible = sc.DataGroup({'onepulse': visible})
+            blocked = sc.DataGroup({'onepulse': blocked})
         dim = self.visible.dim
-        if isinstance(bins, int):
-            bins = sc.linspace(
-                dim=dim,
-                start=min(visible.coords[dim].min(), blocked.coords[dim].min()).value,
-                stop=max(visible.coords[dim].max(), blocked.coords[dim].max()).value,
-                num=bins,
-                unit=visible.coords[dim].unit,
+        to_plot = {}
+        colors = {}
+        edges = bins
+        for i, p in enumerate(visible):
+            if isinstance(bins, int):
+                edges = sc.linspace(
+                    dim=dim,
+                    start=min(
+                        visible[p].coords[dim].min(), blocked[p].coords[dim].min()
+                    ).value,
+                    stop=max(
+                        visible[p].coords[dim].max(), blocked[p].coords[dim].max()
+                    ).value,
+                    num=bins,
+                    unit=visible[p].coords[dim].unit,
+                )
+            vk = f'visible-{p}'
+            bk = f'blocked-{p}'
+            to_plot.update(
+                {vk: visible[p].hist({dim: edges}), bk: blocked[p].hist({dim: edges})}
             )
-        return pp.plot(
-            {
-                'visible': visible.hist({dim: bins}),
-                'blocked': blocked.hist({dim: bins}),
-            },
-            **{**{'color': {'blocked': 'gray'}}, **kwargs},
+            colors.update({vk: f'C{i}', bk: 'gray'})
+        out = pp.plot(
+            to_plot,
+            **{**{'color': colors}, **kwargs},
         )
+        # TODO: remove this once https://github.com/scipp/plopp/issues/206 is done.
+        out.ax.get_legend().remove()
+        return out
 
 
 class Component:
@@ -146,18 +198,6 @@ class Component:
     will have a record of the arrival times and wavelengths of the neutrons that
     passed through it.
     """
-
-    @property
-    def data(self) -> sc.DataGroup:
-        """ """
-        return sc.DataGroup(
-            {
-                'tofs': self.tofs.data,
-                'wavelengths': self.wavelengths.data,
-                'birth_times': self.birth_times.data,
-                'speeds': self.speeds.data,
-            }
-        )
 
     def plot(self, bins: int = 300) -> Plot:
         """

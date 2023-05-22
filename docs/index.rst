@@ -32,7 +32,8 @@ You can install from ``conda`` using
    :hidden:
 
    short-example
-   pulses
+   sources
    components
+   multiple-pulses
    api
    Release notes <https://github.com/scipp/tof/releases>

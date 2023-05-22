@@ -7,5 +7,5 @@ from .chopper import Chopper, ChopperReading
 from .component import Component, ComponentData, Data
 from .detector import Detector, DetectorReading
 from .model import Model
-from .pulse import Pulse, PulseParameters
 from .result import Result
+from .source import Source, SourceParameters

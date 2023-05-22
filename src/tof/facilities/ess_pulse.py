@@ -640,4 +640,5 @@ pulse = FacilityPulse(
             )
         },
     ),
+    frequency=14.0 * sc.Unit('Hz'),
 )

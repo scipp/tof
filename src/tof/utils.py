@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import scipp as sc
 import scipp.constants as const
 
-alpha = const.m_n / const.h
+m_over_h = const.m_n / const.h
 two_pi = sc.constants.pi * (2.0 * sc.units.rad)
 
 
@@ -22,7 +22,7 @@ def speed_to_wavelength(x: sc.Variable, unit: str = 'angstrom') -> sc.Variable:
     unit:
         The unit of the output wavelengths.
     """
-    return (1.0 / (alpha * x)).to(unit=unit)
+    return (1.0 / (m_over_h * x)).to(unit=unit)
 
 
 def wavelength_to_speed(x: sc.Variable, unit: str = 'm/s') -> sc.Variable:
@@ -36,7 +36,7 @@ def wavelength_to_speed(x: sc.Variable, unit: str = 'm/s') -> sc.Variable:
     unit:
         The unit of the output speeds.
     """
-    return (1.0 / (alpha * x)).to(unit=unit)
+    return (1.0 / (m_over_h * x)).to(unit=unit)
 
 
 def speed_to_energy(x: sc.Variable, unit='meV') -> sc.Variable:
@@ -71,6 +71,7 @@ def energy_to_speed(x: sc.Variable, unit='m/s') -> sc.Variable:
 class FacilityPulse:
     time: sc.DataArray
     wavelength: sc.DataArray
+    frequency: sc.Variable
 
 
 @dataclass

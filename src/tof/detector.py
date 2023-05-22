@@ -40,6 +40,7 @@ class DetectorReading(Component):
 
     distance: sc.Variable
     name: str
+    data: sc.DataArray
     tofs: ComponentData
     wavelengths: ComponentData
     birth_times: ComponentData
@@ -48,14 +49,10 @@ class DetectorReading(Component):
     def __repr__(self) -> str:
         out = f"Detector: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
-        for key, dim in {
-            'tofs': 'tof',
-            'wavelengths': 'wavelength',
-            'birth_times': 'time',
-            'speeds': 'speed',
-        }.items():
-            coord = getattr(self, key).visible.data.coords[dim]
-            out += f"  {key}: [{coord.min():c} - {coord.max():c}]\n"
+        out += "\n".join(
+            f"  {key}: {getattr(self, key)}"
+            for key in ('tofs', 'wavelengths', 'birth_times', 'speeds')
+        )
         return out
 
     def __str__(self) -> str:

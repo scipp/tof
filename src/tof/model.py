@@ -8,8 +8,8 @@ import scipp as sc
 
 from .chopper import Chopper
 from .detector import Detector
-from .pulse import Pulse
 from .result import Result
+from .source import Source
 
 ComponentType = Union[Chopper, Detector]
 
@@ -43,7 +43,7 @@ def _input_to_dict(
 class Model:
     """
     A class that represents a neutron instrument.
-    It is defined by a list of choppers, a list of detectors, and a pulse.
+    It is defined by a list of choppers, a list of detectors, and a source.
 
     Parameters
     ----------
@@ -51,13 +51,13 @@ class Model:
         A list of choppers.
     detectors:
         A list of detectors.
-    pulse:
-        A pulse of neutrons.
+    source:
+        A source of neutrons.
     """
 
     def __init__(
         self,
-        pulse: Pulse,
+        source: Source,
         choppers: Optional[Union[Chopper, List[Chopper], Tuple[Chopper, ...]]] = None,
         detectors: Optional[
             Union[Detector, List[Detector], Tuple[Detector, ...]]
@@ -65,7 +65,7 @@ class Model:
     ):
         self.choppers = _input_to_dict(choppers, kind=Chopper)
         self.detectors = _input_to_dict(detectors, kind=Detector)
-        self.pulse = pulse
+        self.source = source
 
     def add(self, component):
         """
@@ -120,44 +120,33 @@ class Model:
     def __delitem__(self, name):
         self.remove(name)
 
-    def run(self, npulses: int = 1):
+    def run(self):
         """
         Run the simulation.
-
-        Parameters
-        ----------
-        npulses:
-            Number of pulses to simulate.
         """
-        # TODO: ray-trace multiple pulses
         components = sorted(
             chain(self.choppers.values(), self.detectors.values()),
             key=lambda c: c.distance.value,
         )
 
-        initial_mask = sc.ones(
-            sizes=self.pulse.birth_times.sizes, unit=None, dtype=bool
-        )
+        birth_time = self.source.data.coords['time']
+        speed = self.source.data.coords['speed']
+        initial_mask = sc.ones(sizes=birth_time.sizes, unit=None, dtype=bool)
 
         result_choppers = {}
         result_detectors = {}
         time_limit = (
-            self.pulse.birth_times + components[-1].distance / self.pulse.speeds
+            birth_time + (components[-1].distance / speed).to(unit=birth_time.unit)
         ).max()
         for c in components:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
-            container[c.name].update(
-                {
-                    'birth_times': self.pulse.birth_times,
-                    'speeds': self.pulse.speeds,
-                    'wavelengths': self.pulse.wavelengths,
-                }
-            )
-            t = self.pulse.birth_times + c.distance / self.pulse.speeds
-            container[c.name]['arrival_times'] = t.to(unit='us')
+            container[c.name]['data'] = self.source.data.copy(deep=False)
+            t = birth_time + (c.distance / speed).to(unit=birth_time.unit, copy=False)
+            container[c.name]['data'].coords['tof'] = t
             if isinstance(c, Detector):
                 container[c.name]['visible_mask'] = initial_mask
+                container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
                 continue
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
             to, tc = c.open_close_times(time_limit=time_limit)
@@ -168,14 +157,16 @@ class Model:
             container[c.name].update(
                 {'visible_mask': combined, 'blocked_mask': ~m & initial_mask}
             )
+            container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
+            container[c.name]['data'].masks['blocked_by_me'] = ~m & initial_mask
             initial_mask = combined
 
         return Result(
-            pulse=self.pulse, choppers=result_choppers, detectors=result_detectors
+            source=self.source, choppers=result_choppers, detectors=result_detectors
         )
 
     def __repr__(self) -> str:
-        out = f"Model:\n  Pulse: {self.pulse}\n  Choppers:\n"
+        out = f"Model:\n  Source: {self.source}\n  Choppers:\n"
         for name, ch in self.choppers.items():
             out += f"    {name}: {ch}\n"
         out += "  Detectors:\n"
