@@ -25,7 +25,7 @@ class Data:
         The dimension label of the data.
     """
 
-    data: Union[sc.DataArray, sc.DataGroup]
+    data: sc.DataGroup
     dim: str
 
     @property
@@ -54,13 +54,14 @@ class Data:
         return self.data.hist({self.dim: bins}).plot(**kwargs)
 
     def __repr__(self) -> str:
-        if isinstance(self.data, sc.DataGroup):
-            return "\n".join(f'{name}: {self[i]}' for (i, name) in enumerate(self.data))
-        coord = self.data.coords[self.dim]
-        return (
-            f"Data(dim='{self.dim}', events={len(self)}, "
-            f"min={coord.min():c}, max={coord.max():c})"
-        )
+        out = f"Data(dim='{self.dim}')\n"
+        for name, da in self.data.items():
+            out += f"  {name}: events={len(da)}"
+            if len(da) > 0:
+                coord = da.coords[self.dim]
+                out += f", min={coord.min():c}, max={coord.max():c})"
+            out += "\n"
+        return out
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -69,11 +70,13 @@ class Data:
 def _field_to_string(field: Data) -> str:
     if isinstance(field.data, sc.DataArray):
         return str(len(field))
-    out = [str(len(field[0]))]
-    if len(field) > 2:
+    data = field.data
+    out = [str(len(data['pulse:0']))]
+    npulses = len(data)
+    if npulses > 2:
         out.append('...')
-    if len(field) > 1:
-        out.append(str(len(field[-1])))
+    if npulses > 1:
+        out.append(str(len(data[f'pulse:{npulses - 1}'])))
     return '[' + ', '.join(out) + ']'
 
 

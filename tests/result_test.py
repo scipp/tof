@@ -62,6 +62,30 @@ def model(chopper, detector, source):
     return tof.Model(source=source, choppers=[chopper], detectors=[detector])
 
 
+def make_ess_model(pulses=1, frequency=None):
+    source = tof.Source(facility='ess', neutrons=100_000, pulses=pulses)
+    detector = tof.Detector(distance=30.0 * meter)
+    if frequency is None:
+        frequency = 14.0 * Hz
+    chopper = tof.Chopper(
+        frequency=frequency,
+        open=sc.array(
+            dims=['cutout'],
+            values=[30.0, 50.0],
+            unit='deg',
+        ),
+        close=sc.array(
+            dims=['cutout'],
+            values=[40.0, 80.0],
+            unit='deg',
+        ),
+        phase=0.0 * deg,
+        distance=8 * meter,
+        name="Chopper1",
+    )
+    return tof.Model(source=source, choppers=[chopper], detectors=[detector])
+
+
 def test_source_results_are_read_only(source, model):
     res = model.run()
 
@@ -137,3 +161,27 @@ def test_component_results_data_access(chopper, detector, multi_pulse_source):
 
     assert list(ch.tofs.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
     assert list(det.wavelengths.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
+
+
+def test_result_plot_does_not_raise():
+    model = make_ess_model()
+    res = model.run()
+    res.plot()
+    res.plot(max_rays=5000)
+    res.plot(max_rays=50, blocked_rays=3000)
+
+
+def test_result_multiple_pulses_plot_does_not_raise():
+    model = make_ess_model(pulses=3)
+    res = model.run()
+    res.plot()
+    res.plot(max_rays=2000)
+    res.plot(max_rays=50, blocked_rays=3000)
+
+
+def test_result_multiple_pulses_plot_with_no_events_in_last_frame_does_not_raise():
+    model = make_ess_model(pulses=3, frequency=10.0 * Hz)
+    res = model.run()
+    res.plot()
+    res.plot(max_rays=2000)
+    res.plot(max_rays=50, blocked_rays=3000)

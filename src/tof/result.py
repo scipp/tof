@@ -62,7 +62,7 @@ def _add_rays(
         coll.set_array(wavelengths.values)
         coll.set_norm(plt.Normalize(wmin.value, wmax.value))
         if cbar:
-            cb = plt.colorbar(coll)
+            cb = plt.colorbar(coll, ax=ax)
             cb.ax.yaxis.set_label_coords(-0.9, 0.5)
             cb.set_label('Wavelength (Å)')
     else:
@@ -310,7 +310,14 @@ class Result:
             )
             self._plot_pulse(pulse_index=i, ax=ax)
 
-        tof_max = furthest_detector.tofs.visible[-1].data.coords['tof'].max().value
+        det_data = furthest_detector.tofs.visible.data
+        if len(det_data) == 1:
+            tof_max = det_data['pulse:0'].coords['tof'].max().value
+        else:
+            tof_max = reduce(
+                lambda a, b: max(a.max(), b.max()),
+                [da.coords['tof'] for da in det_data.values()],
+            ).value
         dx = 0.05 * tof_max
         # Plot choppers
         for ch in self._choppers.values():
@@ -357,15 +364,10 @@ class Result:
             f"{source_sizes[other_dim]} neutrons per pulse.\n  Choppers:\n"
         )
         for name, ch in self._choppers.items():
-            tofs = ch.tofs
             out += f"    {name}: {ch.tofs._repr_string_body()}\n"
         out += "  Detectors:\n"
         for name, det in self._detectors.items():
-            tofs = det.tofs
-            vis = [str(len(tofs.visible[0])), str(len(tofs.visible[-1]))]
-            if source_sizes['pulse'] > 2:
-                vis.insert(1, '...')
-            out += f"    {name}: visible=[{', '.join(vis)}]\n"
+            out += f"    {name}: {det.tofs._repr_string_body()}\n"
         return out
 
     def __str__(self) -> str:
