@@ -329,3 +329,29 @@ def test_bad_input_type_raises():
         _ = tof.Model(source=dummy_source(), choppers=[detector])
     with pytest.raises(TypeError, match='Invalid input type'):
         _ = tof.Model(source=dummy_source(), detectors=[chopper])
+
+
+def test_model_repr_does_not_raise():
+    N = 10_000
+    source = tof.Source(facility='ess', neutrons=N)
+    chopper1 = make_chopper(
+        topen=[5.0 * ms],
+        tclose=[16.0 * ms],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='chopper1',
+    )
+    chopper2 = make_chopper(
+        topen=[9.0 * ms, 15.0 * ms],
+        tclose=[15.0 * ms, 20.0 * ms],
+        f=15.0 * Hz,
+        phase=0.0 * deg,
+        distance=15 * meter,
+        name='chopper2',
+    )
+    detector = tof.Detector(distance=20 * meter, name='detector')
+    model = tof.Model(
+        source=source, choppers=[chopper1, chopper2], detectors=[detector]
+    )
+    assert repr(model) is not None
