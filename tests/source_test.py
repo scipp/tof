@@ -262,3 +262,8 @@ def test_multiple_pulses_from_neutrons_no_frequency_raises():
             wavelengths=wavelengths,
             pulses=3,
         )
+
+
+def test_source_repr_does_not_raise():
+    assert repr(tof.Source(facility='ess', neutrons=100_000)) is not None
+    assert repr(tof.Source(facility='ess', neutrons=100_000, pulses=3)) is not None

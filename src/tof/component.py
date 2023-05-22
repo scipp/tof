@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import plopp as pp
@@ -28,19 +28,22 @@ class Data:
     data: sc.DataGroup
     dim: str
 
-    @property
-    def shape(self) -> Tuple[int]:
+    def __len__(self) -> int:
         """
-        The shape of the data.
+        The number of pulses in the data.
         """
-        return self.data.shape
+        return len(self.data)
 
-    @property
-    def sizes(self) -> Dict[str, int]:
-        """
-        The sizes of the data.
-        """
-        return self.data.sizes
+    def __getitem__(self, val: Union[int, slice]):
+        if isinstance(val, int):
+            val = slice(val, val + 1)
+        inds = list(range(len(self))[val])
+        return self.__class__(
+            data=sc.DataGroup(
+                {f'pulse:{ind}': self.data[f'pulse:{ind}'] for ind in inds}
+            ),
+            dim=self.dim,
+        )
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -114,6 +117,12 @@ class ComponentData:
         if self.blocked is not None:
             out['blocked'] = self.blocked.data
         return sc.DataGroup(out)
+
+    def __getitem__(self, val):
+        return self.__class__(
+            visible=self.visible[val],
+            blocked=self.blocked[val] if self.blocked is not None else None,
+        )
 
     def _repr_string_body(self) -> str:
         out = f"visible={_field_to_string(self.visible)}"

@@ -64,7 +64,7 @@ def model(chopper, detector, source):
 
 def make_ess_model(pulses=1, frequency=None):
     source = tof.Source(facility='ess', neutrons=100_000, pulses=pulses)
-    detector = tof.Detector(distance=30.0 * meter)
+    detector = tof.Detector(distance=30.0 * meter, name='detector')
     if frequency is None:
         frequency = 14.0 * Hz
     chopper = tof.Chopper(
@@ -81,7 +81,7 @@ def make_ess_model(pulses=1, frequency=None):
         ),
         phase=0.0 * deg,
         distance=8 * meter,
-        name="Chopper1",
+        name='chopper',
     )
     return tof.Model(source=source, choppers=[chopper], detectors=[detector])
 
@@ -163,6 +163,67 @@ def test_component_results_data_access(chopper, detector, multi_pulse_source):
     assert list(det.wavelengths.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
 
 
+def test_component_data_slicing(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
+    )
+    res = model.run()
+    ch = res.choppers['chopper']
+
+    tofs = ch.tofs[0]
+    assert 'visible' in tofs.data
+    assert 'blocked' in tofs.data
+    vis = ch.tofs.visible[1]
+    assert sc.identical(vis.data['pulse:1'], ch.tofs.visible.data['pulse:1'])
+
+
+def test_component_results_data_slice_range(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
+    )
+    res = model.run()
+    ch = res.choppers['chopper']
+
+    tofs = ch.tofs[0:2]
+    assert 'visible' in tofs.data
+    assert 'blocked' in tofs.data
+    assert 'pulse:0' in tofs.data['visible']
+    assert 'pulse:1' in tofs.data['visible']
+    assert 'pulse:2' not in tofs.data['visible']
+
+
+def test_component_results_data_slice_negative_index(
+    chopper, detector, multi_pulse_source
+):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
+    )
+    res = model.run()
+    ch = res.choppers['chopper']
+
+    tofs = ch.tofs[0:-1]
+    assert 'visible' in tofs.data
+    assert 'blocked' in tofs.data
+    assert 'pulse:0' in tofs.data['visible']
+    assert 'pulse:1' in tofs.data['visible']
+    assert 'pulse:2' not in tofs.data['visible']
+
+
+def test_component_results_data_slice_step(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
+    )
+    res = model.run()
+    ch = res.choppers['chopper']
+
+    tofs = ch.tofs[::2]
+    assert 'visible' in tofs.data
+    assert 'blocked' in tofs.data
+    assert 'pulse:0' in tofs.data['visible']
+    assert 'pulse:1' not in tofs.data['visible']
+    assert 'pulse:2' in tofs.data['visible']
+
+
 def test_result_plot_does_not_raise():
     model = make_ess_model()
     res = model.run()
@@ -185,3 +246,31 @@ def test_result_multiple_pulses_plot_with_no_events_in_last_frame_does_not_raise
     res.plot()
     res.plot(max_rays=2000)
     res.plot(max_rays=50, blocked_rays=3000)
+
+
+def test_result_repr_does_not_raise():
+    model = make_ess_model()
+    res = model.run()
+    assert repr(res) is not None
+
+
+def test_component_repr_does_not_raise():
+    model = make_ess_model()
+    res = model.run()
+    assert repr(res.choppers['chopper']) is not None
+    assert repr(res.detectors['detector']) is not None
+
+
+def test_componentdata_repr_does_not_raise():
+    model = make_ess_model()
+    res = model.run()
+    assert repr(res.choppers['chopper'].tofs) is not None
+    assert repr(res.detectors['detector'].wavelengths) is not None
+
+
+def test_data_repr_does_not_raise():
+    model = make_ess_model()
+    res = model.run()
+    assert repr(res.choppers['chopper'].tofs.visible) is not None
+    assert repr(res.choppers['chopper'].tofs.blocked) is not None
+    assert repr(res.detectors['detector'].wavelengths.visible) is not None
