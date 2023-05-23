@@ -12,6 +12,12 @@
 
 A simple tool to create time-of-flight chopper cascade diagrams.
 
+**Scope:**
+
+* ``tof`` is designed to be simple and lightweight, it will never replace `McStas <https://www.mcstas.org/>`_
+* it assumes all neutrons travel in a straight line
+* it does not simulate absorption or scattering effects
+
 Installation
 ============
 
