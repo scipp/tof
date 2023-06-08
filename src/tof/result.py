@@ -14,13 +14,13 @@ import scipp as sc
 from matplotlib.collections import LineCollection
 
 from .chopper import Chopper, ChopperReading
-from .component import ComponentData, Data
 from .detector import Detector, DetectorReading
+from .reading import ReadingData, Data
 from .source import Source, SourceParameters
 from .utils import Plot
 
 
-def _make_component_data(component, dim, is_chopper=False):
+def _make_reading_data(component, dim, is_chopper=False):
     visible = {}
     blocked = {} if is_chopper else None
     keep_dim = (set(component.dims) - {'pulse'}).pop()
@@ -31,7 +31,7 @@ def _make_component_data(component, dim, is_chopper=False):
         if is_chopper:
             bsel = da[da.masks['blocked_by_me']]
             blocked[name] = sc.DataArray(data=bsel.data, coords={dim: bsel.coords[dim]})
-    return ComponentData(
+    return ReadingData(
         visible=Data(data=sc.DataGroup(visible), dim=dim),
         blocked=Data(data=sc.DataGroup(blocked), dim=dim) if is_chopper else None,
     )
@@ -116,7 +116,7 @@ class Result:
                 close_times=chopper['close_times'],
                 data=chopper['data'],
                 **{
-                    key: _make_component_data(chopper['data'], dim=dim, is_chopper=True)
+                    key: _make_reading_data(chopper['data'], dim=dim, is_chopper=True)
                     for key, dim in fields.items()
                 },
             )
@@ -130,7 +130,7 @@ class Result:
                 name=det['name'],
                 data=det['data'],
                 **{
-                    key: _make_component_data(det['data'], dim=dim)
+                    key: _make_reading_data(det['data'], dim=dim)
                     for key, dim in fields.items()
                 },
             )

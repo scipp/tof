@@ -15,7 +15,7 @@ from .utils import Plot
 class Data:
     """
     A data object contains the data (visible or blocked) for a component data
-    (time-of-flight or wavelengths).
+    (e.g. time-of-flight or wavelengths).
 
     Parameters
     ----------
@@ -101,24 +101,17 @@ def _field_to_string(field: Data) -> str:
 
 
 @dataclass(frozen=True)
-class ComponentData:
+class ReadingData:
     """
-    A component data object contains the data (time-of-flight or wavelengths) for a
-    component.
+    Contains the data for the visible neutrons. In the case of a :class:`Chopper`,
+    this also contains the data for the blocked neutrons.
 
     Parameters
     ----------
-    data:
-        The data to hold.
-    mask:
-        A mask to apply to the data which will select the neutrons that pass through
-        the component.
-    dim:
-        The dimension label of the data.
-    blocking:
-        A mask to apply to the data which will select the neutrons that are blocked by
-        the component (this only defined in the case of a :class:`Chopper` component
-        since a :class:`Detector` does not block any neutrons).
+    visible:
+        The visible neutrons (those that are not blocked by the component).
+    blocked:
+        The blocked neutrons (those that are blocked by the component).
     """
 
     visible: Data
@@ -148,7 +141,7 @@ class ComponentData:
         return out
 
     def __repr__(self) -> str:
-        return f"ComponentData(dim='{self.visible.dim}', {self._repr_string_body()})"
+        return f"ReadingData(dim='{self.visible.dim}', {self._repr_string_body()})"
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -199,10 +192,10 @@ class ComponentData:
         return out
 
 
-class Component:
+class Reading:
     """
-    A component is placed in the beam path. After the model is run, the component
-    will have a record of the arrival times and wavelengths of the neutrons that
+    Data reading for a component placed in the beam path. After the model is run, the
+    reading will have a record of the arrival times and wavelengths of the neutrons that
     passed through it.
     """
 

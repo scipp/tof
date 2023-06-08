@@ -9,8 +9,8 @@ API Reference
 
    Chopper
    ChopperReading
-   Component
-   ComponentData
+   Reading
+   ReadingData
    Data
    Detector
    DetectorReading
