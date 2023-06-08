@@ -314,14 +314,10 @@ class Result:
 
         det_data = furthest_detector.tofs.visible.data
         if sum([da.sum().value for da in det_data.values()]) > 0:
-            tof_max = reduce(
-                max,
-                [da.coords['tof'].max() for da in det_data.values()],
-            ).value
+            times = [da.coords['tof'].max() for da in det_data.values()]
         else:
-            tof_max = reduce(
-                max, [ch.close_times.max() for ch in self._choppers.values()]
-            ).value
+            times = [ch.close_times.max() for ch in self._choppers.values()]
+        tof_max = reduce(max, times).value
         dx = 0.05 * tof_max
         # Plot choppers
         for ch in self._choppers.values():
@@ -331,11 +327,7 @@ class Result:
             x[0::3] = x0
             x[1::3] = 0.5 * (x0 + x1)
             x[2::3] = x1
-            x = np.concatenate(
-                ([[0]] if x[0] > 0 else [x[0:1]])
-                + [x]
-                + ([[tof_max + dx]] if x[-1] < tof_max else [])
-            )
+            x = np.concatenate(([[0]] if x[0] > 0 else [x[0:1]]) + [x])
             y = np.full_like(x, ch.distance.value)
             y[2::3] = None
             ax.plot(x, y, color="k")
