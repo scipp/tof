@@ -64,7 +64,14 @@ class Data:
         bins:
             The bins to use for histogramming the neutrons.
         """
-        return self.data.hist({self.dim: bins}).plot(**kwargs)
+        return pp.plot(
+            {
+                key: da.hist({self.dim: bins})
+                for key, da in self.data.items()
+                if da.size > 0
+            },
+            **kwargs,
+        )
 
     def __repr__(self) -> str:
         out = f"Data(dim='{self.dim}')\n"

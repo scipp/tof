@@ -77,7 +77,9 @@ class Chopper:
         if unit is None:
             unit = time_limit.unit
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
-        phases = sc.arange(uuid.uuid4().hex, nrot) * two_pi + self.phase.to(unit='rad')
+        phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
+            unit='rad'
+        )
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
         open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
