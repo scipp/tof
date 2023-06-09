@@ -77,6 +77,8 @@ class Chopper:
         if unit is None:
             unit = time_limit.unit
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
+        # Start at -1 to catch early openings in case the phase or opening angles are
+        # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
             unit='rad'
         )
