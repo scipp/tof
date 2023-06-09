@@ -15,7 +15,7 @@ from matplotlib.collections import LineCollection
 
 from .chopper import Chopper, ChopperReading
 from .detector import Detector, DetectorReading
-from .reading import Data, ReadingData
+from .reading import ReadingData, ReadingField
 from .source import Source, SourceParameters
 from .utils import Plot
 
@@ -31,9 +31,11 @@ def _make_reading_data(component, dim, is_chopper=False):
         if is_chopper:
             bsel = da[da.masks['blocked_by_me']]
             blocked[name] = sc.DataArray(data=bsel.data, coords={dim: bsel.coords[dim]})
-    return ReadingData(
-        visible=Data(data=sc.DataGroup(visible), dim=dim),
-        blocked=Data(data=sc.DataGroup(blocked), dim=dim) if is_chopper else None,
+    return ReadingField(
+        visible=ReadingData(data=sc.DataGroup(visible), dim=dim),
+        blocked=ReadingData(data=sc.DataGroup(blocked), dim=dim)
+        if is_chopper
+        else None,
     )
 
 

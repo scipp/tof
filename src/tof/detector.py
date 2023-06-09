@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import scipp as sc
 
-from .reading import Reading, ReadingData
+from .reading import ComponentReading, ReadingField
 
 
 class Detector:
@@ -33,7 +33,7 @@ class Detector:
 
 
 @dataclass(frozen=True)
-class DetectorReading(Reading):
+class DetectorReading(ComponentReading):
     """
     Read-only container for the neutrons that reach the detector.
     """
@@ -41,10 +41,10 @@ class DetectorReading(Reading):
     distance: sc.Variable
     name: str
     data: sc.DataArray
-    tofs: ReadingData
-    wavelengths: ReadingData
-    birth_times: ReadingData
-    speeds: ReadingData
+    tofs: ReadingField
+    wavelengths: ReadingField
+    birth_times: ReadingField
+    speeds: ReadingField
 
     def __repr__(self) -> str:
         out = f"DetectorReading: '{self.name}'\n"

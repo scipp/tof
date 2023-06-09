@@ -6,6 +6,6 @@
 from .chopper import Chopper, ChopperReading
 from .detector import Detector, DetectorReading
 from .model import Model
-from .reading import Data, Reading, ReadingData
+from .reading import ComponentReading, ReadingData, ReadingField
 from .result import Result
 from .source import Source, SourceParameters

@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import scipp as sc
 
-from .reading import Reading, ReadingData
+from .reading import ComponentReading, ReadingField
 from .utils import two_pi
 
 
@@ -108,7 +108,7 @@ class Chopper:
 
 
 @dataclass(frozen=True)
-class ChopperReading(Reading):
+class ChopperReading(ComponentReading):
     """
     Read-only container for the neutrons that reach the chopper.
     """
@@ -122,10 +122,10 @@ class ChopperReading(Reading):
     open_times: sc.Variable
     close_times: sc.Variable
     data: sc.DataArray
-    tofs: ReadingData
-    wavelengths: ReadingData
-    birth_times: ReadingData
-    speeds: ReadingData
+    tofs: ReadingField
+    wavelengths: ReadingField
+    birth_times: ReadingField
+    speeds: ReadingField
 
     def __repr__(self) -> str:
         out = f"ChopperReading: '{self.name}'\n"

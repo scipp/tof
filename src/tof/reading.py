@@ -12,7 +12,7 @@ from .utils import Plot
 
 
 @dataclass(frozen=True)
-class Data:
+class ReadingData:
     """
     A data object contains the data (visible or blocked) for a component data
     (e.g. time-of-flight or wavelengths).
@@ -74,7 +74,7 @@ class Data:
         )
 
     def __repr__(self) -> str:
-        out = f"Data(dim='{self.dim}')\n"
+        out = f"ReadingData(dim='{self.dim}')\n"
         for name, da in self.data.items():
             out += f"  {name}: events={len(da)}"
             if len(da) > 0:
@@ -87,7 +87,7 @@ class Data:
         return self.__repr__()
 
 
-def _field_to_string(field: Data) -> str:
+def _field_to_string(field: ReadingData) -> str:
     if isinstance(field.data, sc.DataArray):
         return str(len(field))
     data = field.data
@@ -101,10 +101,12 @@ def _field_to_string(field: Data) -> str:
 
 
 @dataclass(frozen=True)
-class ReadingData:
+class ReadingField:
     """
-    Contains the data for the visible neutrons. In the case of a :class:`Chopper`,
-    this also contains the data for the blocked neutrons.
+    Contains the data for the visible neutrons of a given field.
+    Possible fields are ``tofs``, ``wavelengths``, ``birth_times``, and ``speeds``.
+    In the case of a :class:`Chopper`, this also contains the data for the blocked
+    neutrons.
 
     Parameters
     ----------
@@ -114,8 +116,8 @@ class ReadingData:
         The blocked neutrons (those that are blocked by the component).
     """
 
-    visible: Data
-    blocked: Optional[Data] = None
+    visible: ReadingData
+    blocked: Optional[ReadingData] = None
 
     @property
     def data(self) -> sc.DataGroup:
@@ -192,11 +194,10 @@ class ReadingData:
         return out
 
 
-class Reading:
+class ComponentReading:
     """
-    Data reading for a component placed in the beam path. After the model is run, the
-    reading will have a record of the arrival times and wavelengths of the neutrons that
-    passed through it.
+    Data reading for a component placed in the beam path. The reading will have a
+    record of the arrival times and wavelengths of the neutrons that passed through it.
     """
 
     def plot(self, bins: int = 300) -> Plot:
