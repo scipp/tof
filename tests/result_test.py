@@ -248,6 +248,13 @@ def test_result_multiple_pulses_plot_with_no_events_in_last_frame_does_not_raise
     res.plot(max_rays=50, blocked_rays=3000)
 
 
+def test_result_all_neutrons_blocked_does_not_raise():
+    model = make_ess_model(frequency=1.0 * Hz)
+    res = model.run()
+    res.plot()
+    res.plot(blocked_rays=500)
+
+
 def test_result_repr_does_not_raise():
     model = make_ess_model()
     res = model.run()
