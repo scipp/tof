@@ -128,7 +128,7 @@ class ChopperReading(Reading):
     speeds: ReadingData
 
     def __repr__(self) -> str:
-        out = f"Chopper: '{self.name}'\n"
+        out = f"ChopperReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
         out += f"  frequency: {self.frequency:c}\n"
         out += f"  phase: {self.phase:c}\n"

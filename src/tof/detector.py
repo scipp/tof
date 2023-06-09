@@ -47,7 +47,7 @@ class DetectorReading(Reading):
     speeds: ReadingData
 
     def __repr__(self) -> str:
-        out = f"Detector: '{self.name}'\n"
+        out = f"DetectorReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
         out += "\n".join(
             f"  {key}: {getattr(self, key)}"
