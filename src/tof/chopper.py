@@ -57,7 +57,7 @@ class Chopper:
         """
         The angular velocity of the chopper.
         """
-        return two_pi * self.frequency
+        return two_pi * abs(self.frequency)
 
     def open_close_times(
         self, time_limit: sc.Variable, unit: Optional[str] = None
@@ -76,7 +76,9 @@ class Chopper:
         """
         if unit is None:
             unit = time_limit.unit
-        nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
+        nrot = max(
+            int(sc.ceil((time_limit * abs(self.frequency)).to(unit='')).value), 1
+        )
         # Start at -1 to catch early openings in case the phase or opening angles are
         # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
@@ -84,11 +86,32 @@ class Chopper:
         )
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
-        open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
-        close_times = (phases + self.close.to(unit='rad', copy=False)) / self.omega
+        # TODO: Do the phases need to be applied in the direction of rotation?
+        open_times = (phases + self.open.to(unit='rad', copy=False)).flatten(
+            to=self.open.dim
+        )
+        close_times = (phases + self.close.to(unit='rad', copy=False)).flatten(
+            to=self.close.dim
+        )
+        # If the chopper is counter-rotating (clockwise), we mirror the openings
+        if self.frequency.value < 0:
+            open_times, close_times = (
+                sc.array(
+                    dims=close_times.dims,
+                    values=(two_pi - close_times).values[::-1],
+                    unit=close_times.unit,
+                ),
+                sc.array(
+                    dims=open_times.dims,
+                    values=(two_pi - open_times).values[::-1],
+                    unit=open_times.unit,
+                ),
+            )
+        open_times /= self.omega
+        close_times /= self.omega
         return (
-            open_times.flatten(to=self.open.dim).to(unit=unit, copy=False),
-            close_times.flatten(to=self.close.dim).to(unit=unit, copy=False),
+            open_times.to(unit=unit, copy=False),
+            close_times.to(unit=unit, copy=False),
         )
 
     def __repr__(self) -> str:

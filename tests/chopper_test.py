@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import pytest
 import scipp as sc
 
 import tof
@@ -135,3 +136,40 @@ def test_phase_int():
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
     assert sc.allclose(topen1, topen2)
     assert sc.allclose(tclose1, tclose2)
+
+
+def test_open_close_times_counter_rotation():
+    f = 10.0 * Hz
+    d = 10.0 * meter
+    ph = 0.0 * deg
+    chopper1 = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[10.0, 90.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[20.0, 130.0], unit='deg'),
+        phase=ph,
+        distance=d,
+    )
+    chopper2 = tof.Chopper(
+        frequency=-f,
+        open=sc.array(
+            dims=['cutout'], values=[360.0 - 130.0, 360.0 - 20.0], unit='deg'
+        ),
+        close=sc.array(
+            dims=['cutout'], values=[360.0 - 90.0, 360.0 - 10.0], unit='deg'
+        ),
+        phase=ph,
+        distance=d,
+    )
+
+    topen1, tclose1 = chopper1.open_close_times(0.2 * sec)
+    topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
+    # Note that the first chopper will have one more rotation before t=0, so we slice
+    # out the first two open/close times
+    assert sc.allclose(topen1[2:], topen2)
+    assert sc.allclose(tclose1[2:], tclose2)
+
+
+# TODO: need a test that takes the phase into account
+@pytest.mark.skip(reason="Not currently known which direction phase should be added")
+def test_open_close_times_counter_rotation_with_phase():
+    pass
