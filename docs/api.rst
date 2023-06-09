@@ -9,12 +9,12 @@ API Reference
 
    Chopper
    ChopperReading
-   Component
-   ComponentData
-   Data
+   ComponentReading
    Detector
    DetectorReading
    Model
+   ReadingData
+   ReadingField
    Result
    Source
    SourceParameters

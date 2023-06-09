@@ -4,8 +4,8 @@
 # flake8: noqa F401
 
 from .chopper import Chopper, ChopperReading
-from .component import Component, ComponentData, Data
 from .detector import Detector, DetectorReading
 from .model import Model
+from .reading import ComponentReading, ReadingData, ReadingField
 from .result import Result
 from .source import Source, SourceParameters

@@ -12,10 +12,10 @@ from .utils import Plot
 
 
 @dataclass(frozen=True)
-class Data:
+class ReadingData:
     """
     A data object contains the data (visible or blocked) for a component data
-    (time-of-flight or wavelengths).
+    (e.g. time-of-flight or wavelengths).
 
     Parameters
     ----------
@@ -64,10 +64,17 @@ class Data:
         bins:
             The bins to use for histogramming the neutrons.
         """
-        return self.data.hist({self.dim: bins}).plot(**kwargs)
+        return pp.plot(
+            {
+                key: da.hist({self.dim: bins})
+                for key, da in self.data.items()
+                if da.size > 0
+            },
+            **kwargs,
+        )
 
     def __repr__(self) -> str:
-        out = f"Data(dim='{self.dim}')\n"
+        out = f"ReadingData(dim='{self.dim}')\n"
         for name, da in self.data.items():
             out += f"  {name}: events={len(da)}"
             if len(da) > 0:
@@ -80,7 +87,7 @@ class Data:
         return self.__repr__()
 
 
-def _field_to_string(field: Data) -> str:
+def _field_to_string(field: ReadingData) -> str:
     if isinstance(field.data, sc.DataArray):
         return str(len(field))
     data = field.data
@@ -94,28 +101,23 @@ def _field_to_string(field: Data) -> str:
 
 
 @dataclass(frozen=True)
-class ComponentData:
+class ReadingField:
     """
-    A component data object contains the data (time-of-flight or wavelengths) for a
-    component.
+    Contains the data for the visible neutrons of a given field.
+    Possible fields are ``tofs``, ``wavelengths``, ``birth_times``, and ``speeds``.
+    In the case of a :class:`Chopper`, this also contains the data for the blocked
+    neutrons.
 
     Parameters
     ----------
-    data:
-        The data to hold.
-    mask:
-        A mask to apply to the data which will select the neutrons that pass through
-        the component.
-    dim:
-        The dimension label of the data.
-    blocking:
-        A mask to apply to the data which will select the neutrons that are blocked by
-        the component (this only defined in the case of a :class:`Chopper` component
-        since a :class:`Detector` does not block any neutrons).
+    visible:
+        The visible neutrons (those that are not blocked by the component).
+    blocked:
+        The blocked neutrons (those that are blocked by the component).
     """
 
-    visible: Data
-    blocked: Optional[Data] = None
+    visible: ReadingData
+    blocked: Optional[ReadingData] = None
 
     @property
     def data(self) -> sc.DataGroup:
@@ -141,7 +143,7 @@ class ComponentData:
         return out
 
     def __repr__(self) -> str:
-        return f"ComponentData(dim='{self.visible.dim}', {self._repr_string_body()})"
+        return f"ReadingData(dim='{self.visible.dim}', {self._repr_string_body()})"
 
     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
         """
@@ -192,11 +194,10 @@ class ComponentData:
         return out
 
 
-class Component:
+class ComponentReading:
     """
-    A component is placed in the beam path. After the model is run, the component
-    will have a record of the arrival times and wavelengths of the neutrons that
-    passed through it.
+    Data reading for a component placed in the beam path. The reading will have a
+    record of the arrival times and wavelengths of the neutrons that passed through it.
     """
 
     def plot(self, bins: int = 300) -> Plot:

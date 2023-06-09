@@ -36,8 +36,14 @@ def test_open_close_times_one_rotation():
     )
 
     topen, tclose = chopper.open_close_times(0 * sec)
-    assert sc.identical(topen[0], (10.0 * deg).to(unit='rad') / (two_pi * f))
-    assert sc.identical(tclose[0], (20.0 * deg).to(unit='rad') / (two_pi * f))
+    # Note that choppers perform one rotation before t=0 to make sure
+    # no openings are missed at early times.
+    assert sc.identical(topen[0], ((10.0 * deg).to(unit='rad') - two_pi) / (two_pi * f))
+    assert sc.identical(
+        tclose[0], ((20.0 * deg).to(unit='rad') - two_pi) / (two_pi * f)
+    )
+    assert sc.identical(topen[1], (10.0 * deg).to(unit='rad') / (two_pi * f))
+    assert sc.identical(tclose[1], (20.0 * deg).to(unit='rad') / (two_pi * f))
 
 
 def test_open_close_times_three_rotations():
@@ -55,12 +61,17 @@ def test_open_close_times_three_rotations():
     close0 = (20.0 * deg).to(unit='rad')
     assert sc.identical(
         topen,
-        sc.concat([open0, open0 + two_pi, open0 + 2 * two_pi], dim='cutout')
+        sc.concat(
+            [open0 - two_pi, open0, open0 + two_pi, open0 + 2 * two_pi], dim='cutout'
+        )
         / (two_pi * f),
     )
     assert sc.identical(
         tclose,
-        sc.concat([close0, close0 + two_pi, close0 + 2 * two_pi], dim='cutout')
+        sc.concat(
+            [close0 - two_pi, close0, close0 + two_pi, close0 + 2 * two_pi],
+            dim='cutout',
+        )
         / (two_pi * f),
     )
 
@@ -75,8 +86,8 @@ def test_open_close_angles_scalars_converted_to_arrays():
         distance=5.0 * meter,
     )
     topen, tclose = chopper.open_close_times(0.0 * sec)
-    assert sc.identical(topen[0], (10.0 * deg).to(unit='rad') / (two_pi * f))
-    assert sc.identical(tclose[0], (20.0 * deg).to(unit='rad') / (two_pi * f))
+    assert sc.identical(topen[1], (10.0 * deg).to(unit='rad') / (two_pi * f))
+    assert sc.identical(tclose[1], (20.0 * deg).to(unit='rad') / (two_pi * f))
 
 
 def test_phase():
@@ -97,8 +108,8 @@ def test_phase():
         distance=10.0 * meter,
     )
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
-    assert sc.identical(topen2, topen1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
-    assert sc.identical(tclose2, tclose1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
+    assert sc.allclose(topen2, topen1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
+    assert sc.allclose(tclose2, tclose1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
 
 
 def test_phase_int():
@@ -122,5 +133,5 @@ def test_phase_int():
     )
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
-    assert sc.identical(topen1, topen2)
-    assert sc.identical(tclose1, tclose2)
+    assert sc.allclose(topen1, topen2)
+    assert sc.allclose(tclose1, tclose2)

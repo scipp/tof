@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import scipp as sc
 
-from .component import Component, ComponentData
+from .reading import ComponentReading, ReadingField
 from .utils import two_pi
 
 
@@ -77,7 +77,11 @@ class Chopper:
         if unit is None:
             unit = time_limit.unit
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
-        phases = sc.arange(uuid.uuid4().hex, nrot) * two_pi + self.phase.to(unit='rad')
+        # Start at -1 to catch early openings in case the phase or opening angles are
+        # large
+        phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
+            unit='rad'
+        )
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
         open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
@@ -106,7 +110,7 @@ class Chopper:
 
 
 @dataclass(frozen=True)
-class ChopperReading(Component):
+class ChopperReading(ComponentReading):
     """
     Read-only container for the neutrons that reach the chopper.
     """
@@ -120,13 +124,13 @@ class ChopperReading(Component):
     open_times: sc.Variable
     close_times: sc.Variable
     data: sc.DataArray
-    tofs: ComponentData
-    wavelengths: ComponentData
-    birth_times: ComponentData
-    speeds: ComponentData
+    tofs: ReadingField
+    wavelengths: ReadingField
+    birth_times: ReadingField
+    speeds: ReadingField
 
     def __repr__(self) -> str:
-        out = f"Chopper: '{self.name}'\n"
+        out = f"ChopperReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
         out += f"  frequency: {self.frequency:c}\n"
         out += f"  phase: {self.phase:c}\n"
