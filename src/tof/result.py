@@ -315,10 +315,10 @@ class Result:
             self._plot_pulse(pulse_index=i, ax=ax)
 
         det_data = furthest_detector.tofs.visible.data
-        if sum([da.sum().value for da in det_data.values()]) > 0:
-            times = [da.coords['tof'].max() for da in det_data.values()]
+        if sum(da.sum().value for da in det_data.values()) > 0:
+            times = (da.coords['tof'].max() for da in det_data.values())
         else:
-            times = [ch.close_times.max() for ch in self._choppers.values()]
+            times = (ch.close_times.max() for ch in self._choppers.values())
         tof_max = reduce(max, times).value
         dx = 0.05 * tof_max
         # Plot choppers
