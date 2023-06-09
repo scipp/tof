@@ -15,7 +15,7 @@ from matplotlib.collections import LineCollection
 
 from .chopper import Chopper, ChopperReading
 from .detector import Detector, DetectorReading
-from .reading import ReadingData, Data
+from .reading import Data, ReadingData
 from .source import Source, SourceParameters
 from .utils import Plot
 
