@@ -18,15 +18,23 @@ class Chopper:
     Parameters
     ----------
     frequency:
-        The frequency of the chopper.
+        The frequency of the chopper. Must be positive.
     open:
-        The opening angles of the chopper cutouts.
+        The opening angles of the chopper cutouts. Note that the order of the values
+        listed here defines the order in which the windows will pass in front of the
+        beam. If your chopper is counter-rotating, you have to list the last window
+        first.
     close:
-        The closing angles of the chopper cutouts.
+        The closing angles of the chopper cutouts. Note that the order of the values
+        listed here defines the order in which the windows will pass in front of the
+        beam. If your chopper is counter-rotating, you have to list the last window
+        first.
     distance:
         The distance from the source to the chopper.
     phase:
-        The phase of the chopper.
+        The phase of the chopper. In addition to the normal phase of the chopper, this
+        can be used to account for the fact that the chopper may be below, above, or
+        to the side of the beam.
     name:
         The name of the chopper.
     """
@@ -40,6 +48,8 @@ class Chopper:
         phase: sc.Variable,
         name: str = "",
     ):
+        if frequency < (0.0 * frequency.unit):
+            raise ValueError(f"Chopper frequency must be positive, got {frequency:c}")
         self.frequency = frequency.to(dtype=float, copy=False)
         self.open = (open if open.dims else open.flatten(to='cutout')).to(
             dtype=float, copy=False

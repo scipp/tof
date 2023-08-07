@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import pytest
 import scipp as sc
 
 import tof
@@ -135,3 +136,14 @@ def test_phase_int():
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
     assert sc.allclose(topen1, topen2)
     assert sc.allclose(tclose1, tclose2)
+
+
+def test_frequency_must_be_positive():
+    with pytest.raises(ValueError, match="Chopper frequency must be positive"):
+        tof.Chopper(
+            frequency=-1.0 * Hz,
+            open=0.0 * deg,
+            close=10.0 * deg,
+            phase=0.0 * deg,
+            distance=5.0 * meter,
+        )
