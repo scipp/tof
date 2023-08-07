@@ -329,7 +329,11 @@ class Result:
             x[0::3] = x0
             x[1::3] = 0.5 * (x0 + x1)
             x[2::3] = x1
-            x = np.concatenate(([[0]] if x[0] > 0 else [x[0:1]]) + [x])
+            x = np.concatenate(
+                ([[0]] if x[0] > 0 else [x[0:1]])
+                + [x]
+                + ([[tof_max + dx]] if x[-1] < tof_max else [])
+            )
             y = np.full_like(x, ch.distance.value)
             y[2::3] = None
             ax.plot(x, y, color="k")
