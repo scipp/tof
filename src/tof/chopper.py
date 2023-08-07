@@ -3,7 +3,7 @@
 
 import uuid
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 import scipp as sc
 
@@ -46,6 +46,7 @@ class Chopper:
         close: sc.Variable,
         distance: sc.Variable,
         phase: sc.Variable,
+        direction: Literal['clockwise', 'anticlockwise'] = 'clockwise',
         name: str = "",
     ):
         if frequency < (0.0 * frequency.unit):
@@ -57,6 +58,7 @@ class Chopper:
         self.close = (close if close.dims else close.flatten(to='cutout')).to(
             dtype=float, copy=False
         )
+        self.direction = direction
         self.distance = distance.to(dtype=float, copy=False)
         self.phase = phase.to(dtype=float, copy=False)
         self.name = name
@@ -91,14 +93,35 @@ class Chopper:
         # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
             unit='rad'
-        )
+        ) * (int(self.direction == 'clockwise') * 2 - 1)
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
-        open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
-        close_times = (phases + self.close.to(unit='rad', copy=False)) / self.omega
+        open_times = (phases + self.open.to(unit='rad', copy=False)).flatten(
+            to=self.open.dim
+        )
+        close_times = (phases + self.close.to(unit='rad', copy=False)).flatten(
+            to=self.close.dim
+        )
+        # If the chopper is rotating anti-clockwise, we mirror the openings because the
+        # first cutout will be the last to open.
+        if self.direction != 'clockwise':
+            open_times, close_times = (
+                sc.array(
+                    dims=close_times.dims,
+                    values=(two_pi - close_times).values[::-1],
+                    unit=close_times.unit,
+                ),
+                sc.array(
+                    dims=open_times.dims,
+                    values=(two_pi - open_times).values[::-1],
+                    unit=open_times.unit,
+                ),
+            )
+        open_times /= self.omega
+        close_times /= self.omega
         return (
-            open_times.flatten(to=self.open.dim).to(unit=unit, copy=False),
-            close_times.flatten(to=self.close.dim).to(unit=unit, copy=False),
+            open_times.to(unit=unit, copy=False),
+            close_times.to(unit=unit, copy=False),
         )
 
     def __repr__(self) -> str:
