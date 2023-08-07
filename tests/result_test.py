@@ -23,7 +23,7 @@ def chopper():
     return make_chopper(
         topen=[topen],
         tclose=[tclose],
-        f=10.0 * Hz,
+        f=-10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name='chopper',

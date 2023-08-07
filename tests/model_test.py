@@ -27,7 +27,7 @@ def test_one_chopper_one_opening():
     chopper = make_chopper(
         topen=[topen],
         tclose=[tclose],
-        f=10.0 * Hz,
+        f=-10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name='chopper',
@@ -78,7 +78,7 @@ def test_two_choppers_one_opening():
     chopper1 = make_chopper(
         topen=[topen],
         tclose=[tclose],
-        f=10.0 * Hz,
+        f=-10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name='chopper1',
@@ -88,7 +88,7 @@ def test_two_choppers_one_opening():
     chopper2 = make_chopper(
         topen=[15.0 * ms],
         tclose=[20.0 * ms],
-        f=15.0 * Hz,
+        f=-15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
         name='chopper2',
@@ -152,7 +152,7 @@ def test_two_choppers_one_and_two_openings():
     chopper1 = make_chopper(
         topen=[topen],
         tclose=[tclose],
-        f=10.0 * Hz,
+        f=-10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name='chopper1',
@@ -161,7 +161,7 @@ def test_two_choppers_one_and_two_openings():
     chopper2 = make_chopper(
         topen=[9.0 * ms, 15.0 * ms],
         tclose=[12.0 * ms, 20.0 * ms],
-        f=15.0 * Hz,
+        f=-15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
         name='chopper2',
@@ -209,7 +209,7 @@ def test_neutron_conservation():
     chopper1 = make_chopper(
         topen=[5.0 * ms],
         tclose=[16.0 * ms],
-        f=10.0 * Hz,
+        f=-10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name='chopper1',
@@ -217,7 +217,7 @@ def test_neutron_conservation():
     chopper2 = make_chopper(
         topen=[9.0 * ms, 15.0 * ms],
         tclose=[15.0 * ms, 20.0 * ms],
-        f=15.0 * Hz,
+        f=-15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
         name='chopper2',
@@ -337,7 +337,7 @@ def test_model_repr_does_not_raise():
     chopper1 = make_chopper(
         topen=[5.0 * ms],
         tclose=[16.0 * ms],
-        f=10.0 * Hz,
+        f=-10.0 * Hz,
         phase=0.0 * deg,
         distance=10 * meter,
         name='chopper1',
@@ -345,7 +345,7 @@ def test_model_repr_does_not_raise():
     chopper2 = make_chopper(
         topen=[9.0 * ms, 15.0 * ms],
         tclose=[15.0 * ms, 20.0 * ms],
-        f=15.0 * Hz,
+        f=-15.0 * Hz,
         phase=0.0 * deg,
         distance=15 * meter,
         name='chopper2',

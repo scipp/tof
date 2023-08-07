@@ -26,10 +26,22 @@ def test_angular_speed():
     assert chopper.omega == two_pi * f
 
 
+def test_angular_speed_negative():
+    f = -8.0 * Hz
+    chopper = tof.Chopper(
+        frequency=f,
+        open=0.0 * deg,
+        close=10.0 * deg,
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+    )
+    assert chopper.omega == two_pi * f
+
+
 def test_open_close_times_one_rotation():
     f = 10.0 * Hz
     chopper = tof.Chopper(
-        frequency=f,
+        frequency=-f,  # negative frequency for clockwise rotation
         open=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
@@ -50,7 +62,7 @@ def test_open_close_times_one_rotation():
 def test_open_close_times_three_rotations():
     f = 10.0 * Hz
     chopper = tof.Chopper(
-        frequency=f,
+        frequency=-f,  # negative frequency for clockwise rotation
         open=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
@@ -80,7 +92,7 @@ def test_open_close_times_three_rotations():
 def test_open_close_angles_scalars_converted_to_arrays():
     f = 10.0 * Hz
     chopper = tof.Chopper(
-        frequency=f,
+        frequency=-f,  # negative frequency for clockwise rotation
         open=10.0 * deg,
         close=20.0 * deg,
         phase=0.0 * deg,
@@ -94,7 +106,7 @@ def test_open_close_angles_scalars_converted_to_arrays():
 def test_phase():
     f = 10.0 * Hz
     chopper1 = tof.Chopper(
-        frequency=f,
+        frequency=-f,  # negative frequency for clockwise rotation
         open=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
@@ -102,15 +114,19 @@ def test_phase():
     )
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     chopper2 = tof.Chopper(
-        frequency=f,
+        frequency=-f,  # negative frequency for clockwise rotation
         open=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=30.0 * deg,
         distance=10.0 * meter,
     )
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
-    assert sc.allclose(topen2, topen1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
-    assert sc.allclose(tclose2, tclose1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
+    assert sc.allclose(
+        topen2, topen1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
+    )
+    assert sc.allclose(
+        tclose2, tclose1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
+    )
 
 
 def test_phase_int():
@@ -119,14 +135,14 @@ def test_phase_int():
     cl = sc.array(dims=['cutout'], values=[20.0], unit='deg')
     d = 10.0 * meter
     chopper1 = tof.Chopper(
-        frequency=f,
+        frequency=-f,  # negative frequency for clockwise rotation
         open=op,
         close=cl,
         phase=30.0 * deg,
         distance=d,
     )
     chopper2 = tof.Chopper(
-        frequency=f,
+        frequency=-f,  # negative frequency for clockwise rotation
         open=op,
         close=cl,
         phase=30 * deg,
@@ -143,14 +159,14 @@ def test_open_close_times_counter_rotation():
     d = 10.0 * meter
     ph = 0.0 * deg
     chopper1 = tof.Chopper(
-        frequency=f,
+        frequency=-f,
         open=sc.array(dims=['cutout'], values=[10.0, 90.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[20.0, 130.0], unit='deg'),
         phase=ph,
         distance=d,
     )
     chopper2 = tof.Chopper(
-        frequency=-f,
+        frequency=f,
         open=sc.array(
             dims=['cutout'], values=[360.0 - 130.0, 360.0 - 20.0], unit='deg'
         ),
@@ -169,7 +185,27 @@ def test_open_close_times_counter_rotation():
     assert sc.allclose(tclose1[2:], tclose2)
 
 
-# TODO: need a test that takes the phase into account
-@pytest.mark.skip(reason="Not currently known which direction phase should be added")
 def test_open_close_times_counter_rotation_with_phase():
-    pass
+    f = 10.0 * Hz
+    chopper1 = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[80.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[90.0], unit='deg'),
+        phase=0.0 * deg,
+        distance=10.0 * meter,
+    )
+    topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
+    chopper2 = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[80.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[90.0], unit='deg'),
+        phase=30.0 * deg,
+        distance=10.0 * meter,
+    )
+    topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
+    assert sc.allclose(
+        topen2, topen1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
+    )
+    assert sc.allclose(
+        tclose2, tclose1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
+    )

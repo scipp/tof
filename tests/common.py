@@ -13,8 +13,8 @@ two_pi = sc.constants.pi * (2.0 * sc.units.rad)
 
 
 def make_chopper(topen, tclose, f, phase, distance, name):
-    aopen = two_pi * sc.concat(topen, dim='cutout').to(unit='s') * f
-    aclose = two_pi * sc.concat(tclose, dim='cutout').to(unit='s') * f
+    aopen = two_pi * sc.concat(topen, dim='cutout').to(unit='s') * (-f)
+    aclose = two_pi * sc.concat(tclose, dim='cutout').to(unit='s') * (-f)
     return tof.Chopper(
         frequency=f,
         open=aopen,

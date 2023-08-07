@@ -5,6 +5,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+import numpy as np
 import scipp as sc
 
 from .reading import ComponentReading, ReadingField
@@ -18,7 +19,8 @@ class Chopper:
     Parameters
     ----------
     frequency:
-        The frequency of the chopper.
+        The frequency of the chopper. Positive values indicate anti-clockwise rotation,
+        negative values indicate clockwise rotation.
     open:
         The opening angles of the chopper cutouts.
     close:
@@ -26,7 +28,10 @@ class Chopper:
     distance:
         The distance from the source to the chopper.
     phase:
-        The phase of the chopper.
+        The phase of the chopper. Note that the phase is applied opposite to the
+        direction of rotation. For example, if the chopper rotates clockwise, a
+        phase of 10 degrees will shift all the openings by 10 degrees in the
+        anti-clockwise direction.
     name:
         The name of the chopper.
     """
@@ -57,7 +62,7 @@ class Chopper:
         """
         The angular velocity of the chopper.
         """
-        return two_pi * abs(self.frequency)
+        return two_pi * self.frequency
 
     def open_close_times(
         self, time_limit: sc.Variable, unit: Optional[str] = None
@@ -83,18 +88,18 @@ class Chopper:
         # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
             unit='rad'
-        )
+        ) * (np.sign(self.frequency.value) * -1.0)
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
-        # TODO: Do the phases need to be applied in the direction of rotation?
         open_times = (phases + self.open.to(unit='rad', copy=False)).flatten(
             to=self.open.dim
         )
         close_times = (phases + self.close.to(unit='rad', copy=False)).flatten(
             to=self.close.dim
         )
-        # If the chopper is counter-rotating (clockwise), we mirror the openings
-        if self.frequency.value < 0:
+        # If the chopper is rotating anti-clockwise, we mirror the openings because the
+        # first cutout will be the last to open.
+        if self.frequency.value > 0:
             open_times, close_times = (
                 sc.array(
                     dims=close_times.dims,
@@ -107,8 +112,9 @@ class Chopper:
                     unit=open_times.unit,
                 ),
             )
-        open_times /= self.omega
-        close_times /= self.omega
+        abs_omg = abs(self.omega)
+        open_times /= abs_omg
+        close_times /= abs_omg
         return (
             open_times.to(unit=unit, copy=False),
             close_times.to(unit=unit, copy=False),
