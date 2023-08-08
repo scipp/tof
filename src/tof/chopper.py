@@ -20,21 +20,14 @@ class Chopper:
     frequency:
         The frequency of the chopper. Must be positive.
     open:
-        The opening angles of the chopper cutouts. Note that the order of the values
-        listed here defines the order in which the windows will pass in front of the
-        beam. If your chopper is counter-rotating, you have to list the last window
-        first.
+        The opening angles of the chopper cutouts.
     close:
-        The closing angles of the chopper cutouts. Note that the order of the values
-        listed here defines the order in which the windows will pass in front of the
-        beam. If your chopper is counter-rotating, you have to list the last window
-        first.
+        The closing angles of the chopper cutouts.
     distance:
         The distance from the source to the chopper.
     phase:
-        The phase of the chopper. In addition to the normal phase of the chopper, this
-        can be used to account for the fact that the chopper may be below, above, or
-        to the side of the beam.
+        The phase of the chopper. The phase offset is applied in the opposite direction
+        to the chopper rotation direction.
     name:
         The name of the chopper.
     """
