@@ -65,7 +65,7 @@ class Chopper:
         return two_pi * self.frequency
 
     def open_close_times(
-        self, time_limit: sc.Variable, unit: Optional[str] = None
+        self, time_limit: Optional[sc.Variable] = None, unit: Optional[str] = None
     ) -> Tuple[sc.Variable, sc.Variable]:
         """
         The times at which the chopper opens and closes.
@@ -74,11 +74,13 @@ class Chopper:
         ----------
         time_limit:
             Determines how many rotations the chopper needs to perform to reach the time
-            limit.
+            limit. If not specified, the chopper will perform a single rotation.
         unit:
             The unit of the returned times. If not specified, the unit of `time_limit`
             is used.
         """
+        if time_limit is None:
+            time_limit = sc.scalar(0.0, unit='us')
         if unit is None:
             unit = time_limit.unit
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
