@@ -3,12 +3,22 @@
 
 import uuid
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional, Tuple
 
 import scipp as sc
 
 from .reading import ComponentReading, ReadingField
 from .utils import two_pi
+
+
+class Direction(Enum):
+    CLOCKWISE = 1
+    ANTICLOCKWISE = 2
+
+
+Clockwise = Direction.CLOCKWISE
+AntiClockwise = Direction.ANTICLOCKWISE
 
 
 class Chopper:
@@ -18,7 +28,7 @@ class Chopper:
     Parameters
     ----------
     frequency:
-        The frequency of the chopper.
+        The frequency of the chopper. Must be positive.
     open:
         The opening angles of the chopper cutouts.
     close:
@@ -26,7 +36,11 @@ class Chopper:
     distance:
         The distance from the source to the chopper.
     phase:
-        The phase of the chopper.
+        The phase of the chopper. Because the phase offset implemented as a time delay
+        on real beamline choppers, it is applied in the opposite direction
+        to the chopper rotation direction. For example, if the chopper rotates
+        clockwise, a phase of 10 degrees will shift all window angles by 10 degrees
+        in the anticlockwise direction, which will result in the windows opening later.
     name:
         The name of the chopper.
     """
@@ -38,9 +52,18 @@ class Chopper:
         close: sc.Variable,
         distance: sc.Variable,
         phase: sc.Variable,
+        direction: Direction = Clockwise,
         name: str = "",
     ):
+        if frequency <= (0.0 * frequency.unit):
+            raise ValueError(f"Chopper frequency must be positive, got {frequency:c}.")
         self.frequency = frequency.to(dtype=float, copy=False)
+        if direction not in (Clockwise, AntiClockwise):
+            raise ValueError(
+                "Chopper direction must be Clockwise or AntiClockwise"
+                f", got {direction}."
+            )
+        self.direction = direction
         self.open = (open if open.dims else open.flatten(to='cutout')).to(
             dtype=float, copy=False
         )
@@ -60,7 +83,7 @@ class Chopper:
         return two_pi * self.frequency
 
     def open_close_times(
-        self, time_limit: sc.Variable, unit: Optional[str] = None
+        self, time_limit: Optional[sc.Variable] = None, unit: Optional[str] = None
     ) -> Tuple[sc.Variable, sc.Variable]:
         """
         The times at which the chopper opens and closes.
@@ -69,11 +92,13 @@ class Chopper:
         ----------
         time_limit:
             Determines how many rotations the chopper needs to perform to reach the time
-            limit.
+            limit. If not specified, the chopper will perform a single rotation.
         unit:
             The unit of the returned times. If not specified, the unit of `time_limit`
             is used.
         """
+        if time_limit is None:
+            time_limit = sc.scalar(0.0, unit='us')
         if unit is None:
             unit = time_limit.unit
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
@@ -81,14 +106,35 @@ class Chopper:
         # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
             unit='rad'
-        )
+        ) * ({Clockwise: 1, AntiClockwise: -1}[self.direction])
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
-        open_times = (phases + self.open.to(unit='rad', copy=False)) / self.omega
-        close_times = (phases + self.close.to(unit='rad', copy=False)) / self.omega
+        open_times = (phases + self.open.to(unit='rad', copy=False)).flatten(
+            to=self.open.dim
+        )
+        close_times = (phases + self.close.to(unit='rad', copy=False)).flatten(
+            to=self.close.dim
+        )
+        # If the chopper is rotating anti-clockwise, we mirror the openings because the
+        # first cutout will be the last to open.
+        if self.direction == AntiClockwise:
+            open_times, close_times = (
+                sc.array(
+                    dims=close_times.dims,
+                    values=(two_pi - close_times).values[::-1],
+                    unit=close_times.unit,
+                ),
+                sc.array(
+                    dims=open_times.dims,
+                    values=(two_pi - open_times).values[::-1],
+                    unit=open_times.unit,
+                ),
+            )
+        open_times /= self.omega
+        close_times /= self.omega
         return (
-            open_times.flatten(to=self.open.dim).to(unit=unit, copy=False),
-            close_times.flatten(to=self.close.dim).to(unit=unit, copy=False),
+            open_times.to(unit=unit, copy=False),
+            close_times.to(unit=unit, copy=False),
         )
 
     def __repr__(self) -> str:

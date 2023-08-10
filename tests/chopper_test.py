@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import pytest
 import scipp as sc
 
 import tof
@@ -135,3 +136,131 @@ def test_phase_int():
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
     assert sc.allclose(topen1, topen2)
     assert sc.allclose(tclose1, tclose2)
+
+
+def test_frequency_must_be_positive():
+    with pytest.raises(ValueError, match="Chopper frequency must be positive"):
+        tof.Chopper(
+            frequency=-1.0 * Hz,
+            open=0.0 * deg,
+            close=10.0 * deg,
+            phase=0.0 * deg,
+            distance=5.0 * meter,
+        )
+
+
+def test_open_close_times_counter_rotation():
+    f = 10.0 * Hz
+    d = 10.0 * meter
+    ph = 0.0 * deg
+    chopper1 = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[10.0, 90.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[20.0, 130.0], unit='deg'),
+        phase=ph,
+        distance=d,
+    )
+    chopper2 = tof.Chopper(
+        frequency=f,
+        open=sc.array(
+            dims=['cutout'], values=[360.0 - 130.0, 360.0 - 20.0], unit='deg'
+        ),
+        close=sc.array(
+            dims=['cutout'], values=[360.0 - 90.0, 360.0 - 10.0], unit='deg'
+        ),
+        phase=ph,
+        distance=d,
+        direction=tof.AntiClockwise,
+    )
+
+    topen1, tclose1 = chopper1.open_close_times(0.2 * sec)
+    topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
+    # Note that the first chopper will have one more rotation before t=0, so we slice
+    # out the first two open/close times
+    assert sc.allclose(topen1[2:], topen2)
+    assert sc.allclose(tclose1[2:], tclose2)
+
+
+def test_open_close_times_counter_rotation_with_phase():
+    f = 10.0 * Hz
+    chopper1 = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[80.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[90.0], unit='deg'),
+        phase=0.0 * deg,
+        distance=10.0 * meter,
+        direction=tof.AntiClockwise,
+    )
+    topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
+    chopper2 = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[80.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[90.0], unit='deg'),
+        phase=30.0 * deg,
+        distance=10.0 * meter,
+        direction=tof.AntiClockwise,
+    )
+    topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
+    assert sc.allclose(
+        topen2, topen1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
+    )
+    assert sc.allclose(
+        tclose2, tclose1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
+    )
+
+
+def test_bad_direction_raises():
+    f = 10.0 * Hz
+    op = sc.array(dims=['cutout'], values=[10.0], unit='deg')
+    cl = sc.array(dims=['cutout'], values=[20.0], unit='deg')
+    d = 10.0 * meter
+    ph = 0.0 * deg
+    tof.Chopper(
+        frequency=f,
+        open=op,
+        close=cl,
+        phase=ph,
+        distance=d,
+        direction=tof.Clockwise,
+    )
+    tof.Chopper(
+        frequency=f,
+        open=op,
+        close=cl,
+        phase=ph,
+        distance=d,
+        direction=tof.AntiClockwise,
+    )
+    with pytest.raises(
+        ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
+    ):
+        tof.Chopper(
+            frequency=f,
+            open=op,
+            close=cl,
+            phase=ph,
+            distance=d,
+            direction='clockwise',
+        )
+    with pytest.raises(
+        ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
+    ):
+        tof.Chopper(
+            frequency=f,
+            open=op,
+            close=cl,
+            phase=ph,
+            distance=d,
+            direction='anti-clockwise',
+        )
+    with pytest.raises(
+        ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
+    ):
+        tof.Chopper(
+            frequency=f,
+            open=op,
+            close=cl,
+            phase=ph,
+            distance=d,
+            direction=1,
+        )
