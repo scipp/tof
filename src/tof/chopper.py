@@ -56,10 +56,13 @@ class Chopper:
         name: str = "",
     ):
         if frequency <= (0.0 * frequency.unit):
-            raise ValueError(f"Chopper frequency must be positive, got {frequency:c}")
+            raise ValueError(f"Chopper frequency must be positive, got {frequency:c}.")
         self.frequency = frequency.to(dtype=float, copy=False)
         if direction not in (Clockwise, AntiClockwise):
-            raise ValueError(f"Chopper direction must be Clockwise or AntiClockwise")
+            raise ValueError(
+                "Chopper direction must be Clockwise or AntiClockwise"
+                f", got {direction}."
+            )
         self.direction = direction
         self.open = (open if open.dims else open.flatten(to='cutout')).to(
             dtype=float, copy=False
