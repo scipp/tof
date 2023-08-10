@@ -1,7 +1,7 @@
 scipp
 plopp
 scipy
-sphinx
+sphinx==6.2.1
 nbsphinx
 jupyter
 sphinx-autodoc-typehints
