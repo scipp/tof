@@ -10,7 +10,6 @@ import scipp as sc
 from .reading import ComponentReading, ReadingField
 from .utils import two_pi
 
-
 Clockwise = Literal["clockwise"]
 AntiClockwise = Literal["anticlockwise"]
 
