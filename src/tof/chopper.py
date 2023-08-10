@@ -3,15 +3,22 @@
 
 import uuid
 from dataclasses import dataclass
-from typing import Literal, Optional, Tuple, Union
+from enum import Enum
+from typing import Optional, Tuple
 
 import scipp as sc
 
 from .reading import ComponentReading, ReadingField
 from .utils import two_pi
 
-Clockwise = Literal["clockwise"]
-AntiClockwise = Literal["anticlockwise"]
+
+class Direction(Enum):
+    CLOCKWISE = 1
+    ANTICLOCKWISE = 2
+
+
+Clockwise = Direction.CLOCKWISE
+AntiClockwise = Direction.ANTICLOCKWISE
 
 
 class Chopper:
@@ -45,19 +52,21 @@ class Chopper:
         close: sc.Variable,
         distance: sc.Variable,
         phase: sc.Variable,
-        direction: Union[Clockwise, AntiClockwise] = Clockwise,
+        direction: Direction = Clockwise,
         name: str = "",
     ):
         if frequency <= (0.0 * frequency.unit):
             raise ValueError(f"Chopper frequency must be positive, got {frequency:c}")
         self.frequency = frequency.to(dtype=float, copy=False)
+        if direction not in (Clockwise, AntiClockwise):
+            raise ValueError(f"Chopper direction must be Clockwise or AntiClockwise")
+        self.direction = direction
         self.open = (open if open.dims else open.flatten(to='cutout')).to(
             dtype=float, copy=False
         )
         self.close = (close if close.dims else close.flatten(to='cutout')).to(
             dtype=float, copy=False
         )
-        self.direction = direction
         self.distance = distance.to(dtype=float, copy=False)
         self.phase = phase.to(dtype=float, copy=False)
         self.name = name
@@ -94,7 +103,7 @@ class Chopper:
         # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
             unit='rad'
-        ) * (int(self.direction is Clockwise) * 2 - 1)
+        ) * ({Clockwise: 1, AntiClockwise: -1}[self.direction])
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
         open_times = (phases + self.open.to(unit='rad', copy=False)).flatten(
@@ -105,7 +114,7 @@ class Chopper:
         )
         # If the chopper is rotating anti-clockwise, we mirror the openings because the
         # first cutout will be the last to open.
-        if self.direction is AntiClockwise:
+        if self.direction == AntiClockwise:
             open_times, close_times = (
                 sc.array(
                     dims=close_times.dims,
