@@ -3,12 +3,16 @@
 
 import uuid
 from dataclasses import dataclass
-from typing import Literal, Optional, Tuple
+from typing import Literal, Optional, Tuple, Union
 
 import scipp as sc
 
 from .reading import ComponentReading, ReadingField
 from .utils import two_pi
+
+
+Clockwise = Literal["clockwise"]
+AntiClockwise = Literal["anticlockwise"]
 
 
 class Chopper:
@@ -42,7 +46,7 @@ class Chopper:
         close: sc.Variable,
         distance: sc.Variable,
         phase: sc.Variable,
-        direction: Literal['clockwise', 'anticlockwise'] = 'clockwise',
+        direction: Union[Clockwise, AntiClockwise] = Clockwise,
         name: str = "",
     ):
         if frequency <= (0.0 * frequency.unit):
@@ -91,7 +95,7 @@ class Chopper:
         # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
             unit='rad'
-        ) * (int(self.direction == 'clockwise') * 2 - 1)
+        ) * (int(self.direction is Clockwise) * 2 - 1)
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten below.
         open_times = (phases + self.open.to(unit='rad', copy=False)).flatten(
@@ -102,7 +106,7 @@ class Chopper:
         )
         # If the chopper is rotating anti-clockwise, we mirror the openings because the
         # first cutout will be the last to open.
-        if self.direction != 'clockwise':
+        if self.direction is AntiClockwise:
             open_times, close_times = (
                 sc.array(
                     dims=close_times.dims,

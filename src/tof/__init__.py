@@ -3,7 +3,7 @@
 
 # flake8: noqa F401
 
-from .chopper import Chopper, ChopperReading
+from .chopper import Chopper, ChopperReading, Clockwise, Anticlockwise
 from .detector import Detector, DetectorReading
 from .model import Model
 from .reading import ComponentReading, ReadingData, ReadingField
