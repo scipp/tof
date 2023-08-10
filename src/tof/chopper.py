@@ -42,7 +42,7 @@ class Chopper:
         direction: Literal['clockwise', 'anticlockwise'] = 'clockwise',
         name: str = "",
     ):
-        if frequency < (0.0 * frequency.unit):
+        if frequency <= (0.0 * frequency.unit):
             raise ValueError(f"Chopper frequency must be positive, got {frequency:c}")
         self.frequency = frequency.to(dtype=float, copy=False)
         self.open = (open if open.dims else open.flatten(to='cutout')).to(
