@@ -207,3 +207,60 @@ def test_open_close_times_counter_rotation_with_phase():
     assert sc.allclose(
         tclose2, tclose1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
     )
+
+
+def test_bad_direction_raises():
+    f = 10.0 * Hz
+    op = sc.array(dims=['cutout'], values=[10.0], unit='deg')
+    cl = sc.array(dims=['cutout'], values=[20.0], unit='deg')
+    d = 10.0 * meter
+    ph = 0.0 * deg
+    tof.Chopper(
+        frequency=f,
+        open=op,
+        close=cl,
+        phase=ph,
+        distance=d,
+        direction=tof.Clockwise,
+    )
+    tof.Chopper(
+        frequency=f,
+        open=op,
+        close=cl,
+        phase=ph,
+        distance=d,
+        direction=tof.AntiClockwise,
+    )
+    with pytest.raises(
+        ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
+    ):
+        tof.Chopper(
+            frequency=f,
+            open=op,
+            close=cl,
+            phase=ph,
+            distance=d,
+            direction='clockwise',
+        )
+    with pytest.raises(
+        ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
+    ):
+        tof.Chopper(
+            frequency=f,
+            open=op,
+            close=cl,
+            phase=ph,
+            distance=d,
+            direction='anti-clockwise',
+        )
+    with pytest.raises(
+        ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
+    ):
+        tof.Chopper(
+            frequency=f,
+            open=op,
+            close=cl,
+            phase=ph,
+            distance=d,
+            direction=1,
+        )
