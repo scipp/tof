@@ -26,8 +26,11 @@ class Chopper:
     distance:
         The distance from the source to the chopper.
     phase:
-        The phase of the chopper. The phase offset is applied in the opposite direction
-        to the chopper rotation direction.
+        The phase of the chopper. Because the phase offset implemented as a time delay
+        on real beamline choppers, it is applied in the opposite direction
+        to the chopper rotation direction. For example, if the chopper rotates
+        clockwise, a phase of 10 degrees will shift all window angles by 10 degrees
+        in the anticlockwise direction, which will result in the windows opening later.
     name:
         The name of the chopper.
     """
