@@ -170,7 +170,7 @@ def test_open_close_times_counter_rotation():
         ),
         phase=ph,
         distance=d,
-        direction='anticlockwise',
+        direction=tof.AntiClockwise,
     )
 
     topen1, tclose1 = chopper1.open_close_times(0.2 * sec)
@@ -189,7 +189,7 @@ def test_open_close_times_counter_rotation_with_phase():
         close=sc.array(dims=['cutout'], values=[90.0], unit='deg'),
         phase=0.0 * deg,
         distance=10.0 * meter,
-        direction='anticlockwise',
+        direction=tof.AntiClockwise,
     )
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     chopper2 = tof.Chopper(
@@ -198,7 +198,7 @@ def test_open_close_times_counter_rotation_with_phase():
         close=sc.array(dims=['cutout'], values=[90.0], unit='deg'),
         phase=30.0 * deg,
         distance=10.0 * meter,
-        direction='anticlockwise',
+        direction=tof.AntiClockwise,
     )
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
     assert sc.allclose(
