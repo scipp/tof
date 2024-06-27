@@ -15,7 +15,7 @@ defaults:
 jobs:
   build_conda:
     name: Conda build
-    runs-on: ubuntu-latest
+    runs-on: 'ubuntu-latest'
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
 
   build_wheels:
     name: Wheels
-    runs-on: ubuntu-latest
+    runs-on: 'ubuntu-latest'
 
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
   upload_pypi:
     name: Deploy PyPI
     needs: [build_wheels, build_conda]
-    runs-on: 'ubuntu-22.04'
+    runs-on: 'ubuntu-latest'
     environment: release
     permissions:
       id-token: write
@@ -76,7 +76,7 @@ jobs:
   upload_conda:
     name: Deploy Conda
     needs: [build_wheels, build_conda]
-    runs-on: 'ubuntu-22.04'
+    runs-on: 'ubuntu-latest'
     if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
