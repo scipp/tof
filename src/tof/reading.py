@@ -50,7 +50,7 @@ class ReadingData:
         inds = range(len(self))[val]
         return self.__class__(
             data=sc.DataGroup(
-                {f'pulse:{ind}': self.data[f'pulse:{ind}'] for ind in inds}
+                {f"pulse:{ind}": self.data[f"pulse:{ind}"] for ind in inds}
             ),
             dim=self.dim,
         )
@@ -91,13 +91,13 @@ def _field_to_string(field: ReadingData) -> str:
     if isinstance(field.data, sc.DataArray):
         return str(len(field))
     data = field.data
-    out = [str(len(data['pulse:0']))]
+    out = [str(len(data["pulse:0"]))]
     npulses = len(data)
     if npulses > 2:
-        out.append('...')
+        out.append("...")
     if npulses > 1:
-        out.append(str(len(data[f'pulse:{npulses - 1}'])))
-    return '[' + ', '.join(out) + ']'
+        out.append(str(len(data[f"pulse:{npulses - 1}"])))
+    return "[" + ", ".join(out) + "]"
 
 
 @dataclass(frozen=True)
@@ -125,9 +125,9 @@ class ReadingField:
         The neutrons that reach the component, split up into those that are blocked by
         the component and those that are not.
         """
-        out = {'visible': self.visible.data}
+        out = {"visible": self.visible.data}
         if self.blocked is not None:
-            out['blocked'] = self.blocked.data
+            out["blocked"] = self.blocked.data
         return sc.DataGroup(out)
 
     def __getitem__(self, val):
@@ -160,8 +160,8 @@ class ReadingField:
         visible = self.visible.data
         blocked = self.blocked.data
         if isinstance(visible, sc.DataArray):
-            visible = sc.DataGroup({'onepulse': visible})
-            blocked = sc.DataGroup({'onepulse': blocked})
+            visible = sc.DataGroup({"onepulse": visible})
+            blocked = sc.DataGroup({"onepulse": blocked})
         dim = self.visible.dim
         to_plot = {}
         colors = {}
@@ -179,18 +179,16 @@ class ReadingField:
                     num=bins,
                     unit=visible[p].coords[dim].unit,
                 )
-            vk = f'visible-{p}'
-            bk = f'blocked-{p}'
+            vk = f"visible-{p}"
+            bk = f"blocked-{p}"
             to_plot.update(
                 {vk: visible[p].hist({dim: edges}), bk: blocked[p].hist({dim: edges})}
             )
-            colors.update({vk: f'C{i}', bk: 'gray'})
+            colors.update({vk: f"C{i}", bk: "gray"})
         out = pp.plot(
             to_plot,
-            **{**{'color': colors}, **kwargs},
+            **{**{"color": colors}, **kwargs},
         )
-        # TODO: remove this once https://github.com/scipp/plopp/issues/206 is done.
-        out.ax.get_legend().remove()
         return out
 
 

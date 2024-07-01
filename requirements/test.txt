@@ -5,15 +5,15 @@
 #
 #    pip-compile-multi
 #
-exceptiongroup==1.1.1
+exceptiongroup==1.2.1
     # via pytest
 iniconfig==2.0.0
     # via pytest
-packaging==23.1
+packaging==24.1
     # via pytest
-pluggy==1.0.0
+pluggy==1.5.0
     # via pytest
-pytest==7.3.1
-    # via -r requirements/test.in
+pytest==8.2.2
+    # via -r test.in
 tomli==2.0.1
     # via pytest
