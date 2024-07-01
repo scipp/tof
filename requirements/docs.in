@@ -1,4 +1,5 @@
 gitpython
+ipykernel
 ipywidgets
 nbsphinx
 sphinx
