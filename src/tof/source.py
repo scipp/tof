@@ -13,17 +13,17 @@ from scipp.scipy.interpolate import interp1d
 from . import facilities
 from .utils import Plot, wavelength_to_speed
 
-TIME_UNIT = 'us'
-WAV_UNIT = 'angstrom'
+TIME_UNIT = "us"
+WAV_UNIT = "angstrom"
 
 
 def _default_frequency(frequency: Union[None, sc.Variable], pulses: int) -> sc.Variable:
     if frequency is None:
         if pulses > 1:
             raise ValueError(
-                'If pulses is greater than one, a frequency must be supplied.'
+                "If pulses is greater than one, a frequency must be supplied."
             )
-        frequency = 1.0 * sc.Unit('Hz')
+        frequency = 1.0 * sc.Unit("Hz")
     return frequency
 
 
@@ -71,8 +71,8 @@ def _make_pulses(
     wmax:
         Maximum neutron wavelength.
     """
-    t_dim = 'time'
-    w_dim = 'wavelength'
+    t_dim = "time"
+    w_dim = "wavelength"
 
     p_time = _convert_coord(p_time, unit=TIME_UNIT, coord=t_dim)
     p_wav = _convert_coord(p_wav, unit=WAV_UNIT, coord=w_dim)
@@ -85,8 +85,8 @@ def _make_pulses(
     if wmax is None:
         wmax = p_wav.coords[w_dim].max()
 
-    time_interpolator = interp1d(p_time, dim=t_dim, fill_value='extrapolate')
-    wav_interpolator = interp1d(p_wav, dim=w_dim, fill_value='extrapolate')
+    time_interpolator = interp1d(p_time, dim=t_dim, fill_value="extrapolate")
+    wav_interpolator = interp1d(p_wav, dim=w_dim, fill_value="extrapolate")
     x_time = sc.linspace(
         dim=t_dim,
         start=tmin.value,
@@ -145,27 +145,25 @@ def _make_pulses(
         wavs.append(w[mask])
         n += mask.sum()
 
-    dim = 'event'
+    dim = "event"
     birth_time = sc.array(
         dims=[dim],
         values=np.concatenate(times),
         unit=TIME_UNIT,
-    ).fold(dim=dim, sizes={'pulse': pulses, dim: neutrons}) + (
-        sc.arange('pulse', pulses) / frequency
-    ).to(
-        unit=TIME_UNIT, copy=False
-    )
+    ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons}) + (
+        sc.arange("pulse", pulses) / frequency
+    ).to(unit=TIME_UNIT, copy=False)
 
     wavelength = sc.array(
         dims=[dim],
         values=np.concatenate(wavs),
         unit=WAV_UNIT,
-    ).fold(dim=dim, sizes={'pulse': pulses, dim: neutrons})
+    ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons})
     speed = wavelength_to_speed(wavelength)
     return {
-        'time': birth_time,
-        'wavelength': wavelength,
-        'speed': speed,
+        "time": birth_time,
+        "wavelength": wavelength,
+        "speed": speed,
     }
 
 
@@ -221,11 +219,11 @@ class Source:
                 wmax=wmax,
             )
             self.data = sc.DataArray(
-                data=sc.ones(sizes=pulse_params['time'].sizes, unit='counts'),
+                data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),
                 coords={
-                    'time': pulse_params['time'],
-                    'wavelength': pulse_params['wavelength'],
-                    'speed': pulse_params['speed'],
+                    "time": pulse_params["time"],
+                    "wavelength": pulse_params["wavelength"],
+                    "speed": pulse_params["speed"],
                 },
             )
 
@@ -257,7 +255,7 @@ class Source:
         source = cls(facility=None, neutrons=len(birth_times), pulses=pulses)
         source.frequency = _default_frequency(frequency, pulses)
 
-        birth_times = (sc.arange('pulse', pulses) / source.frequency).to(
+        birth_times = (sc.arange("pulse", pulses) / source.frequency).to(
             unit=TIME_UNIT, copy=False
         ) + birth_times.to(unit=TIME_UNIT, copy=False)
         wavelengths = sc.broadcast(
@@ -265,11 +263,11 @@ class Source:
         )
 
         source.data = sc.DataArray(
-            data=sc.ones(sizes=birth_times.sizes, unit='counts'),
+            data=sc.ones(sizes=birth_times.sizes, unit="counts"),
             coords={
-                'time': birth_times,
-                'wavelength': wavelengths,
-                'speed': wavelength_to_speed(wavelengths).to(unit='m/s', copy=False),
+                "time": birth_times,
+                "wavelength": wavelengths,
+                "speed": wavelength_to_speed(wavelengths).to(unit="m/s", copy=False),
             },
         )
 
@@ -321,17 +319,17 @@ class Source:
             sampling=sampling,
         )
         source.data = sc.DataArray(
-            data=sc.ones(sizes=pulse_params['time'].sizes, unit='counts'),
+            data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),
             coords={
-                'time': pulse_params['time'],
-                'wavelength': pulse_params['wavelength'],
-                'speed': pulse_params['speed'],
+                "time": pulse_params["time"],
+                "wavelength": pulse_params["wavelength"],
+                "speed": pulse_params["speed"],
             },
         )
         return source
 
     def __len__(self) -> int:
-        return self.data.sizes['pulse']
+        return self.data.sizes["pulse"]
 
     def plot(self, bins: int = 300) -> tuple:
         """
@@ -343,7 +341,7 @@ class Source:
             Number of bins to use for histogramming the neutrons.
         """
         fig, ax = plt.subplots(1, 2)
-        dim = (set(self.data.dims) - {'pulse'}).pop()
+        dim = (set(self.data.dims) - {"pulse"}).pop()
         collapsed = sc.collapse(self.data, keep=dim)
         pp.plot(
             {k: da.hist(time=bins) for k, da in collapsed.items()},
@@ -353,8 +351,7 @@ class Source:
             {k: da.hist(wavelength=bins) for k, da in collapsed.items()},
             ax=ax[1],
         )
-        size = fig.get_size_inches()
-        fig.set_size_inches(size[0] * 2, size[1])
+        fig.set_size_inches(10, 4)
         fig.tight_layout()
         return Plot(fig=fig, ax=ax)
 
