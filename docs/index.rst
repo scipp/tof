@@ -41,5 +41,6 @@ You can install from ``conda`` using
    sources
    components
    multiple-pulses
+   wfm-stitching
    api
    Release notes <https://github.com/scipp/tof/releases>
