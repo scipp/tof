@@ -23,13 +23,13 @@ from .utils import Plot
 def _make_reading_data(component, dim, is_chopper=False):
     visible = {}
     blocked = {} if is_chopper else None
-    keep_dim = (set(component.dims) - {'pulse'}).pop()
+    keep_dim = (set(component.dims) - {"pulse"}).pop()
     for name, da in sc.collapse(component, keep=keep_dim).items():
         one_mask = ~reduce(lambda a, b: a | b, da.masks.values())
         vsel = da[one_mask]
         visible[name] = sc.DataArray(data=vsel.data, coords={dim: vsel.coords[dim]})
         if is_chopper:
-            bsel = da[da.masks['blocked_by_me']]
+            bsel = da[da.masks["blocked_by_me"]]
             blocked[name] = sc.DataArray(data=bsel.data, coords={dim: bsel.coords[dim]})
     return ReadingField(
         visible=ReadingData(data=sc.DataGroup(visible), dim=dim),
@@ -45,6 +45,7 @@ def _add_rays(
     birth_times: sc.Variable,
     distances: sc.Variable,
     cbar: bool = True,
+    cmap: Optional[str] = None,
     wavelengths: Optional[sc.Variable] = None,
     wmin: Optional[sc.Variable] = None,
     wmax: Optional[sc.Variable] = None,
@@ -62,15 +63,16 @@ def _add_rays(
     )
     coll = LineCollection(segments)
     if wavelengths is not None:
-        coll.set_cmap(plt.cm.gist_rainbow_r)
+        # coll.set_cmap(plt.cm.gist_rainbow_r)
+        coll.set_cmap("gist_rainbow_r" if cmap is None else cmap)
         coll.set_array(wavelengths.values)
         coll.set_norm(plt.Normalize(wmin.value, wmax.value))
         if cbar:
             cb = plt.colorbar(coll, ax=ax)
             cb.ax.yaxis.set_label_coords(-0.9, 0.5)
-            cb.set_label('Wavelength (Å)')
+            cb.set_label("Wavelength (Å)")
     else:
-        coll.set_color('lightgray')
+        coll.set_color("lightgray")
     ax.add_collection(coll)
 
 
@@ -99,40 +101,40 @@ class Result:
         self._arrival_times = {}
         self._choppers = {}
         fields = {
-            'tofs': 'tof',
-            'wavelengths': 'wavelength',
-            'birth_times': 'time',
-            'speeds': 'speed',
+            "tofs": "tof",
+            "wavelengths": "wavelength",
+            "birth_times": "time",
+            "speeds": "speed",
         }
         for name, chopper in choppers.items():
-            self._masks[name] = chopper['visible_mask']
-            self._arrival_times[name] = chopper['data'].coords['tof']
+            self._masks[name] = chopper["visible_mask"]
+            self._arrival_times[name] = chopper["data"].coords["tof"]
             self._choppers[name] = ChopperReading(
-                distance=chopper['distance'],
-                name=chopper['name'],
-                frequency=chopper['frequency'],
-                open=chopper['open'],
-                close=chopper['close'],
-                phase=chopper['phase'],
-                open_times=chopper['open_times'],
-                close_times=chopper['close_times'],
-                data=chopper['data'],
+                distance=chopper["distance"],
+                name=chopper["name"],
+                frequency=chopper["frequency"],
+                open=chopper["open"],
+                close=chopper["close"],
+                phase=chopper["phase"],
+                open_times=chopper["open_times"],
+                close_times=chopper["close_times"],
+                data=chopper["data"],
                 **{
-                    key: _make_reading_data(chopper['data'], dim=dim, is_chopper=True)
+                    key: _make_reading_data(chopper["data"], dim=dim, is_chopper=True)
                     for key, dim in fields.items()
                 },
             )
 
         self._detectors = {}
         for name, det in detectors.items():
-            self._masks[name] = det['visible_mask']
-            self._arrival_times[name] = det['data'].coords['tof']
+            self._masks[name] = det["visible_mask"]
+            self._arrival_times[name] = det["data"].coords["tof"]
             self._detectors[name] = DetectorReading(
-                distance=det['distance'],
-                name=det['name'],
-                data=det['data'],
+                distance=det["distance"],
+                name=det["name"],
+                data=det["data"],
                 **{
-                    key: _make_reading_data(det['data'], dim=dim)
+                    key: _make_reading_data(det["data"], dim=dim)
                     for key, dim in fields.items()
                 },
             )
@@ -172,20 +174,21 @@ class Result:
         furthest_detector: DetectorReading,
         ax: plt.Axes,
         cbar: bool,
+        cmap: str,
         wmin: sc.Variable,
         wmax: sc.Variable,
     ):
-        da = furthest_detector.data['pulse', pulse_index]
-        visible = da[~da.masks['blocked_by_others']]
-        tofs = visible.coords['tof']
+        da = furthest_detector.data["pulse", pulse_index]
+        visible = da[~da.masks["blocked_by_others"]]
+        tofs = visible.coords["tof"]
         if (max_rays <= 0) or (len(tofs) == 0):
             return
         if (max_rays is not None) and (len(tofs) > max_rays):
             inds = np.random.choice(len(tofs), size=max_rays, replace=False)
         else:
             inds = slice(None)
-        birth_times = visible.coords['time'][inds]
-        wavelengths = visible.coords['wavelength'][inds]
+        birth_times = visible.coords["time"][inds]
+        wavelengths = visible.coords["wavelength"][inds]
         distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
         _add_rays(
             ax=ax,
@@ -193,6 +196,7 @@ class Result:
             birth_times=birth_times,
             distances=distances,
             cbar=cbar,
+            cmap=cmap,
             wavelengths=wavelengths,
             wmin=wmin,
             wmax=wmax,
@@ -205,7 +209,7 @@ class Result:
         furthest_detector: DetectorReading,
         ax: plt.Axes,
     ):
-        slc = ('pulse', pulse_index)
+        slc = ("pulse", pulse_index)
         inv_mask = ~self._masks[furthest_detector.name][slc]
         nrays = int(inv_mask.sum())
         if (blocked_rays <= 0) or (nrays == 0):
@@ -214,13 +218,13 @@ class Result:
             inds = np.random.choice(nrays, size=blocked_rays, replace=False)
         else:
             inds = slice(None)
-        birth_times = self._source.data.coords['time'][slc][inv_mask][inds]
+        birth_times = self._source.data.coords["time"][slc][inv_mask][inds]
 
         components = sorted(
             chain(self._choppers.values(), [furthest_detector]),
             key=lambda c: c.distance.value,
         )
-        dim = 'component'
+        dim = "component"
         tofs = sc.concat(
             [
                 self._arrival_times[comp.name][slc][inv_mask][inds]
@@ -239,7 +243,7 @@ class Result:
         )
 
         diff = sc.abs(masks[dim, 1:].to(dtype=int) - masks[dim, :-1].to(dtype=int))
-        diff.unit = ''
+        diff.unit = ""
         _add_rays(
             ax=ax,
             tofs=(tofs * diff).max(dim=dim),
@@ -248,7 +252,7 @@ class Result:
         )
 
     def _plot_pulse(self, pulse_index: int, ax: plt.Axes):
-        time_coord = self.source.data.coords['time']['pulse', pulse_index]
+        time_coord = self.source.data.coords["time"]["pulse", pulse_index]
         tmin = time_coord.min().value
         ax.plot(
             [tmin, time_coord.max().value],
@@ -265,6 +269,7 @@ class Result:
         figsize: Optional[Tuple[float, float]] = None,
         ax: Optional[plt.Axes] = None,
         cbar: bool = True,
+        cmap: Optional[str] = None,
     ) -> Plot:
         """
         Plot the time-distance diagram for the instrument, including the rays of
@@ -286,6 +291,8 @@ class Result:
             Axes to plot on.
         cbar:
             Show a colorbar for the wavelength if ``True``.
+        cmap:
+            Colormap to use for the wavelength colorbar.
         """
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize)
@@ -293,10 +300,10 @@ class Result:
             fig = ax.get_figure()
         furthest_detector = max(self._detectors.values(), key=lambda d: d.distance)
         wavelengths = sc.DataArray(
-            data=furthest_detector.data.coords['wavelength'],
+            data=furthest_detector.data.coords["wavelength"],
             masks=furthest_detector.data.masks,
         )
-        for i in range(self._source.data.sizes['pulse']):
+        for i in range(self._source.data.sizes["pulse"]):
             self._plot_blocked_rays(
                 blocked_rays=blocked_rays,
                 pulse_index=i,
@@ -309,6 +316,7 @@ class Result:
                 furthest_detector=furthest_detector,
                 ax=ax,
                 cbar=cbar and (i == 0),
+                cmap=cmap,
                 wmin=wavelengths.min(),
                 wmax=wavelengths.max(),
             )
@@ -316,7 +324,7 @@ class Result:
 
         det_data = furthest_detector.tofs.visible.data
         if sum(da.sum().value for da in det_data.values()) > 0:
-            times = (da.coords['tof'].max() for da in det_data.values())
+            times = (da.coords["tof"].max() for da in det_data.values())
         else:
             times = (ch.close_times.max() for ch in self._choppers.values())
         tof_max = reduce(max, times).value
@@ -355,7 +363,7 @@ class Result:
             inches = fig.get_size_inches()
             fig.set_size_inches(
                 (
-                    min(inches[0] * furthest_detector.data.sizes['pulse'], 12.0),
+                    min(inches[0] * furthest_detector.data.sizes["pulse"], 12.0),
                     inches[1],
                 )
             )
@@ -364,7 +372,7 @@ class Result:
 
     def __repr__(self) -> str:
         source_sizes = self._source.data.sizes
-        other_dim = (set(source_sizes) - {'pulse'}).pop()
+        other_dim = (set(source_sizes) - {"pulse"}).pop()
         out = (
             f"Result:\n  Source: {source_sizes['pulse']} pulses, "
             f"{source_sizes[other_dim]} neutrons per pulse.\n  Choppers:\n"
