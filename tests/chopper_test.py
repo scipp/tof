@@ -173,12 +173,10 @@ def test_open_close_times_counter_rotation():
         direction=tof.AntiClockwise,
     )
 
-    topen1, tclose1 = chopper1.open_close_times(0.2 * sec)
+    topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
-    # Note that the first chopper will have one more rotation before t=0, so we slice
-    # out the first two open/close times
-    assert sc.allclose(topen1[2:], topen2)
-    assert sc.allclose(tclose1[2:], tclose2)
+    assert sc.allclose(topen1, topen2)
+    assert sc.allclose(tclose1, tclose2)
 
 
 def test_open_close_times_counter_rotation_with_phase():
