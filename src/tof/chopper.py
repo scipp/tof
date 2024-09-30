@@ -125,6 +125,8 @@ class Chopper:
                     unit=open_times.unit,
                 ),
             )
+        # Note that the order is important here: we need (phases + open/close) to get
+        # the correct dimension order when we flatten.
         open_times = (phases + open_times).flatten(to=self.open.dim)
         close_times = (phases + close_times).flatten(to=self.close.dim)
         open_times /= self.omega
