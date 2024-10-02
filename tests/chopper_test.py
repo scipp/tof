@@ -173,12 +173,10 @@ def test_open_close_times_counter_rotation():
         direction=tof.AntiClockwise,
     )
 
-    topen1, tclose1 = chopper1.open_close_times(0.2 * sec)
+    topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
-    # Note that the first chopper will have one more rotation before t=0, so we slice
-    # out the first two open/close times
-    assert sc.allclose(topen1[2:], topen2)
-    assert sc.allclose(tclose1[2:], tclose2)
+    assert sc.allclose(topen1, topen2)
+    assert sc.allclose(tclose1, tclose2)
 
 
 def test_open_close_times_counter_rotation_with_phase():
@@ -207,6 +205,35 @@ def test_open_close_times_counter_rotation_with_phase():
     assert sc.allclose(
         tclose2, tclose1 + (30.0 * deg).to(unit='rad') / abs(chopper2.omega)
     )
+
+
+def test_open_close_anticlockwise_multiple_rotations():
+    chopper = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.array(dims=["cutout"], values=[10.0, 90.0], unit="deg"),
+        close=sc.array(dims=["cutout"], values=[20.0, 130.0], unit="deg"),
+        distance=10.0 * meter,
+        phase=0 * deg,
+        direction=tof.AntiClockwise,
+    )
+
+    two_rotations_open, two_rotations_close = chopper.open_close_times(0.0 * sec)
+    three_rotations_open, three_rotations_close = chopper.open_close_times(0.2 * sec)
+    four_rotations_open, four_rotations_close = chopper.open_close_times(0.3 * sec)
+
+    assert len(two_rotations_open) == 4
+    assert len(three_rotations_open) == 6
+    assert len(four_rotations_open) == 8
+    assert len(two_rotations_close) == 4
+    assert len(three_rotations_close) == 6
+    assert len(four_rotations_close) == 8
+
+    assert sc.allclose(two_rotations_open, three_rotations_open[:-2])
+    assert sc.allclose(two_rotations_close, three_rotations_close[:-2])
+    assert sc.allclose(three_rotations_open, four_rotations_open[:-2])
+    assert sc.allclose(three_rotations_close, four_rotations_close[:-2])
+    assert sc.allclose(two_rotations_open, four_rotations_open[:-4])
+    assert sc.allclose(two_rotations_close, four_rotations_close[:-4])
 
 
 def test_bad_direction_raises():

@@ -106,15 +106,10 @@ class Chopper:
         # large
         phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
             unit='rad'
-        ) * ({Clockwise: 1, AntiClockwise: -1}[self.direction])
-        # Note that the order is important here: we need (phases + open/close) to get
-        # the correct dimension order when we flatten below.
-        open_times = (phases + self.open.to(unit='rad', copy=False)).flatten(
-            to=self.open.dim
         )
-        close_times = (phases + self.close.to(unit='rad', copy=False)).flatten(
-            to=self.close.dim
-        )
+
+        open_times = self.open.to(unit='rad', copy=False)
+        close_times = self.close.to(unit='rad', copy=False)
         # If the chopper is rotating anti-clockwise, we mirror the openings because the
         # first cutout will be the last to open.
         if self.direction == AntiClockwise:
@@ -130,6 +125,10 @@ class Chopper:
                     unit=open_times.unit,
                 ),
             )
+        # Note that the order is important here: we need (phases + open/close) to get
+        # the correct dimension order when we flatten.
+        open_times = (phases + open_times).flatten(to=self.open.dim)
+        close_times = (phases + close_times).flatten(to=self.close.dim)
         open_times /= self.omega
         close_times /= self.omega
         return (
@@ -141,7 +140,7 @@ class Chopper:
         return (
             f"Chopper(name={self.name}, distance={self.distance:c}, "
             f"frequency={self.frequency:c}, phase={self.phase:c}, "
-            f"cutouts={len(self.open)})"
+            f"direction={self.direction.name}, cutouts={len(self.open)})"
         )
 
     def as_dict(self):
@@ -152,6 +151,7 @@ class Chopper:
             'distance': self.distance,
             'phase': self.phase,
             'name': self.name,
+            'direction': self.direction,
         }
 
 
