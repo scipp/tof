@@ -291,3 +291,43 @@ def test_bad_direction_raises():
             distance=d,
             direction=1,
         )
+
+
+def test_chopper_create_from_centers_and_widths():
+    f = 10.0 * Hz
+    center = sc.array(dims=['cutout'], values=[15.0, 46.0], unit='deg')
+    width = sc.array(dims=['cutout'], values=[10.0, 16.0], unit='deg')
+    chopper = tof.Chopper(
+        frequency=f,
+        center=center,
+        width=width,
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+    )
+    assert sc.allclose(chopper.open, center - width / 2)
+    assert sc.allclose(chopper.close, center + width / 2)
+
+    expected = tof.Chopper(
+        frequency=f,
+        open=sc.array(dims=['cutout'], values=[10.0, 38.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[20.0, 54.0], unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+    )
+    assert sc.allclose(chopper.open, expected.open)
+    assert sc.allclose(chopper.close, expected.close)
+
+
+def test_chopper_create_raises_when_both_edges_and_centers_are_supplied():
+    with pytest.raises(
+        ValueError, match="Either open/close or center/width must be provided"
+    ):
+        tof.Chopper(
+            frequency=10.0 * Hz,
+            open=10.0 * deg,
+            close=20.0 * deg,
+            center=15.0 * deg,
+            width=10.0 * deg,
+            phase=0.0 * deg,
+            distance=5.0 * meter,
+        )

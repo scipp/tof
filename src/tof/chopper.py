@@ -29,10 +29,6 @@ class Chopper:
     ----------
     frequency:
         The frequency of the chopper. Must be positive.
-    open:
-        The opening angles of the chopper cutouts.
-    close:
-        The closing angles of the chopper cutouts.
     distance:
         The distance from the source to the chopper.
     phase:
@@ -41,17 +37,32 @@ class Chopper:
         to the chopper rotation direction. For example, if the chopper rotates
         clockwise, a phase of 10 degrees will shift all window angles by 10 degrees
         in the anticlockwise direction, which will result in the windows opening later.
+    open:
+        The opening angles of the chopper cutouts.
+    close:
+        The closing angles of the chopper cutouts.
+    center:
+        The center of the chopper cutouts.
+    width:
+        The width of the chopper cutouts.
     name:
         The name of the chopper.
+
+    Notes
+    -----
+    Either `open` and `close` or `center` and `width` must be provided, but not both.
     """
 
     def __init__(
         self,
+        *,
         frequency: sc.Variable,
-        open: sc.Variable,
-        close: sc.Variable,
         distance: sc.Variable,
         phase: sc.Variable,
+        open: sc.Variable | None = None,
+        close: sc.Variable | None = None,
+        center: sc.Variable | None = None,
+        width: sc.Variable | None = None,
         direction: Direction = Clockwise,
         name: str = "",
     ):
@@ -64,6 +75,20 @@ class Chopper:
                 f", got {direction}."
             )
         self.direction = direction
+        # Check that either open/close or center/width are provided, but not both
+        if tuple(x for x in (open, close, center, width) if x is not None) not in (
+            (open, close),
+            (center, width),
+        ):
+            raise ValueError(
+                "Either open/close or center/width must be provided, got"
+                f" open={open}, close={close}, center={center}, width={width}."
+            )
+        if open is None:
+            half_width = width * 0.5
+            open = center - half_width
+            close = center + half_width
+
         self.open = (open if open.dims else open.flatten(to='cutout')).to(
             dtype=float, copy=False
         )
