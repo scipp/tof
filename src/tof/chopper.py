@@ -82,7 +82,7 @@ class Chopper:
         ):
             raise ValueError(
                 "Either open/close or centers/widths must be provided, got"
-                f" open={open}, close={close}, center={centers}, width={widths}."
+                f" open={open}, close={close}, centers={centers}, widths={widths}."
             )
         if open is None:
             half_width = widths * 0.5
