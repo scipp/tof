@@ -75,7 +75,7 @@ class Chopper:
                 f", got {direction}."
             )
         self.direction = direction
-        # Check that either open/close or center/width are provided, but not both
+        # Check that either open/close or centers/widths are provided, but not both
         if tuple(x for x in (open, close, centers, widths) if x is not None) not in (
             (open, close),
             (centers, widths),
