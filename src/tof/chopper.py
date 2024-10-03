@@ -41,16 +41,16 @@ class Chopper:
         The opening angles of the chopper cutouts.
     close:
         The closing angles of the chopper cutouts.
-    center:
-        The center of the chopper cutouts.
-    width:
-        The width of the chopper cutouts.
+    centers:
+        The centers of the chopper cutouts.
+    widths:
+        The widths of the chopper cutouts.
     name:
         The name of the chopper.
 
     Notes
     -----
-    Either `open` and `close` or `center` and `width` must be provided, but not both.
+    Either `open` and `close` or `centers` and `widths` must be provided, but not both.
     """
 
     def __init__(
@@ -61,8 +61,8 @@ class Chopper:
         phase: sc.Variable,
         open: sc.Variable | None = None,
         close: sc.Variable | None = None,
-        center: sc.Variable | None = None,
-        width: sc.Variable | None = None,
+        centers: sc.Variable | None = None,
+        widths: sc.Variable | None = None,
         direction: Direction = Clockwise,
         name: str = "",
     ):
@@ -76,18 +76,18 @@ class Chopper:
             )
         self.direction = direction
         # Check that either open/close or center/width are provided, but not both
-        if tuple(x for x in (open, close, center, width) if x is not None) not in (
+        if tuple(x for x in (open, close, centers, widths) if x is not None) not in (
             (open, close),
-            (center, width),
+            (centers, widths),
         ):
             raise ValueError(
-                "Either open/close or center/width must be provided, got"
-                f" open={open}, close={close}, center={center}, width={width}."
+                "Either open/close or centers/widths must be provided, got"
+                f" open={open}, close={close}, center={centers}, width={widths}."
             )
         if open is None:
-            half_width = width * 0.5
-            open = center - half_width
-            close = center + half_width
+            half_width = widths * 0.5
+            open = centers - half_width
+            close = centers + half_width
 
         self.open = (open if open.dims else open.flatten(to='cutout')).to(
             dtype=float, copy=False
