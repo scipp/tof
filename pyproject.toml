@@ -42,3 +42,6 @@ skip-string-normalization = true
 [tool.isort]
 skip_gitignore = true
 profile = "black"
+
+[tool.ruff.format]
+quote-style = "preserve"
