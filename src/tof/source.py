@@ -226,6 +226,9 @@ class Source:
                     "time": pulse_params["time"],
                     "wavelength": pulse_params["wavelength"],
                     "speed": pulse_params["speed"],
+                    "id": sc.arange("event", pulse_params["time"].size, unit=None).fold(
+                        "event", sizes=pulse_params["time"].sizes
+                    ),
                 },
             )
 
@@ -270,6 +273,9 @@ class Source:
                 "time": birth_times,
                 "wavelength": wavelengths,
                 "speed": wavelength_to_speed(wavelengths).to(unit="m/s", copy=False),
+                "id": sc.arange("event", birth_times.size, unit=None).fold(
+                    "event", sizes=birth_times.sizes
+                ),
             },
         )
 
@@ -326,6 +332,9 @@ class Source:
                 "time": pulse_params["time"],
                 "wavelength": pulse_params["wavelength"],
                 "speed": pulse_params["speed"],
+                "id": sc.arange("event", pulse_params["time"].size, unit=None).fold(
+                    "event", sizes=pulse_params["time"].sizes
+                ),
             },
         )
         return source
