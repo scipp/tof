@@ -336,7 +336,8 @@ class Result:
             )
             y = np.full_like(x, ch.distance.value)
             y[2::3] = None
-            ax.plot(x, y, color="k")
+            inds = np.argsort(x)
+            ax.plot(x[inds], y[inds], color="k")
             ax.text(
                 tof_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
             )
