@@ -41,7 +41,7 @@ def _make_reading_data(component, dim, is_chopper=False):
 
 def _add_rays(
     ax: plt.Axes,
-    tofs: sc.Variable,
+    toas: sc.Variable,
     birth_times: sc.Variable,
     distances: sc.Variable,
     cbar: bool = True,
@@ -50,7 +50,7 @@ def _add_rays(
     wmax: Optional[sc.Variable] = None,
 ):
     x0 = birth_times.values.reshape(-1, 1)
-    x1 = tofs.values.reshape(-1, 1)
+    x1 = toas.values.reshape(-1, 1)
     y0 = np.zeros(x0.size).reshape(-1, 1)
     y1 = distances.values.reshape(-1, 1)
     segments = np.concatenate(
@@ -99,14 +99,14 @@ class Result:
         self._arrival_times = {}
         self._choppers = {}
         fields = {
-            'tofs': 'tof',
+            'toas': 'toa',
             'wavelengths': 'wavelength',
             'birth_times': 'time',
             'speeds': 'speed',
         }
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
-            self._arrival_times[name] = chopper['data'].coords['tof']
+            self._arrival_times[name] = chopper['data'].coords['toa']
             self._choppers[name] = ChopperReading(
                 distance=chopper['distance'],
                 name=chopper['name'],
@@ -126,7 +126,7 @@ class Result:
         self._detectors = {}
         for name, det in detectors.items():
             self._masks[name] = det['visible_mask']
-            self._arrival_times[name] = det['data'].coords['tof']
+            self._arrival_times[name] = det['data'].coords['toa']
             self._detectors[name] = DetectorReading(
                 distance=det['distance'],
                 name=det['name'],
@@ -177,11 +177,11 @@ class Result:
     ):
         da = furthest_detector.data['pulse', pulse_index]
         visible = da[~da.masks['blocked_by_others']]
-        tofs = visible.coords['tof']
-        if (max_rays <= 0) or (len(tofs) == 0):
+        toas = visible.coords['toa']
+        if (max_rays <= 0) or (len(toas) == 0):
             return
-        if (max_rays is not None) and (len(tofs) > max_rays):
-            inds = np.random.choice(len(tofs), size=max_rays, replace=False)
+        if (max_rays is not None) and (len(toas) > max_rays):
+            inds = np.random.choice(len(toas), size=max_rays, replace=False)
         else:
             inds = slice(None)
         birth_times = visible.coords['time'][inds]
@@ -189,7 +189,7 @@ class Result:
         distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
         _add_rays(
             ax=ax,
-            tofs=tofs[inds],
+            toas=toas[inds],
             birth_times=birth_times,
             distances=distances,
             cbar=cbar,
@@ -221,7 +221,7 @@ class Result:
             key=lambda c: c.distance.value,
         )
         dim = 'component'
-        tofs = sc.concat(
+        toas = sc.concat(
             [
                 self._arrival_times[comp.name][slc][inv_mask][inds]
                 for comp in components
@@ -242,7 +242,7 @@ class Result:
         diff.unit = ''
         _add_rays(
             ax=ax,
-            tofs=(tofs * diff).max(dim=dim),
+            toas=(toas * diff).max(dim=dim),
             birth_times=birth_times,
             distances=(distances * diff).max(dim=dim),
         )
@@ -314,13 +314,13 @@ class Result:
             )
             self._plot_pulse(pulse_index=i, ax=ax)
 
-        det_data = furthest_detector.tofs.visible.data
+        det_data = furthest_detector.toas.visible.data
         if sum(da.sum().value for da in det_data.values()) > 0:
-            times = (da.coords['tof'].max() for da in det_data.values())
+            times = (da.coords['toa'].max() for da in det_data.values())
         else:
             times = (ch.close_times.max() for ch in self._choppers.values())
-        tof_max = reduce(max, times).value
-        dx = 0.05 * tof_max
+        toa_max = reduce(max, times).value
+        dx = 0.05 * toa_max
         # Plot choppers
         for ch in self._choppers.values():
             x0 = ch.open_times.values
@@ -332,26 +332,26 @@ class Result:
             x = np.concatenate(
                 ([[0]] if x[0] > 0 else [x[0:1]])
                 + [x]
-                + ([[tof_max + dx]] if x[-1] < tof_max else [])
+                + ([[toa_max + dx]] if x[-1] < toa_max else [])
             )
             y = np.full_like(x, ch.distance.value)
             y[2::3] = None
             inds = np.argsort(x)
             ax.plot(x[inds], y[inds], color="k")
             ax.text(
-                tof_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
+                toa_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
             )
 
         # Plot detectors
         for det in self._detectors.values():
-            ax.plot([0, tof_max], [det.distance.value] * 2, color="gray", lw=3)
+            ax.plot([0, toa_max], [det.distance.value] * 2, color="gray", lw=3)
             ax.text(
                 0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
             )
 
         ax.set_xlabel("Time-of-flight (us)")
         ax.set_ylabel("Distance (m)")
-        ax.set_xlim(0 - dx, tof_max + dx)
+        ax.set_xlim(0 - dx, toa_max + dx)
         if figsize is None:
             inches = fig.get_size_inches()
             fig.set_size_inches(
@@ -371,10 +371,10 @@ class Result:
             f"{source_sizes[other_dim]} neutrons per pulse.\n  Choppers:\n"
         )
         for name, ch in self._choppers.items():
-            out += f"    {name}: {ch.tofs._repr_string_body()}\n"
+            out += f"    {name}: {ch.toas._repr_string_body()}\n"
         out += "  Detectors:\n"
         for name, det in self._detectors.items():
-            out += f"    {name}: {det.tofs._repr_string_body()}\n"
+            out += f"    {name}: {det.toas._repr_string_body()}\n"
         return out
 
     def __str__(self) -> str:

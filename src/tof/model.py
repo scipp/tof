@@ -143,6 +143,8 @@ class Model:
             container[c.name] = c.as_dict()
             container[c.name]['data'] = self.source.data.copy(deep=False)
             t = birth_time + (c.distance / speed).to(unit=birth_time.unit, copy=False)
+            container[c.name]['data'].coords['toa'] = t
+            # TODO: remove 'tof' coordinate once deprecation period is over
             container[c.name]['data'].coords['tof'] = t
             if isinstance(c, Detector):
                 container[c.name]['visible_mask'] = initial_mask
