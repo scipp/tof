@@ -41,7 +41,7 @@ class DetectorReading(ComponentReading):
     distance: sc.Variable
     name: str
     data: sc.DataArray
-    tofs: ReadingField
+    toas: ReadingField
     wavelengths: ReadingField
     birth_times: ReadingField
     speeds: ReadingField
@@ -51,7 +51,7 @@ class DetectorReading(ComponentReading):
         out += f"  distance: {self.distance:c}\n"
         out += "\n".join(
             f"  {key}: {getattr(self, key)}"
-            for key in ('tofs', 'wavelengths', 'birth_times', 'speeds')
+            for key in ('toas', 'wavelengths', 'birth_times', 'speeds')
         )
         return out
 

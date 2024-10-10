@@ -104,7 +104,7 @@ def _field_to_string(field: ReadingData) -> str:
 class ReadingField:
     """
     Contains the data for the visible neutrons of a given field.
-    Possible fields are ``tofs``, ``wavelengths``, ``birth_times``, and ``speeds``.
+    Possible fields are ``toas``, ``wavelengths``, ``birth_times``, and ``speeds``.
     In the case of a :class:`Chopper`, this also contains the data for the blocked
     neutrons.
 
@@ -200,7 +200,7 @@ class ComponentReading:
 
     def plot(self, bins: int = 300) -> Plot:
         """
-        Plot both the tof and wavelength data side by side.
+        Plot both the toa and wavelength data side by side.
 
         Parameters
         ----------
@@ -208,7 +208,7 @@ class ComponentReading:
             Number of bins to use for histogramming the neutrons.
         """
         fig, ax = plt.subplots(1, 2)
-        self.tofs.plot(bins=bins, ax=ax[0])
+        self.toas.plot(bins=bins, ax=ax[0])
         self.wavelengths.plot(bins=bins, ax=ax[1])
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])

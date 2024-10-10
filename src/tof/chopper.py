@@ -195,7 +195,7 @@ class ChopperReading(ComponentReading):
     open_times: sc.Variable
     close_times: sc.Variable
     data: sc.DataArray
-    tofs: ReadingField
+    toas: ReadingField
     wavelengths: ReadingField
     birth_times: ReadingField
     speeds: ReadingField
@@ -208,7 +208,7 @@ class ChopperReading(ComponentReading):
         out += f"  cutouts: {len(self.open)}\n"
         out += "\n".join(
             f"  {key}: {getattr(self, key)}"
-            for key in ('tofs', 'wavelengths', 'birth_times', 'speeds')
+            for key in ('toas', 'wavelengths', 'birth_times', 'speeds')
         )
         return out
 

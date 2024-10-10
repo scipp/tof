@@ -143,7 +143,7 @@ class Model:
             container[c.name] = c.as_dict()
             container[c.name]['data'] = self.source.data.copy(deep=False)
             t = birth_time + (c.distance / speed).to(unit=birth_time.unit, copy=False)
-            container[c.name]['data'].coords['tof'] = t
+            container[c.name]['data'].coords['toa'] = t
             if isinstance(c, Detector):
                 container[c.name]['visible_mask'] = initial_mask
                 container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
