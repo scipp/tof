@@ -108,8 +108,8 @@ def test_chopper_results_are_read_only(chopper, model):
 
     # Check that basic properties are accessible
     key = 'pulse:0'
-    assert len(ch.tofs.visible.data[key]) == 1
-    assert len(ch.tofs.blocked.data[key]) == 2
+    assert len(ch.toas.visible.data[key]) == 1
+    assert len(ch.toas.blocked.data[key]) == 2
     assert sc.identical(ch.distance, chopper.distance)
     assert sc.identical(ch.phase, chopper.phase)
     # Check that values cannot be overwritten
@@ -118,7 +118,7 @@ def test_chopper_results_are_read_only(chopper, model):
     with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
         ch.frequency = 21.0 * Hz
     with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
-        ch.tofs = [1, 2, 3, 4, 5]
+        ch.toas = [1, 2, 3, 4, 5]
     # Check that choppers cannot be added or removed
     with pytest.raises(TypeError, match='object does not support item assignment'):
         res.choppers['chopper2'] = chopper
@@ -131,7 +131,7 @@ def test_detector_results_are_read_only(detector, model):
     det = res.detectors['detector']
 
     # Check that basic properties are accessible
-    assert len(det.tofs.visible.data['pulse:0']) == 1
+    assert len(det.toas.visible.data['pulse:0']) == 1
     assert sc.identical(det.distance, detector.distance)
     # Check that values cannot be overwritten
     with pytest.raises(FrozenInstanceError, match='cannot assign to field'):
@@ -153,13 +153,13 @@ def test_component_results_data_access(chopper, detector, multi_pulse_source):
     ch = res.choppers['chopper']
     det = res.detectors['detector']
 
-    for field in ('tofs', 'wavelengths', 'birth_times', 'speeds'):
+    for field in ('toas', 'wavelengths', 'birth_times', 'speeds'):
         assert 'visible' in getattr(ch, field).data
         assert 'blocked' in getattr(ch, field).data
         assert 'visible' in getattr(det, field).data
         assert 'blocked' not in getattr(det, field).data
 
-    assert list(ch.tofs.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
+    assert list(ch.toas.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
     assert list(det.wavelengths.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
 
 
@@ -170,11 +170,11 @@ def test_component_data_slicing(chopper, detector, multi_pulse_source):
     res = model.run()
     ch = res.choppers['chopper']
 
-    tofs = ch.tofs[0]
-    assert 'visible' in tofs.data
-    assert 'blocked' in tofs.data
-    vis = ch.tofs.visible[1]
-    assert sc.identical(vis.data['pulse:1'], ch.tofs.visible.data['pulse:1'])
+    toas = ch.toas[0]
+    assert 'visible' in toas.data
+    assert 'blocked' in toas.data
+    vis = ch.toas.visible[1]
+    assert sc.identical(vis.data['pulse:1'], ch.toas.visible.data['pulse:1'])
 
 
 def test_component_results_data_slice_range(chopper, detector, multi_pulse_source):
@@ -184,12 +184,12 @@ def test_component_results_data_slice_range(chopper, detector, multi_pulse_sourc
     res = model.run()
     ch = res.choppers['chopper']
 
-    tofs = ch.tofs[0:2]
-    assert 'visible' in tofs.data
-    assert 'blocked' in tofs.data
-    assert 'pulse:0' in tofs.data['visible']
-    assert 'pulse:1' in tofs.data['visible']
-    assert 'pulse:2' not in tofs.data['visible']
+    toas = ch.toas[0:2]
+    assert 'visible' in toas.data
+    assert 'blocked' in toas.data
+    assert 'pulse:0' in toas.data['visible']
+    assert 'pulse:1' in toas.data['visible']
+    assert 'pulse:2' not in toas.data['visible']
 
 
 def test_component_results_data_slice_negative_index(
@@ -201,12 +201,12 @@ def test_component_results_data_slice_negative_index(
     res = model.run()
     ch = res.choppers['chopper']
 
-    tofs = ch.tofs[0:-1]
-    assert 'visible' in tofs.data
-    assert 'blocked' in tofs.data
-    assert 'pulse:0' in tofs.data['visible']
-    assert 'pulse:1' in tofs.data['visible']
-    assert 'pulse:2' not in tofs.data['visible']
+    toas = ch.toas[0:-1]
+    assert 'visible' in toas.data
+    assert 'blocked' in toas.data
+    assert 'pulse:0' in toas.data['visible']
+    assert 'pulse:1' in toas.data['visible']
+    assert 'pulse:2' not in toas.data['visible']
 
 
 def test_component_results_data_slice_step(chopper, detector, multi_pulse_source):
@@ -216,12 +216,12 @@ def test_component_results_data_slice_step(chopper, detector, multi_pulse_source
     res = model.run()
     ch = res.choppers['chopper']
 
-    tofs = ch.tofs[::2]
-    assert 'visible' in tofs.data
-    assert 'blocked' in tofs.data
-    assert 'pulse:0' in tofs.data['visible']
-    assert 'pulse:1' not in tofs.data['visible']
-    assert 'pulse:2' in tofs.data['visible']
+    toas = ch.toas[::2]
+    assert 'visible' in toas.data
+    assert 'blocked' in toas.data
+    assert 'pulse:0' in toas.data['visible']
+    assert 'pulse:1' not in toas.data['visible']
+    assert 'pulse:2' in toas.data['visible']
 
 
 def test_result_plot_does_not_raise():
@@ -271,13 +271,13 @@ def test_component_repr_does_not_raise():
 def test_componentdata_repr_does_not_raise():
     model = make_ess_model()
     res = model.run()
-    assert repr(res.choppers['chopper'].tofs) is not None
+    assert repr(res.choppers['chopper'].toas) is not None
     assert repr(res.detectors['detector'].wavelengths) is not None
 
 
 def test_data_repr_does_not_raise():
     model = make_ess_model()
     res = model.run()
-    assert repr(res.choppers['chopper'].tofs.visible) is not None
-    assert repr(res.choppers['chopper'].tofs.blocked) is not None
+    assert repr(res.choppers['chopper'].toas.visible) is not None
+    assert repr(res.choppers['chopper'].toas.blocked) is not None
     assert repr(res.detectors['detector'].wavelengths.visible) is not None
