@@ -8,6 +8,7 @@ from typing import Optional, Tuple
 
 import scipp as sc
 
+from .deprecation import deprecated
 from .reading import ComponentReading, ReadingField
 from .utils import two_pi
 
@@ -214,3 +215,8 @@ class ChopperReading(ComponentReading):
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    @property
+    @deprecated("Use 'toas' instead.")
+    def tofs(self) -> ReadingField:
+        return self.toas
