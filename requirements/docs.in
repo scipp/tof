@@ -1,8 +1,8 @@
+-r base.in
 gitpython
 ipykernel
 ipywidgets
 nbsphinx
-scippneutron
 sphinx
 sphinx-autodoc-typehints
 sphinx-book-theme

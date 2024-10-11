@@ -11,11 +11,11 @@ certifi==2024.8.30
     # via requests
 chardet==5.2.0
     # via tox
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
 colorama==0.4.6
     # via tox
-distlib==0.3.8
+distlib==0.3.9
     # via virtualenv
 filelock==3.16.1
     # via
