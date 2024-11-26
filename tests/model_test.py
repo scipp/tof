@@ -416,6 +416,8 @@ def test_to_nxevent_data():
     model = tof.Model(source=source, choppers=choppers, detectors=detectors)
     res = model.run()
 
+    # There should be 1 pulse for monitor data, and 2 pulses for detector data as it
+    # wraps around the pulse period.
     for key, npulses in zip(('monitor', 'detector'), (1, 2)):
         nxevent_data = res.to_nxevent_data(key)
         assert sc.identical(res['monitor'].data.sum().data, nxevent_data.sum().data)
