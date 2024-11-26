@@ -387,3 +387,44 @@ def test_component_distance():
     assert sc.identical(res['monitor'].data.coords['distance'], monitor.distance)
     assert sc.identical(res['detector'].data.coords['distance'], detector.distance)
     assert sc.identical(res['chopper'].data.coords['distance'], chopper.distance)
+
+
+def test_to_nxevent_data():
+    source = tof.Source(facility='ess', neutrons=100_000)
+    choppers = [
+        tof.Chopper(
+            frequency=14.0 * Hz,
+            open=sc.array(
+                dims=['cutout'],
+                values=[0.0],
+                unit='deg',
+            ),
+            close=sc.array(
+                dims=['cutout'],
+                values=[10.0],
+                unit='deg',
+            ),
+            phase=90.0 * deg,
+            distance=8.0 * meter,
+            name="chopper",
+        )
+    ]
+    detectors = [
+        tof.Detector(distance=26.0 * meter, name='monitor'),
+        tof.Detector(distance=32.0 * meter, name='detector'),
+    ]
+    model = tof.Model(source=source, choppers=choppers, detectors=detectors)
+    res = model.run()
+
+    # There should be 1 pulse for monitor data, and 2 pulses for detector data as it
+    # wraps around the pulse period.
+    for key, npulses in zip(('monitor', 'detector'), (1, 2)):
+        nxevent_data = res.to_nxevent_data(key)
+        assert sc.identical(res['monitor'].data.sum().data, nxevent_data.sum().data)
+        assert nxevent_data.sizes['pulse'] == npulses
+        assert nxevent_data.bins.concat().value.coords[
+            'event_time_offset'
+        ].min() >= sc.scalar(0.0, unit='us')
+        assert nxevent_data.bins.concat().value.coords[
+            'event_time_offset'
+        ].max() <= sc.reciprocal(source.frequency).to(unit='us')
