@@ -45,6 +45,7 @@ def _add_rays(
     birth_times: sc.Variable,
     distances: sc.Variable,
     cbar: bool = True,
+    cmap: str = 'gist_rainbow_r',
     wavelengths: Optional[sc.Variable] = None,
     wmin: Optional[sc.Variable] = None,
     wmax: Optional[sc.Variable] = None,
@@ -62,7 +63,7 @@ def _add_rays(
     )
     coll = LineCollection(segments)
     if wavelengths is not None:
-        coll.set_cmap(plt.cm.gist_rainbow_r)
+        coll.set_cmap(plt.colormaps[cmap])
         coll.set_array(wavelengths.values)
         coll.set_norm(plt.Normalize(wmin.value, wmax.value))
         if cbar:
@@ -174,6 +175,7 @@ class Result:
         cbar: bool,
         wmin: sc.Variable,
         wmax: sc.Variable,
+        cmap: str,
     ):
         da = furthest_detector.data['pulse', pulse_index]
         visible = da[~da.masks['blocked_by_others']]
@@ -196,6 +198,7 @@ class Result:
             wavelengths=wavelengths,
             wmin=wmin,
             wmax=wmax,
+            cmap=cmap,
         )
 
     def _plot_blocked_rays(
@@ -265,6 +268,7 @@ class Result:
         figsize: Optional[Tuple[float, float]] = None,
         ax: Optional[plt.Axes] = None,
         cbar: bool = True,
+        cmap: str = 'gist_rainbow_r',
     ) -> Plot:
         """
         Plot the time-distance diagram for the instrument, including the rays of
@@ -286,6 +290,8 @@ class Result:
             Axes to plot on.
         cbar:
             Show a colorbar for the wavelength if ``True``.
+        cmap:
+            Colormap to use for the wavelength colorbar.
         """
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize)
@@ -311,6 +317,7 @@ class Result:
                 cbar=cbar and (i == 0),
                 wmin=wavelengths.min(),
                 wmax=wavelengths.max(),
+                cmap=cmap,
             )
             self._plot_pulse(pulse_index=i, ax=ax)
 
@@ -379,3 +386,30 @@ class Result:
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    def to_nxevent_data(self, key: str) -> sc.DataArray:
+        """
+        Convert a component reading to event data that resembles event data found in a
+        NeXus file.
+
+        Parameters
+        ----------
+        key:
+            Name of the component.
+        """
+        start = sc.datetime("2024-01-01T12:00:00.000000")
+        period = sc.reciprocal(self.source.frequency)
+        raw_data = self[key].data.flatten(to='event')
+        # Select only the neutrons that make it to the detector
+        event_data = raw_data[~raw_data.masks['blocked_by_others']].copy()
+        dt = period.to(unit=event_data.coords['toa'].unit)
+        event_time_zero = (dt * (event_data.coords['toa'] // dt)).to(dtype=int) + start
+        event_data.coords['event_time_zero'] = event_time_zero
+        event_data.coords['event_time_offset'] = event_data.coords.pop(
+            'toa'
+        ) % period.to(unit=dt.unit)
+        return (
+            event_data.drop_coords(['tof', 'speed', 'time', 'wavelength'])
+            .group('event_time_zero')
+            .rename_dims(event_time_zero='pulse')
+        )

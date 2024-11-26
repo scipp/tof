@@ -355,3 +355,76 @@ def test_model_repr_does_not_raise():
         source=source, choppers=[chopper1, chopper2], detectors=[detector]
     )
     assert repr(model) is not None
+
+
+def test_component_distance():
+    # Make a chopper open from 10-20 ms. Assume zero phase.
+    topen = 10.0 * ms
+    tclose = 20.0 * ms
+    chopper = make_chopper(
+        topen=[topen],
+        tclose=[tclose],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='chopper',
+    )
+    monitor = tof.Detector(distance=17 * meter, name='monitor')
+    detector = tof.Detector(distance=20 * meter, name='detector')
+
+    # Make a pulse with 3 neutrons with one neutron going through the chopper opening
+    # and the other two neutrons on either side of the opening.
+    source = make_source(
+        arrival_times=sc.concat(
+            [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
+        ),
+        distance=chopper.distance,
+    )
+
+    model = tof.Model(source=source, choppers=[chopper], detectors=[monitor, detector])
+    res = model.run()
+
+    assert sc.identical(res['monitor'].data.coords['distance'], monitor.distance)
+    assert sc.identical(res['detector'].data.coords['distance'], detector.distance)
+    assert sc.identical(res['chopper'].data.coords['distance'], chopper.distance)
+
+
+def test_to_nxevent_data():
+    source = tof.Source(facility='ess', neutrons=100_000)
+    choppers = [
+        tof.Chopper(
+            frequency=14.0 * Hz,
+            open=sc.array(
+                dims=['cutout'],
+                values=[0.0],
+                unit='deg',
+            ),
+            close=sc.array(
+                dims=['cutout'],
+                values=[10.0],
+                unit='deg',
+            ),
+            phase=90.0 * deg,
+            distance=8.0 * meter,
+            name="chopper",
+        )
+    ]
+    detectors = [
+        tof.Detector(distance=26.0 * meter, name='monitor'),
+        tof.Detector(distance=32.0 * meter, name='detector'),
+    ]
+    model = tof.Model(source=source, choppers=choppers, detectors=detectors)
+    res = model.run()
+
+    # There should be 1 pulse for monitor data, and 2 pulses for detector data as it
+    # wraps around the pulse period.
+    for key, npulses in zip(('monitor', 'detector'), (1, 2)):
+        nxevent_data = res.to_nxevent_data(key)
+        assert sc.identical(res['monitor'].data.sum().data, nxevent_data.sum().data)
+        assert nxevent_data.sizes['pulse'] == npulses
+        assert nxevent_data.bins.concat().value.coords[
+            'event_time_offset'
+        ].min() >= sc.scalar(0.0, unit='us')
+        assert nxevent_data.bins.concat().value.coords[
+            'event_time_offset'
+        ].max() <= sc.reciprocal(source.frequency).to(unit='us')

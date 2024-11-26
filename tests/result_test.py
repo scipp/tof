@@ -255,6 +255,12 @@ def test_result_all_neutrons_blocked_does_not_raise():
     res.plot(blocked_rays=500)
 
 
+def test_result_plot_cmap_does_not_raise():
+    model = make_ess_model()
+    res = model.run()
+    res.plot(cmap='viridis')
+
+
 def test_result_repr_does_not_raise():
     model = make_ess_model()
     res = model.run()
