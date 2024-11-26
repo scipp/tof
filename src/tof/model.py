@@ -144,7 +144,7 @@ class Model:
             container[c.name]['data'] = self.source.data.copy(deep=False)
             t = birth_time + (c.distance / speed).to(unit=birth_time.unit, copy=False)
             container[c.name]['data'].coords['toa'] = t
-            container[c.name]['data'].coords['Ltotal'] = c.distance
+            container[c.name]['data'].coords['distance'] = c.distance
             # TODO: remove 'tof' coordinate once deprecation period is over
             container[c.name]['data'].coords['tof'] = t
             if isinstance(c, Detector):
