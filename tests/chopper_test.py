@@ -103,7 +103,7 @@ def test_phase():
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
         distance=10.0 * meter,
-        name='choppe1',
+        name='chopper1',
     )
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     chopper2 = tof.Chopper(
