@@ -5,3 +5,4 @@ ESS instruments
    :maxdepth: 2
 
    dream
+   odin
