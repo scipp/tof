@@ -22,6 +22,7 @@ def test_angular_speed():
         close=10.0 * deg,
         phase=0.0 * deg,
         distance=5.0 * meter,
+        name='chopper',
     )
     assert chopper.omega == two_pi * f
 
@@ -34,6 +35,7 @@ def test_open_close_times_one_rotation():
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
         distance=5.0 * meter,
+        name='chopper',
     )
 
     topen, tclose = chopper.open_close_times(0 * sec)
@@ -55,6 +57,7 @@ def test_open_close_times_three_rotations():
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
         distance=5.0 * meter,
+        name='chopper',
     )
 
     topen, tclose = chopper.open_close_times(0.21 * sec)
@@ -85,6 +88,7 @@ def test_open_close_angles_scalars_converted_to_arrays():
         close=20.0 * deg,
         phase=0.0 * deg,
         distance=5.0 * meter,
+        name='chopper',
     )
     topen, tclose = chopper.open_close_times(0.0 * sec)
     assert sc.identical(topen[1], (10.0 * deg).to(unit='rad') / (two_pi * f))
@@ -99,6 +103,7 @@ def test_phase():
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=0.0 * deg,
         distance=10.0 * meter,
+        name='choppe1',
     )
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     chopper2 = tof.Chopper(
@@ -107,6 +112,7 @@ def test_phase():
         close=sc.array(dims=['cutout'], values=[20.0], unit='deg'),
         phase=30.0 * deg,
         distance=10.0 * meter,
+        name='chopper2',
     )
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
     assert sc.allclose(topen2, topen1 + (30.0 * deg).to(unit='rad') / chopper2.omega)
@@ -124,6 +130,7 @@ def test_phase_int():
         close=cl,
         phase=30.0 * deg,
         distance=d,
+        name='chopper1',
     )
     chopper2 = tof.Chopper(
         frequency=f,
@@ -131,6 +138,7 @@ def test_phase_int():
         close=cl,
         phase=30 * deg,
         distance=d,
+        name='chopper2',
     )
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
@@ -146,6 +154,7 @@ def test_frequency_must_be_positive():
             close=10.0 * deg,
             phase=0.0 * deg,
             distance=5.0 * meter,
+            name='chopper',
         )
 
 
@@ -159,6 +168,7 @@ def test_open_close_times_counter_rotation():
         close=sc.array(dims=['cutout'], values=[20.0, 130.0], unit='deg'),
         phase=ph,
         distance=d,
+        name='chopper1',
     )
     chopper2 = tof.Chopper(
         frequency=f,
@@ -171,6 +181,7 @@ def test_open_close_times_counter_rotation():
         phase=ph,
         distance=d,
         direction=tof.AntiClockwise,
+        name='chopper2',
     )
 
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
@@ -188,6 +199,7 @@ def test_open_close_times_counter_rotation_with_phase():
         phase=0.0 * deg,
         distance=10.0 * meter,
         direction=tof.AntiClockwise,
+        name='chopper1',
     )
     topen1, tclose1 = chopper1.open_close_times(0.0 * sec)
     chopper2 = tof.Chopper(
@@ -197,6 +209,7 @@ def test_open_close_times_counter_rotation_with_phase():
         phase=30.0 * deg,
         distance=10.0 * meter,
         direction=tof.AntiClockwise,
+        name='chopper2',
     )
     topen2, tclose2 = chopper2.open_close_times(0.0 * sec)
     assert sc.allclose(
@@ -215,6 +228,7 @@ def test_open_close_anticlockwise_multiple_rotations():
         distance=10.0 * meter,
         phase=0 * deg,
         direction=tof.AntiClockwise,
+        name='chopper',
     )
 
     two_rotations_open, two_rotations_close = chopper.open_close_times(0.0 * sec)
@@ -249,6 +263,7 @@ def test_bad_direction_raises():
         phase=ph,
         distance=d,
         direction=tof.Clockwise,
+        name='chopper',
     )
     tof.Chopper(
         frequency=f,
@@ -257,6 +272,7 @@ def test_bad_direction_raises():
         phase=ph,
         distance=d,
         direction=tof.AntiClockwise,
+        name='chopper',
     )
     with pytest.raises(
         ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
@@ -268,6 +284,7 @@ def test_bad_direction_raises():
             phase=ph,
             distance=d,
             direction='clockwise',
+            name='chopper',
         )
     with pytest.raises(
         ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
@@ -279,6 +296,7 @@ def test_bad_direction_raises():
             phase=ph,
             distance=d,
             direction='anti-clockwise',
+            name='chopper',
         )
     with pytest.raises(
         ValueError, match="Chopper direction must be Clockwise or AntiClockwise"
@@ -290,6 +308,7 @@ def test_bad_direction_raises():
             phase=ph,
             distance=d,
             direction=1,
+            name='chopper',
         )
 
 
@@ -303,6 +322,7 @@ def test_chopper_create_from_centers_and_widths():
         widths=widths,
         phase=0.0 * deg,
         distance=5.0 * meter,
+        name='chopper',
     )
     assert sc.allclose(chopper.open, centers - widths / 2)
     assert sc.allclose(chopper.close, centers + widths / 2)
@@ -313,6 +333,7 @@ def test_chopper_create_from_centers_and_widths():
         close=sc.array(dims=['cutout'], values=[20.0, 54.0], unit='deg'),
         phase=0.0 * deg,
         distance=5.0 * meter,
+        name='chopper',
     )
     assert sc.allclose(chopper.open, expected.open)
     assert sc.allclose(chopper.close, expected.close)
@@ -330,4 +351,5 @@ def test_chopper_create_raises_when_both_edges_and_centers_are_supplied():
             widths=10.0 * deg,
             phase=0.0 * deg,
             distance=5.0 * meter,
+            name='chopper',
         )

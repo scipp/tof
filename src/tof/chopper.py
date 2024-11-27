@@ -32,6 +32,8 @@ class Chopper:
         The frequency of the chopper. Must be positive.
     distance:
         The distance from the source to the chopper.
+    name:
+        The name of the chopper.
     phase:
         The phase of the chopper. Because the phase offset implemented as a time delay
         on real beamline choppers, it is applied in the opposite direction
@@ -46,8 +48,6 @@ class Chopper:
         The centers of the chopper cutouts.
     widths:
         The widths of the chopper cutouts.
-    name:
-        The name of the chopper.
 
     Notes
     -----
@@ -59,13 +59,13 @@ class Chopper:
         *,
         frequency: sc.Variable,
         distance: sc.Variable,
-        phase: sc.Variable,
+        name: str,
+        phase: sc.Variable = sc.scalar(0.0, unit='rad'),
         open: Optional[sc.Variable] = None,
         close: Optional[sc.Variable] = None,
         centers: Optional[sc.Variable] = None,
         widths: Optional[sc.Variable] = None,
         direction: Direction = Clockwise,
-        name: str = "",
     ):
         if frequency <= (0.0 * frequency.unit):
             raise ValueError(f"Chopper frequency must be positive, got {frequency:c}.")
