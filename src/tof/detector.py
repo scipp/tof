@@ -22,7 +22,7 @@ class Detector:
         The name of the detector.
     """
 
-    def __init__(self, distance: sc.Variable, name: str = "detector"):
+    def __init__(self, distance: sc.Variable, name: str):
         self.distance = distance.to(dtype=float, copy=False)
         self.name = name
 
