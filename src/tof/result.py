@@ -33,9 +33,9 @@ def _make_reading_data(component, dim, is_chopper=False):
             blocked[name] = sc.DataArray(data=bsel.data, coords={dim: bsel.coords[dim]})
     return ReadingField(
         visible=ReadingData(data=sc.DataGroup(visible), dim=dim),
-        blocked=ReadingData(data=sc.DataGroup(blocked), dim=dim)
-        if is_chopper
-        else None,
+        blocked=(
+            ReadingData(data=sc.DataGroup(blocked), dim=dim) if is_chopper else None
+        ),
     )
 
 

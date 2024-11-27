@@ -60,7 +60,7 @@ class Chopper:
         frequency: sc.Variable,
         distance: sc.Variable,
         name: str,
-        phase: sc.Variable = sc.scalar(0.0, unit='rad'),
+        phase: Optional[sc.Variable] = None,
         open: Optional[sc.Variable] = None,
         close: Optional[sc.Variable] = None,
         centers: Optional[sc.Variable] = None,
@@ -75,6 +75,8 @@ class Chopper:
                 "Chopper direction must be Clockwise or AntiClockwise"
                 f", got {direction}."
             )
+        if phase is None:
+            phase = sc.scalar(0.0, unit='deg')
         self.direction = direction
         # Check that either open/close or centers/widths are provided, but not both
         if tuple(x for x in (open, close, centers, widths) if x is not None) not in (
