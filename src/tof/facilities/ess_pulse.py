@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+"""
+The data here was obtained from the McStas model of the ESS moderator.
+"""
+
 import scipp as sc
 
 from ..utils import FacilityPulse
