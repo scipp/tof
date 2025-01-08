@@ -3,6 +3,7 @@
 
 """
 The data here was obtained from the McStas model of the ESS moderator.
+See https://www2.mcstas.org/download/components/3.4_current/sources/ESS_butterfly.html.
 """
 
 import scipp as sc
