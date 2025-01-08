@@ -10,7 +10,7 @@ import plopp as pp
 import scipp as sc
 from scipp.scipy.interpolate import interp1d
 
-from . import facilities
+from .facilities import library as facilities
 from .utils import Plot, wavelength_to_speed
 
 TIME_UNIT = "us"
@@ -208,7 +208,7 @@ class Source:
         self.data = None
 
         if facility is not None:
-            facility_params = getattr(facilities, self.facility)
+            facility_params = facilities[self.facility]
             self.frequency = facility_params.frequency
             pulse_params = _make_pulses(
                 neutrons=self.neutrons,
