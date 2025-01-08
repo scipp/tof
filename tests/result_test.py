@@ -261,6 +261,15 @@ def test_result_plot_cmap_does_not_raise():
     res.plot(cmap='viridis')
 
 
+def test_result_plot_no_detectors_does_not_raise():
+    model = make_ess_model()
+    model._detectors = {}
+    res = model.run()
+    res.plot()
+    res.plot(max_rays=5000)
+    res.plot(max_rays=50, blocked_rays=3000)
+
+
 def test_result_repr_does_not_raise():
     model = make_ess_model()
     res = model.run()
