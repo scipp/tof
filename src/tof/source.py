@@ -156,7 +156,9 @@ def _make_pulses(
         unit=TIME_UNIT,
     ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons}) + (
         sc.arange("pulse", pulses) / frequency
-    ).to(unit=TIME_UNIT, copy=False)
+    ).to(
+        unit=TIME_UNIT, copy=False
+    )
 
     wavelength = sc.array(
         dims=[dim],
