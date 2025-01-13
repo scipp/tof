@@ -40,6 +40,7 @@ def _make_pulses(
     p_time: sc.DataArray,
     p_wav: sc.DataArray,
     sampling: int,
+    seed: Optional[int],
     wmin: Optional[sc.Variable] = None,
     wmax: Optional[sc.Variable] = None,
 ):
@@ -66,6 +67,8 @@ def _make_pulses(
         Wavelength probability distribution for a single pulse.
     sampling:
         Number of points used to sample the probability distributions.
+    seed:
+        Seed for the random number generator.
     wmin:
         Minimum neutron wavelength.
     wmax:
@@ -127,14 +130,15 @@ def _make_pulses(
     times = []
     wavs = []
     ntot = pulses * neutrons
+    rng = np.random.default_rng(seed)
     while n < ntot:
         size = ntot - n
-        t = np.random.choice(
+        t = rng.choice(
             p_time.coords[t_dim].values, size=size, p=p_time.values
-        ) + np.random.normal(scale=dt, size=size)
-        w = np.random.choice(
+        ) + rng.normal(scale=dt, size=size)
+        w = rng.choice(
             p_wav.coords[w_dim].values, size=size, p=p_wav.values
-        ) + np.random.normal(scale=dw, size=size)
+        ) + rng.normal(scale=dw, size=size)
         mask = (
             (t >= tmin.value)
             & (t <= tmax.value)
@@ -152,9 +156,7 @@ def _make_pulses(
         unit=TIME_UNIT,
     ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons}) + (
         sc.arange("pulse", pulses) / frequency
-    ).to(
-        unit=TIME_UNIT, copy=False
-    )
+    ).to(unit=TIME_UNIT, copy=False)
 
     wavelength = sc.array(
         dims=[dim],
@@ -191,6 +193,8 @@ class Source:
         Minimum neutron wavelength.
     wmax:
         Maximum neutron wavelength.
+    seed:
+        Seed for the random number generator.
     """
 
     def __init__(
@@ -201,11 +205,13 @@ class Source:
         sampling: int = 1000,
         wmin: Optional[sc.Variable] = None,
         wmax: Optional[sc.Variable] = None,
+        seed: Optional[int] = None,
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
         self.pulses = int(pulses)
         self.data = None
+        # self.seed = seed
 
         if facility is not None:
             facility_params = facilities[self.facility]
@@ -219,6 +225,7 @@ class Source:
                 pulses=pulses,
                 wmin=wmin,
                 wmax=wmax,
+                seed=seed,
             )
             self.data = sc.DataArray(
                 data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),
@@ -290,6 +297,7 @@ class Source:
         pulses: int = 1,
         frequency: Optional[sc.Variable] = None,
         sampling: Optional[int] = 1000,
+        seed: Optional[int] = None,
     ):
         """
         Create source pulses from time a wavelength probability distributions.
@@ -314,6 +322,8 @@ class Source:
             Frequency of the pulse.
         sampling:
             Number of points used to interpolate the probability distributions.
+        seed:
+            Seed for the random number generator.
         """
 
         source = cls(facility=None, neutrons=neutrons, pulses=pulses)
@@ -325,6 +335,7 @@ class Source:
             frequency=source.frequency,
             pulses=pulses,
             sampling=sampling,
+            seed=seed,
         )
         source.data = sc.DataArray(
             data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),

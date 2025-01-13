@@ -267,3 +267,41 @@ def test_multiple_pulses_from_neutrons_no_frequency_raises():
 def test_source_repr_does_not_raise():
     assert repr(tof.Source(facility='ess', neutrons=100_000)) is not None
     assert repr(tof.Source(facility='ess', neutrons=100_000, pulses=3)) is not None
+
+
+def test_seed_ess_pulse():
+    a = tof.Source(facility='ess', neutrons=100_000, seed=1234)
+    b = tof.Source(facility='ess', neutrons=100_000, seed=1234)
+    assert sc.identical(a.data, b.data)
+    c = tof.Source(facility='ess', neutrons=100_000, seed=0)
+    assert not sc.identical(a.data, c.data)
+
+
+def test_seed_from_distribution():
+    v = np.ones(9) * 0.1
+    v[3:6] = 1.0
+
+    p_time = sc.DataArray(
+        data=sc.array(dims=['time'], values=v),
+        coords={'time': sc.linspace('time', 0.0, 8000.0, len(v), unit='us')},
+    )
+    p_wav = sc.DataArray(
+        data=sc.array(dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0]),
+        coords={
+            'wavelength': sc.array(
+                dims=['wavelength'], values=[1.0, 2.0, 3.0, 4.0], unit='angstrom'
+            )
+        },
+    )
+
+    a = tof.Source.from_distribution(
+        neutrons=100_000, p_time=p_time, p_wav=p_wav, seed=12
+    )
+    b = tof.Source.from_distribution(
+        neutrons=100_000, p_time=p_time, p_wav=p_wav, seed=12
+    )
+    assert sc.identical(a.data, b.data)
+    c = tof.Source.from_distribution(
+        neutrons=100_000, p_time=p_time, p_wav=p_wav, seed=1
+    )
+    assert not sc.identical(a.data, c.data)
