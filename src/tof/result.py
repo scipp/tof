@@ -390,7 +390,7 @@ class Result:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def to_nxevent_data(self, key: str) -> sc.DataArray:
+    def to_nxevent_data(self, key: Optional[str] = None) -> sc.DataArray:
         """
         Convert a component reading to event data that resembles event data found in a
         NeXus file.
@@ -402,9 +402,28 @@ class Result:
         """
         start = sc.datetime("2024-01-01T12:00:00.000000")
         period = sc.reciprocal(self.source.frequency)
-        raw_data = self[key].data.flatten(to='event')
-        # Select only the neutrons that make it to the detector
-        event_data = raw_data[~raw_data.masks['blocked_by_others']].copy()
+
+        keys = list(self._detectors.keys()) if key is None else [key]
+
+        event_data = []
+        for name in keys:
+            raw_data = self._detectors[name].data.flatten(to='event')
+            events = (
+                raw_data[~raw_data.masks['blocked_by_others']]
+                .copy()
+                .drop_masks('blocked_by_others')
+            )
+            events.coords['distance'] = sc.broadcast(
+                events.coords['distance'], sizes=events.sizes
+            ).copy()
+            event_data.append(events)
+
+        event_data = sc.concat(event_data, dim=event_data[0].dim)
+        # events
+
+        # raw_data = self[key].data.flatten(to='event')
+        # # Select only the neutrons that make it to the detector
+        # event_data = raw_data[~raw_data.masks['blocked_by_others']].copy()
         dt = period.to(unit=event_data.coords['toa'].unit)
         event_time_zero = (dt * (event_data.coords['toa'] // dt)).to(dtype=int) + start
         event_data.coords['event_time_zero'] = event_time_zero
@@ -413,6 +432,6 @@ class Result:
         ) % period.to(unit=dt.unit)
         return (
             event_data.drop_coords(['tof', 'speed', 'time', 'wavelength'])
-            .group('event_time_zero')
+            .group('distance', 'event_time_zero')
             .rename_dims(event_time_zero='pulse')
-        )
+        ).rename(distance='Ltotal')
