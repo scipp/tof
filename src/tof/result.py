@@ -392,13 +392,13 @@ class Result:
 
     def to_nxevent_data(self, key: Optional[str] = None) -> sc.DataArray:
         """
-        Convert a component reading to event data that resembles event data found in a
+        Convert a detector reading to event data that resembles event data found in a
         NeXus file.
 
         Parameters
         ----------
         key:
-            Name of the component.
+            Name of the detector. If ``None``, all detectors are included.
         """
         start = sc.datetime("2024-01-01T12:00:00.000000")
         period = sc.reciprocal(self.source.frequency)
@@ -419,11 +419,6 @@ class Result:
             event_data.append(events)
 
         event_data = sc.concat(event_data, dim=event_data[0].dim)
-        # events
-
-        # raw_data = self[key].data.flatten(to='event')
-        # # Select only the neutrons that make it to the detector
-        # event_data = raw_data[~raw_data.masks['blocked_by_others']].copy()
         dt = period.to(unit=event_data.coords['toa'].unit)
         event_time_zero = (dt * (event_data.coords['toa'] // dt)).to(dtype=int) + start
         event_data.coords['event_time_zero'] = event_time_zero
