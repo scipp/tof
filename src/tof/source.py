@@ -213,7 +213,6 @@ class Source:
         self.neutrons = int(neutrons)
         self.pulses = int(pulses)
         self.data = None
-        # self.seed = seed
 
         if facility is not None:
             facility_params = facilities[self.facility]
