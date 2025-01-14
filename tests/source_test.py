@@ -104,24 +104,9 @@ def test_creation_from_distribution():
     assert sc.isclose(mid / right, sc.scalar(10.0), rtol=rtol)
 
     # Make sure distribution is monotonically increasing
-    locs = np.linspace(1.0, 4.0, 20)
-    step = 0.5 * (locs[1] - locs[0])
-    for i in range(len(locs) - 2):
-        a = da.hist(
-            wavelength=sc.array(
-                dims=['wavelength'],
-                values=[locs[i] - step, locs[i] + step],
-                unit='angstrom',
-            )
-        ).data.sum()
-        b = da.hist(
-            wavelength=sc.array(
-                dims=['wavelength'],
-                values=[locs[i + 1] - step, locs[i + 1] + step],
-                unit='angstrom',
-            )
-        ).data.sum()
-        assert b > a
+    h = da.hist(wavelength=10)
+    diff = h.data[1:] - h.data[:-1]
+    assert sc.all(diff > sc.scalar(0.0, unit='counts'))
 
 
 def test_non_integer_sampling():

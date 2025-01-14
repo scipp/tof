@@ -428,3 +428,7 @@ def test_to_nxevent_data():
         assert nxevent_data.bins.concat().value.coords[
             'event_time_offset'
         ].max() <= sc.reciprocal(source.frequency).to(unit='us')
+
+    # Test when we include all detectors at once
+    nxevent_data = res.to_nxevent_data()
+    assert nxevent_data.sizes == {'detector_number': 2, 'pulse': 2}
