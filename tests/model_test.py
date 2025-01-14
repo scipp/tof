@@ -431,4 +431,4 @@ def test_to_nxevent_data():
 
     # Test when we include all detectors at once
     nxevent_data = res.to_nxevent_data()
-    assert nxevent_data.sizes == {'Ltotal': 2, 'pulse': 2}
+    assert nxevent_data.sizes == {'detector_number': 2, 'pulse': 2}
