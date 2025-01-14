@@ -425,8 +425,10 @@ class Result:
         event_data.coords['event_time_offset'] = event_data.coords.pop(
             'toa'
         ) % period.to(unit=dt.unit)
-        return (
+        out = (
             event_data.drop_coords(['tof', 'speed', 'time', 'wavelength'])
             .group('distance', 'event_time_zero')
             .rename_dims(event_time_zero='pulse')
-        ).rename(distance='Ltotal')
+        ).rename_dims(distance='detector_number')
+        out.coords['Ltotal'] = out.coords.pop('distance')
+        return out
