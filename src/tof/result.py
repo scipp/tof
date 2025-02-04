@@ -427,8 +427,8 @@ class Result:
         ) % period.to(unit=dt.unit)
         out = (
             event_data.drop_coords(['tof', 'speed', 'time', 'wavelength'])
-            .group('distance', 'event_time_zero')
-            .rename_dims(event_time_zero='pulse')
-        ).rename_dims(distance='detector_number')
+            .group('distance')
+            .rename_dims(distance='detector_number')
+        )
         out.coords['Ltotal'] = out.coords.pop('distance')
         return out

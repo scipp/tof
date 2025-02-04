@@ -421,7 +421,8 @@ def test_to_nxevent_data():
     for key, npulses in zip(('monitor', 'detector'), (1, 2)):
         nxevent_data = res.to_nxevent_data(key)
         assert sc.identical(res['monitor'].data.sum().data, nxevent_data.sum().data)
-        assert nxevent_data.sizes['pulse'] == npulses
+        grouped = nxevent_data.group('event_time_zero')
+        assert grouped.sizes['event_time_zero'] == npulses
         assert nxevent_data.bins.concat().value.coords[
             'event_time_offset'
         ].min() >= sc.scalar(0.0, unit='us')
@@ -431,4 +432,4 @@ def test_to_nxevent_data():
 
     # Test when we include all detectors at once
     nxevent_data = res.to_nxevent_data()
-    assert nxevent_data.sizes == {'detector_number': 2, 'pulse': 2}
+    assert nxevent_data.sizes == {'detector_number': 2}
