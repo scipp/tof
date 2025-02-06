@@ -5,7 +5,6 @@ import os
 import sys
 from datetime import datetime
 
-
 src = os.path.abspath('../src')
 os.environ['PYTHONPATH'] = src
 sys.path.insert(0, src)
