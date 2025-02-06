@@ -3,6 +3,7 @@
 
 import os
 import sys
+from datetime import datetime
 
 src = os.path.abspath('../src')
 os.environ['PYTHONPATH'] = src
@@ -11,7 +12,7 @@ sys.path.insert(0, src)
 # -- Project information -----------------------------------------------------
 
 project = 'tof'
-copyright = '2023, Scipp contributors'
+copyright = f'{datetime.now().year}, Scipp contributors'
 author = 'Neil Vaytet'
 
 # -- General configuration ---------------------------------------------------
