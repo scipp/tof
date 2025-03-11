@@ -359,7 +359,7 @@ class Result:
                 0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
             )
 
-        ax.set_xlabel("Time-of-flight (us)")
+        ax.set_xlabel("Time (us)")
         ax.set_ylabel("Distance (m)")
         ax.set_xlim(0 - dx, toa_max + dx)
         if figsize is None:
