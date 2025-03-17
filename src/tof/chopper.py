@@ -8,8 +8,7 @@ from typing import Optional, Tuple
 
 import scipp as sc
 
-from .deprecation import deprecated
-from .reading import ComponentReading, ReadingField
+from .reading import ComponentReading
 from .utils import two_pi
 
 
@@ -198,10 +197,10 @@ class ChopperReading(ComponentReading):
     open_times: sc.Variable
     close_times: sc.Variable
     data: sc.DataArray
-    toas: ReadingField
-    wavelengths: ReadingField
-    birth_times: ReadingField
-    speeds: ReadingField
+    # toas: ReadingField
+    # wavelengths: ReadingField
+    # birth_times: ReadingField
+    # speeds: ReadingField
 
     def __repr__(self) -> str:
         out = f"ChopperReading: '{self.name}'\n"
@@ -218,7 +217,7 @@ class ChopperReading(ComponentReading):
     def __str__(self) -> str:
         return self.__repr__()
 
-    @property
-    @deprecated("Use 'toas' instead.")
-    def tofs(self) -> ReadingField:
-        return self.toas
+    # @property
+    # @deprecated("Use 'toas' instead.")
+    # def tofs(self) -> ReadingField:
+    #     return self.toas

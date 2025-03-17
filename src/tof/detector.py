@@ -5,8 +5,7 @@ from dataclasses import dataclass
 
 import scipp as sc
 
-from .deprecation import deprecated
-from .reading import ComponentReading, ReadingField
+from .reading import ComponentReading
 
 
 class Detector:
@@ -42,24 +41,68 @@ class DetectorReading(ComponentReading):
     distance: sc.Variable
     name: str
     data: sc.DataArray
-    toas: ReadingField
-    wavelengths: ReadingField
-    birth_times: ReadingField
-    speeds: ReadingField
+    # toa: ReadingField
+    # wavelength: ReadingField
+    # birth_time: ReadingField
+    # speed: ReadingField
 
     def __repr__(self) -> str:
         out = f"DetectorReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
         out += "\n".join(
             f"  {key}: {getattr(self, key)}"
-            for key in ('toas', 'wavelengths', 'birth_times', 'speeds')
+            for key in ('toa', 'wavelength', 'birth_time', 'speed')
         )
         return out
 
     def __str__(self) -> str:
         return self.__repr__()
 
-    @property
-    @deprecated("Use 'toas' instead.")
-    def tofs(self) -> ReadingField:
-        return self.toas
+    # @property
+    # @deprecated("Use 'toa' instead.")
+    # def tof(self) -> ReadingField:
+    #     return self.toa
+
+    # @property
+    # def toa(self) -> ReadingField:
+    #     return ReadingField(
+    #         data=sc.DataArray(
+    #             data=self.data.data,
+    #             coords={"toa": self.data.coords["toa"]},
+    #             masks=self.data.masks,
+    #         ),
+    #         dim="toa",
+    #     )
+
+    # @property
+    # def wavelength(self) -> ReadingField:
+    #     return ReadingField(
+    #         data=sc.DataArray(
+    #             data=self.data.data,
+    #             coords={"wavelength": self.data.coords["wavelength"]},
+    #             masks=self.data.masks,
+    #         ),
+    #         dim="wavelength",
+    #     )
+
+    # @property
+    # def birth_time(self) -> ReadingField:
+    #     return ReadingField(
+    #         data=sc.DataArray(
+    #             data=self.data.data,
+    #             coords={"birth_time": self.data.coords["birth_time"]},
+    #             masks=self.data.masks,
+    #         ),
+    #         dim="birth_time",
+    #     )
+
+    # @property
+    # def speed(self) -> ReadingField:
+    #     return ReadingField(
+    #         data=sc.DataArray(
+    #             data=self.data.data,
+    #             coords={"speed": self.data.coords["speed"]},
+    #             masks=self.data.masks,
+    #         ),
+    #         dim="speed",
+    #     )

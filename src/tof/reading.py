@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Union
 
 import matplotlib.pyplot as plt
 import plopp as pp
@@ -100,96 +100,130 @@ def _field_to_string(field: ReadingData) -> str:
     return "[" + ", ".join(out) + "]"
 
 
+# @dataclass(frozen=True)
+# class ReadingField:
+#     """
+#     Contains the data for the visible neutrons of a given field.
+#     Possible fields are ``toas``, ``wavelengths``, ``birth_times``, and ``speeds``.
+#     In the case of a :class:`Chopper`, this also contains the data for the blocked
+#     neutrons.
+
+#     Parameters
+#     ----------
+#     visible:
+#         The visible neutrons (those that are not blocked by the component).
+#     blocked:
+#         The blocked neutrons (those that are blocked by the component).
+#     """
+
+#     visible: ReadingData
+#     blocked: Optional[ReadingData] = None
+
+#     @property
+#     def data(self) -> sc.DataGroup:
+#         """
+#         The neutrons that reach the component, split up into those that are blocked by
+#         the component and those that are not.
+#         """
+#         out = {"visible": self.visible.data}
+#         if self.blocked is not None:
+#             out["blocked"] = self.blocked.data
+#         return sc.DataGroup(out)
+
+#     def __getitem__(self, val):
+#         return self.__class__(
+#             visible=self.visible[val],
+#             blocked=self.blocked[val] if self.blocked is not None else None,
+#         )
+
+#     def _repr_string_body(self) -> str:
+#         out = f"visible={_field_to_string(self.visible)}"
+#         if self.blocked is not None:
+#             out += f", blocked={_field_to_string(self.blocked)}"
+#         return out
+
+#     def __repr__(self) -> str:
+#         return f"ReadingData(dim='{self.visible.dim}', {self._repr_string_body()})"
+
+#     def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
+#         """
+#         Plot the data for the neutrons that reach the component, split up into those
+#         that are blocked by the component and those that are not.
+
+#         Parameters
+#         ----------
+#         bins:
+#             The bins to use for histogramming the neutrons.
+#         """
+#         if self.blocked is None:
+#             return self.visible.plot(bins=bins, **kwargs)
+#         visible = self.visible.data
+#         blocked = self.blocked.data
+#         if isinstance(visible, sc.DataArray):
+#             visible = sc.DataGroup({"onepulse": visible})
+#             blocked = sc.DataGroup({"onepulse": blocked})
+#         dim = self.visible.dim
+#         to_plot = {}
+#         colors = {}
+#         edges = bins
+#         for i, p in enumerate(visible):
+#             if isinstance(bins, int):
+#                 edges = sc.linspace(
+#                     dim=dim,
+#                     start=min(
+#                         visible[p].coords[dim].min(), blocked[p].coords[dim].min()
+#                     ).value,
+#                     stop=max(
+#                         visible[p].coords[dim].max(), blocked[p].coords[dim].max()
+#                     ).value,
+#                     num=bins,
+#                     unit=visible[p].coords[dim].unit,
+#                 )
+#             vk = f"visible-{p}"
+#             bk = f"blocked-{p}"
+#             to_plot.update(
+#                 {vk: visible[p].hist({dim: edges}), bk: blocked[p].hist({dim: edges})}
+#             )
+#             colors.update({vk: f"C{i}", bk: "gray"})
+#         out = pp.plot(
+#             to_plot,
+#             **{**{"color": colors}, **kwargs},
+#         )
+#         return out
+
+
 @dataclass(frozen=True)
 class ReadingField:
-    """
-    Contains the data for the visible neutrons of a given field.
-    Possible fields are ``toas``, ``wavelengths``, ``birth_times``, and ``speeds``.
-    In the case of a :class:`Chopper`, this also contains the data for the blocked
-    neutrons.
+    data: sc.DataArray
+    dim: str
 
-    Parameters
-    ----------
-    visible:
-        The visible neutrons (those that are not blocked by the component).
-    blocked:
-        The blocked neutrons (those that are blocked by the component).
-    """
-
-    visible: ReadingData
-    blocked: Optional[ReadingData] = None
-
-    @property
-    def data(self) -> sc.DataGroup:
-        """
-        The neutrons that reach the component, split up into those that are blocked by
-        the component and those that are not.
-        """
-        out = {"visible": self.visible.data}
-        if self.blocked is not None:
-            out["blocked"] = self.blocked.data
-        return sc.DataGroup(out)
-
-    def __getitem__(self, val):
-        return self.__class__(
-            visible=self.visible[val],
-            blocked=self.blocked[val] if self.blocked is not None else None,
-        )
-
-    def _repr_string_body(self) -> str:
-        out = f"visible={_field_to_string(self.visible)}"
-        if self.blocked is not None:
-            out += f", blocked={_field_to_string(self.blocked)}"
-        return out
-
-    def __repr__(self) -> str:
-        return f"ReadingData(dim='{self.visible.dim}', {self._repr_string_body()})"
-
-    def plot(self, bins: Union[int, sc.Variable] = 300, **kwargs):
-        """
-        Plot the data for the neutrons that reach the component, split up into those
-        that are blocked by the component and those that are not.
-
-        Parameters
-        ----------
-        bins:
-            The bins to use for histogramming the neutrons.
-        """
-        if self.blocked is None:
-            return self.visible.plot(bins=bins, **kwargs)
-        visible = self.visible.data
-        blocked = self.blocked.data
-        if isinstance(visible, sc.DataArray):
-            visible = sc.DataGroup({"onepulse": visible})
-            blocked = sc.DataGroup({"onepulse": blocked})
-        dim = self.visible.dim
+    def plot(self, bins: int = 300, **kwargs):
+        by_pulse = sc.collapse(self.data, keep="event")
         to_plot = {}
-        colors = {}
-        edges = bins
-        for i, p in enumerate(visible):
-            if isinstance(bins, int):
-                edges = sc.linspace(
-                    dim=dim,
-                    start=min(
-                        visible[p].coords[dim].min(), blocked[p].coords[dim].min()
-                    ).value,
-                    stop=max(
-                        visible[p].coords[dim].max(), blocked[p].coords[dim].max()
-                    ).value,
-                    num=bins,
-                    unit=visible[p].coords[dim].unit,
+        color = {}
+        if "blocked_by_me" in self.data.masks:
+            for key, da in by_pulse.items():
+                name = f"blocked-{key}"
+                to_plot[name] = (
+                    da[da.masks["blocked_by_me"]]
+                    .drop_masks(list(da.masks.keys()))
+                    .hist({self.dim: bins})
                 )
-            vk = f"visible-{p}"
-            bk = f"blocked-{p}"
-            to_plot.update(
-                {vk: visible[p].hist({dim: edges}), bk: blocked[p].hist({dim: edges})}
-            )
-            colors.update({vk: f"C{i}", bk: "gray"})
-        out = pp.plot(
-            to_plot,
-            **{**{"color": colors}, **kwargs},
-        )
-        return out
+                color[name] = "gray"
+        to_plot.update({key: da.hist({self.dim: bins}) for key, da in by_pulse.items()})
+        color.update({key: f"C{i}" for i, key in enumerate(by_pulse)})
+        return pp.plot(to_plot, **{**{"color": color}, **kwargs})
+
+
+def _make_reading_field(da: sc.DataArray, dim: str) -> ReadingField:
+    return ReadingField(
+        data=sc.DataArray(
+            data=da.data,
+            coords={dim: da.coords[dim]},
+            masks=da.masks,
+        ),
+        dim=dim,
+    )
 
 
 class ComponentReading:
@@ -197,6 +231,22 @@ class ComponentReading:
     Data reading for a component placed in the beam path. The reading will have a
     record of the arrival times and wavelengths of the neutrons that passed through it.
     """
+
+    @property
+    def toa(self) -> ReadingField:
+        return _make_reading_field(self.data, dim="toa")
+
+    @property
+    def wavelength(self) -> ReadingField:
+        return _make_reading_field(self.data, dim="wavelength")
+
+    @property
+    def birth_time(self) -> ReadingField:
+        return _make_reading_field(self.data, dim="birth_time")
+
+    @property
+    def speed(self) -> ReadingField:
+        return _make_reading_field(self.data, dim="speed")
 
     def plot(self, bins: int = 300) -> Plot:
         """
@@ -208,8 +258,8 @@ class ComponentReading:
             Number of bins to use for histogramming the neutrons.
         """
         fig, ax = plt.subplots(1, 2)
-        self.toas.plot(bins=bins, ax=ax[0])
-        self.wavelengths.plot(bins=bins, ax=ax[1])
+        self.toa.plot(bins=bins, ax=ax[0])
+        self.wavelength.plot(bins=bins, ax=ax[1])
         size = fig.get_size_inches()
         fig.set_size_inches(size[0] * 2, size[1])
         fig.tight_layout()
