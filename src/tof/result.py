@@ -18,25 +18,6 @@ from .source import Source, SourceParameters
 from .utils import Plot
 
 
-# def _make_reading_data(component, dim, is_chopper=False):
-#     visible = {}
-#     blocked = {} if is_chopper else None
-#     keep_dim = (set(component.dims) - {'pulse'}).pop()
-#     for name, da in sc.collapse(component, keep=keep_dim).items():
-#         one_mask = ~reduce(lambda a, b: a | b, da.masks.values())
-#         vsel = da[one_mask]
-#         visible[name] = sc.DataArray(data=vsel.data, coords={dim: vsel.coords[dim]})
-#         if is_chopper:
-#             bsel = da[da.masks['blocked_by_me']]
-#             blocked[name] = sc.DataArray(data=bsel.data, coords={dim: bsel.coords[dim]})
-#     return ReadingField(
-#         visible=ReadingData(data=sc.DataGroup(visible), dim=dim),
-#         blocked=(
-#             ReadingData(data=sc.DataGroup(blocked), dim=dim) if is_chopper else None
-#         ),
-#     )
-
-
 def _add_rays(
     ax: plt.Axes,
     toas: sc.Variable,
@@ -97,12 +78,6 @@ class Result:
         self._masks = {}
         self._arrival_times = {}
         self._choppers = {}
-        # fields = {
-        #     'toas': 'toa',
-        #     'wavelengths': 'wavelength',
-        #     'birth_times': 'time',
-        #     'speeds': 'speed',
-        # }
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
             self._arrival_times[name] = chopper['data'].coords['toa']
@@ -116,10 +91,6 @@ class Result:
                 open_times=chopper['open_times'],
                 close_times=chopper['close_times'],
                 data=chopper['data'],
-                # **{
-                #     key: _make_reading_data(chopper['data'], dim=dim, is_chopper=True)
-                #     for key, dim in fields.items()
-                # },
             )
 
         self._detectors = {}
@@ -127,13 +98,7 @@ class Result:
             self._masks[name] = det['visible_mask']
             self._arrival_times[name] = det['data'].coords['toa']
             self._detectors[name] = DetectorReading(
-                distance=det['distance'],
-                name=det['name'],
-                data=det['data'],
-                # **{
-                #     key: _make_reading_data(det['data'], dim=dim)
-                #     for key, dim in fields.items()
-                # },
+                distance=det['distance'], name=det['name'], data=det['data']
             )
 
         self._choppers = MappingProxyType(self._choppers)

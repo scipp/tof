@@ -360,20 +360,14 @@ class Source:
         bins:
             Number of bins to use for histogramming the neutrons.
         """
-        # fig, ax = plt.subplots(1, 2)
         dim = (set(self.data.dims) - {"pulse"}).pop()
         collapsed = sc.collapse(self.data, keep=dim)
         f1 = pp.plot(
             {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
-            # ax=ax[0],
         )
         f2 = pp.plot(
             {k: da.hist(wavelength=bins) for k, da in collapsed.items()},
-            # ax=ax[1],
         )
-        # fig.set_size_inches(10, 4)
-        # fig.tight_layout()
-        # return Plot(fig=fig, ax=ax)
         return f1 + f2
 
     def as_readonly(self):

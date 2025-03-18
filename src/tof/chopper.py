@@ -197,10 +197,6 @@ class ChopperReading(ComponentReading):
     open_times: sc.Variable
     close_times: sc.Variable
     data: sc.DataArray
-    # toas: ReadingField
-    # wavelengths: ReadingField
-    # birth_times: ReadingField
-    # speeds: ReadingField
 
     def _repr_stats(self) -> str:
         return (
@@ -219,8 +215,3 @@ class ChopperReading(ComponentReading):
 
     def __str__(self) -> str:
         return self.__repr__()
-
-    # @property
-    # @deprecated("Use 'toas' instead.")
-    # def tofs(self) -> ReadingField:
-    #     return self.toas

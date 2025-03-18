@@ -41,10 +41,6 @@ class DetectorReading(ComponentReading):
     distance: sc.Variable
     name: str
     data: sc.DataArray
-    # toa: ReadingField
-    # wavelength: ReadingField
-    # birth_time: ReadingField
-    # speed: ReadingField
 
     def _repr_stats(self) -> str:
         return f"visible={int(self.data.sum().value)}"
@@ -53,57 +49,7 @@ class DetectorReading(ComponentReading):
         out = f"DetectorReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
         out += "  fields: toa, wavelength, birth_time, speed\n  "
-        # out += f"  visible={int(self.data.sum().value)}\n"
         return out + self._repr_stats() + "\n"
 
     def __str__(self) -> str:
         return self.__repr__()
-
-    # @property
-    # @deprecated("Use 'toa' instead.")
-    # def tof(self) -> ReadingField:
-    #     return self.toa
-
-    # @property
-    # def toa(self) -> ReadingField:
-    #     return ReadingField(
-    #         data=sc.DataArray(
-    #             data=self.data.data,
-    #             coords={"toa": self.data.coords["toa"]},
-    #             masks=self.data.masks,
-    #         ),
-    #         dim="toa",
-    #     )
-
-    # @property
-    # def wavelength(self) -> ReadingField:
-    #     return ReadingField(
-    #         data=sc.DataArray(
-    #             data=self.data.data,
-    #             coords={"wavelength": self.data.coords["wavelength"]},
-    #             masks=self.data.masks,
-    #         ),
-    #         dim="wavelength",
-    #     )
-
-    # @property
-    # def birth_time(self) -> ReadingField:
-    #     return ReadingField(
-    #         data=sc.DataArray(
-    #             data=self.data.data,
-    #             coords={"birth_time": self.data.coords["birth_time"]},
-    #             masks=self.data.masks,
-    #         ),
-    #         dim="birth_time",
-    #     )
-
-    # @property
-    # def speed(self) -> ReadingField:
-    #     return ReadingField(
-    #         data=sc.DataArray(
-    #             data=self.data.data,
-    #             coords={"speed": self.data.coords["speed"]},
-    #             masks=self.data.masks,
-    #         ),
-    #         dim="speed",
-    #     )
