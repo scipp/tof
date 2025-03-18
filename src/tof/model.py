@@ -129,7 +129,7 @@ class Model:
             key=lambda c: c.distance.value,
         )
 
-        birth_time = self.source.data.coords['time']
+        birth_time = self.source.data.coords['birth_time']
         speed = self.source.data.coords['speed']
         initial_mask = sc.ones(sizes=birth_time.sizes, unit=None, dtype=bool)
 

@@ -202,17 +202,20 @@ class ChopperReading(ComponentReading):
     # birth_times: ReadingField
     # speeds: ReadingField
 
+    def _repr_stats(self) -> str:
+        return (
+            f"visible={int(self.data.sum().value)}, "
+            f"blocked={int(self.data.masks['blocked_by_me'].sum().value)}"
+        )
+
     def __repr__(self) -> str:
         out = f"ChopperReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
         out += f"  frequency: {self.frequency:c}\n"
         out += f"  phase: {self.phase:c}\n"
         out += f"  cutouts: {len(self.open)}\n"
-        out += "\n".join(
-            f"  {key}: {getattr(self, key)}"
-            for key in ('toas', 'wavelengths', 'birth_times', 'speeds')
-        )
-        return out
+        out += "  fields: toa, wavelength, birth_time, speed\n  "
+        return out + self._repr_stats() + "\n"
 
     def __str__(self) -> str:
         return self.__repr__()

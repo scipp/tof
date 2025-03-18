@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import plopp as pp
 import scipp as sc
 
-from .utils import Plot
+from .utils import Plot, one_mask
 
 
 @dataclass(frozen=True)
@@ -210,9 +210,30 @@ class ReadingField:
                     .hist({self.dim: bins})
                 )
                 color[name] = "gray"
-        to_plot.update({key: da.hist({self.dim: bins}) for key, da in by_pulse.items()})
-        color.update({key: f"C{i}" for i, key in enumerate(by_pulse)})
+        for i, (key, da) in enumerate(by_pulse.items()):
+            sel = ~one_mask(da.masks)
+            to_plot[key] = da[sel].hist({self.dim: bins})
+            color[key] = f"C{i}"
         return pp.plot(to_plot, **{**{"color": color}, **kwargs})
+
+    def min(self):
+        mask = ~one_mask(self.data.masks)
+        mask.unit = ""
+        return (self.data.coords[self.dim] * mask).min()
+
+    def max(self):
+        mask = ~one_mask(self.data.masks)
+        mask.unit = ""
+        return (self.data.coords[self.dim] * mask).max()
+
+    def __repr__(self) -> str:
+        mask = ~one_mask(self.data.masks)
+        mask.unit = ""
+        coord = self.data.coords[self.dim] * mask
+        return (
+            f"{self.dim}: min={coord.min():c}, max={coord.max():c}, "
+            f"events={int(self.data.sum().value)}"
+        )
 
 
 def _make_reading_field(da: sc.DataArray, dim: str) -> ReadingField:

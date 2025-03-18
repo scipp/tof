@@ -74,7 +74,7 @@ def _make_pulses(
     wmax:
         Maximum neutron wavelength.
     """
-    t_dim = "time"
+    t_dim = "birth_time"
     w_dim = "wavelength"
 
     p_time = _convert_coord(p_time, unit=TIME_UNIT, coord=t_dim)
@@ -156,9 +156,7 @@ def _make_pulses(
         unit=TIME_UNIT,
     ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons}) + (
         sc.arange("pulse", pulses) / frequency
-    ).to(
-        unit=TIME_UNIT, copy=False
-    )
+    ).to(unit=TIME_UNIT, copy=False)
 
     wavelength = sc.array(
         dims=[dim],
@@ -167,7 +165,7 @@ def _make_pulses(
     ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons})
     speed = wavelength_to_speed(wavelength)
     return {
-        "time": birth_time,
+        "birth_time": birth_time,
         "wavelength": wavelength,
         "speed": speed,
     }
@@ -219,7 +217,7 @@ class Source:
             self.frequency = facility_params.frequency
             pulse_params = _make_pulses(
                 neutrons=self.neutrons,
-                p_time=facility_params.time,
+                p_time=facility_params.birth_time,
                 p_wav=facility_params.wavelength,
                 sampling=sampling,
                 frequency=self.frequency,
@@ -229,14 +227,14 @@ class Source:
                 seed=seed,
             )
             self.data = sc.DataArray(
-                data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),
+                data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
                 coords={
-                    "time": pulse_params["time"],
+                    "birth_time": pulse_params["birth_time"],
                     "wavelength": pulse_params["wavelength"],
                     "speed": pulse_params["speed"],
-                    "id": sc.arange("event", pulse_params["time"].size, unit=None).fold(
-                        "event", sizes=pulse_params["time"].sizes
-                    ),
+                    "id": sc.arange(
+                        "event", pulse_params["birth_time"].size, unit=None
+                    ).fold("event", sizes=pulse_params["birth_time"].sizes),
                 },
             )
 
@@ -278,7 +276,7 @@ class Source:
         source.data = sc.DataArray(
             data=sc.ones(sizes=birth_times.sizes, unit="counts"),
             coords={
-                "time": birth_times,
+                "birth_time": birth_times,
                 "wavelength": wavelengths,
                 "speed": wavelength_to_speed(wavelengths).to(unit="m/s", copy=False),
                 "id": sc.arange("event", birth_times.size, unit=None).fold(
@@ -339,14 +337,14 @@ class Source:
             seed=seed,
         )
         source.data = sc.DataArray(
-            data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),
+            data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
             coords={
-                "time": pulse_params["time"],
+                "birth_time": pulse_params["birth_time"],
                 "wavelength": pulse_params["wavelength"],
                 "speed": pulse_params["speed"],
-                "id": sc.arange("event", pulse_params["time"].size, unit=None).fold(
-                    "event", sizes=pulse_params["time"].sizes
-                ),
+                "id": sc.arange(
+                    "event", pulse_params["birth_time"].size, unit=None
+                ).fold("event", sizes=pulse_params["birth_time"].sizes),
             },
         )
         return source
@@ -367,7 +365,7 @@ class Source:
         dim = (set(self.data.dims) - {"pulse"}).pop()
         collapsed = sc.collapse(self.data, keep=dim)
         pp.plot(
-            {k: da.hist(time=bins) for k, da in collapsed.items()},
+            {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
             ax=ax[0],
         )
         pp.plot(

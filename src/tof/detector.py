@@ -46,14 +46,15 @@ class DetectorReading(ComponentReading):
     # birth_time: ReadingField
     # speed: ReadingField
 
+    def _repr_stats(self) -> str:
+        return f"visible={int(self.data.sum().value)}"
+
     def __repr__(self) -> str:
         out = f"DetectorReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
-        out += "\n".join(
-            f"  {key}: {getattr(self, key)}"
-            for key in ('toa', 'wavelength', 'birth_time', 'speed')
-        )
-        return out
+        out += "  fields: toa, wavelength, birth_time, speed\n  "
+        # out += f"  visible={int(self.data.sum().value)}\n"
+        return out + self._repr_stats() + "\n"
 
     def __str__(self) -> str:
         return self.__repr__()

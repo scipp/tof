@@ -97,12 +97,12 @@ class Result:
         self._masks = {}
         self._arrival_times = {}
         self._choppers = {}
-        fields = {
-            'toas': 'toa',
-            'wavelengths': 'wavelength',
-            'birth_times': 'time',
-            'speeds': 'speed',
-        }
+        # fields = {
+        #     'toas': 'toa',
+        #     'wavelengths': 'wavelength',
+        #     'birth_times': 'time',
+        #     'speeds': 'speed',
+        # }
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
             self._arrival_times[name] = chopper['data'].coords['toa']
@@ -184,7 +184,7 @@ class Result:
             inds = np.random.choice(len(toas), size=max_rays, replace=False)
         else:
             inds = slice(None)
-        birth_times = visible.coords['time'][inds]
+        birth_times = visible.coords['birth_time'][inds]
         wavelengths = visible.coords['wavelength'][inds]
         distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
         _add_rays(
@@ -215,7 +215,7 @@ class Result:
             inds = np.random.choice(nrays, size=blocked_rays, replace=False)
         else:
             inds = slice(None)
-        birth_times = self._source.data.coords['time'][slc][inv_mask][inds]
+        birth_times = self._source.data.coords['birth_time'][slc][inv_mask][inds]
 
         components = sorted(
             chain(self._choppers.values(), [furthest_detector]),
@@ -249,7 +249,7 @@ class Result:
         )
 
     def _plot_pulse(self, pulse_index: int, ax: plt.Axes):
-        time_coord = self.source.data.coords['time']['pulse', pulse_index]
+        time_coord = self.source.data.coords['birth_time']['pulse', pulse_index]
         tmin = time_coord.min().value
         ax.plot(
             [tmin, time_coord.max().value],
@@ -328,7 +328,7 @@ class Result:
         # else:
         #     times = (ch.close_times.max() for ch in self._choppers.values())
         # toa_max = reduce(max, times).value
-        toa_max = furthest_component.toa.data.hist(toa=1).coords['toa'].max().value
+        toa_max = furthest_component.toa.max().value
         dx = 0.05 * toa_max
         # Plot choppers
         for ch in self._choppers.values():
@@ -380,10 +380,10 @@ class Result:
             f"{source_sizes[other_dim]} neutrons per pulse.\n  Choppers:\n"
         )
         for name, ch in self._choppers.items():
-            out += f"    {name}: {ch.toas._repr_string_body()}\n"
+            out += f"    {name}: {ch._repr_stats()}\n"
         out += "  Detectors:\n"
         for name, det in self._detectors.items():
-            out += f"    {name}: {det.toas._repr_string_body()}\n"
+            out += f"    {name}: {det._repr_stats()}\n"
         return out
 
     def __str__(self) -> str:
@@ -425,7 +425,7 @@ class Result:
             'toa'
         ) % period.to(unit=dt.unit)
         out = (
-            event_data.drop_coords(['tof', 'speed', 'time', 'wavelength'])
+            event_data.drop_coords(['tof', 'speed', 'birth_time', 'wavelength'])
             .group('distance')
             .rename_dims(distance='detector_number')
         )
