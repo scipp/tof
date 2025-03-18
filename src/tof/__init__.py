@@ -5,7 +5,7 @@ from .chopper import AntiClockwise, Chopper, ChopperReading, Clockwise
 from .detector import Detector, DetectorReading
 from .facilities import library as facilities
 from .model import Model
-from .reading import ComponentReading, ReadingData, ReadingField
+from .reading import ComponentReading, ReadingField
 from .result import Result
 from .source import Source, SourceParameters
 
@@ -19,7 +19,6 @@ __all__ = [
     'DetectorReading',
     'facilities',
     'Model',
-    'ReadingData',
     'ReadingField',
     'Result',
     'Source',
