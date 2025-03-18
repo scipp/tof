@@ -18,7 +18,7 @@ class ReadingField:
         by_pulse = sc.collapse(self.data, keep="event")
         to_plot = {}
         color = {}
-        for i, (key, da) in enumerate(by_pulse.items()):
+        for key, da in by_pulse.items():
             sel = da[~da.masks["blocked_by_others"]]
             to_plot[key] = sel.hist({self.dim: bins})
             if "blocked_by_me" in self.data.masks:

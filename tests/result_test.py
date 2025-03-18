@@ -165,9 +165,6 @@ def test_component_results_data_access(chopper, detector, multi_pulse_source):
         assert getattr(ch, field).data.sizes['pulse'] == 3
         assert getattr(det, field).data.sizes['pulse'] == 3
 
-    # assert list(ch.toas.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
-    # assert list(det.wavelengths.visible.data.keys()) == [f'pulse:{i}' for i in range(3)]
-
 
 def test_component_data_slicing(chopper, detector, multi_pulse_source):
     model = tof.Model(
@@ -179,11 +176,6 @@ def test_component_data_slicing(chopper, detector, multi_pulse_source):
     toas = ch.toa['pulse', 0].data
     assert 'pulse' not in toas.dims
     assert 'event' in toas.dims
-
-    # assert 'visible' in toas.data
-    # assert 'blocked' in toas.data
-    # vis = ch.toas.visible[1]
-    # assert sc.identical(vis.data['pulse:1'], ch.toas.visible.data['pulse:1'])
 
 
 def test_component_results_data_slice_range(chopper, detector, multi_pulse_source):
@@ -288,11 +280,3 @@ def test_componentdata_repr_does_not_raise():
     res = model.run()
     assert repr(res.choppers['chopper'].toa) is not None
     assert repr(res.detectors['detector'].wavelength) is not None
-
-
-# def test_data_repr_does_not_raise():
-#     model = make_ess_model()
-#     res = model.run()
-#     assert repr(res.choppers['chopper'].toas.visible) is not None
-#     assert repr(res.choppers['chopper'].toas.blocked) is not None
-#     assert repr(res.detectors['detector'].wavelengths.visible) is not None
