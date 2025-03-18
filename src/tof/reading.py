@@ -4,7 +4,6 @@
 from dataclasses import dataclass
 from typing import Union
 
-import matplotlib.pyplot as plt
 import plopp as pp
 import scipp as sc
 
@@ -201,20 +200,24 @@ class ReadingField:
         by_pulse = sc.collapse(self.data, keep="event")
         to_plot = {}
         color = {}
-        if "blocked_by_me" in self.data.masks:
-            for key, da in by_pulse.items():
+        for i, (key, da) in enumerate(by_pulse.items()):
+            sel = da[~da.masks["blocked_by_others"]]
+            to_plot[key] = sel.hist({self.dim: bins})
+            if "blocked_by_me" in self.data.masks:
                 name = f"blocked-{key}"
                 to_plot[name] = (
                     da[da.masks["blocked_by_me"]]
                     .drop_masks(list(da.masks.keys()))
-                    .hist({self.dim: bins})
+                    .hist({self.dim: to_plot[key].coords[self.dim]})
                 )
                 color[name] = "gray"
-        for i, (key, da) in enumerate(by_pulse.items()):
-            sel = ~one_mask(da.masks)
-            to_plot[key] = da[sel].hist({self.dim: bins})
-            color[key] = f"C{i}"
+        # else:
+        #     for i, (key, da) in enumerate(by_pulse.items()):
+        #         sel = ~one_mask(da.masks)
+        #         to_plot[key] = da[sel].hist({self.dim: bins})
+        #         color[key] = f"C{i}"
         return pp.plot(to_plot, **{**{"color": color}, **kwargs})
+        # return Plot(fig=fig, ax=fig.ax)
 
     def min(self):
         mask = ~one_mask(self.data.masks)
@@ -284,10 +287,11 @@ class ComponentReading:
         bins:
             Number of bins to use for histogramming the neutrons.
         """
-        fig, ax = plt.subplots(1, 2)
-        self.toa.plot(bins=bins, ax=ax[0])
-        self.wavelength.plot(bins=bins, ax=ax[1])
-        size = fig.get_size_inches()
-        fig.set_size_inches(size[0] * 2, size[1])
-        fig.tight_layout()
-        return Plot(fig=fig, ax=ax)
+        # # fig, ax = plt.subplots(1, 2)
+        # self.toa.plot(bins=bins, ax=ax[0])
+        # self.wavelength.plot(bins=bins, ax=ax[1])
+        # size = fig.get_size_inches()
+        # fig.set_size_inches(size[0] * 2, size[1])
+        # fig.tight_layout()
+        # return Plot(fig=fig, ax=ax)
+        return self.toa.plot(bins=bins) + self.wavelength.plot(bins=bins)

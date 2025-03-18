@@ -4,14 +4,13 @@
 from dataclasses import dataclass
 from typing import Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import plopp as pp
 import scipp as sc
 from scipp.scipy.interpolate import interp1d
 
 from .facilities import library as facilities
-from .utils import Plot, wavelength_to_speed
+from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
 WAV_UNIT = "angstrom"
@@ -361,20 +360,21 @@ class Source:
         bins:
             Number of bins to use for histogramming the neutrons.
         """
-        fig, ax = plt.subplots(1, 2)
+        # fig, ax = plt.subplots(1, 2)
         dim = (set(self.data.dims) - {"pulse"}).pop()
         collapsed = sc.collapse(self.data, keep=dim)
-        pp.plot(
+        f1 = pp.plot(
             {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
-            ax=ax[0],
+            # ax=ax[0],
         )
-        pp.plot(
+        f2 = pp.plot(
             {k: da.hist(wavelength=bins) for k, da in collapsed.items()},
-            ax=ax[1],
+            # ax=ax[1],
         )
-        fig.set_size_inches(10, 4)
-        fig.tight_layout()
-        return Plot(fig=fig, ax=ax)
+        # fig.set_size_inches(10, 4)
+        # fig.tight_layout()
+        # return Plot(fig=fig, ax=ax)
+        return f1 + f2
 
     def as_readonly(self):
         return SourceParameters(
