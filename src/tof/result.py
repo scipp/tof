@@ -322,13 +322,10 @@ class Result:
             )
             self._plot_pulse(pulse_index=i, ax=ax)
 
-        # comp_data = furthest_component.toas.visible.data
-        # if sum(da.sum().value for da in comp_data.values()) > 0:
-        #     times = (da.coords['toa'].max() for da in comp_data.values())
-        # else:
-        #     times = (ch.close_times.max() for ch in self._choppers.values())
-        # toa_max = reduce(max, times).value
-        toa_max = furthest_component.toa.max().value
+        if furthest_component.toa.data.sum().value > 0:
+            toa_max = furthest_component.toa.max().value
+        else:
+            toa_max = furthest_component.toa.data.coords['toa'].max().value
         dx = 0.05 * toa_max
         # Plot choppers
         for ch in self._choppers.values():

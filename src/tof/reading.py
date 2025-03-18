@@ -235,6 +235,12 @@ class ReadingField:
             f"events={int(self.data.sum().value)}"
         )
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __getitem__(self, val):
+        return self.__class__(data=self.data[val], dim=self.dim)
+
 
 def _make_reading_field(da: sc.DataArray, dim: str) -> ReadingField:
     return ReadingField(
