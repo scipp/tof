@@ -205,12 +205,13 @@ class ChopperReading(ComponentReading):
         )
 
     def __repr__(self) -> str:
-        out = f"ChopperReading: '{self.name}'\n"
-        out += f"  distance: {self.distance:c}\n"
-        out += f"  frequency: {self.frequency:c}\n"
-        out += f"  phase: {self.phase:c}\n"
-        out += f"  cutouts: {len(self.open)}\n"
-        return out + self._repr_stats() + "\n"
+        return f"""ChopperReading: '{self.name}'
+  distance: {self.distance:c}
+  frequency: {self.frequency:c}
+  phase: {self.phase:c}
+  cutouts: {len(self.open)}
+  neutrons: {self._repr_stats()}
+"""
 
     def __str__(self) -> str:
         return self.__repr__()

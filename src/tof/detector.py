@@ -46,9 +46,10 @@ class DetectorReading(ComponentReading):
         return f"visible={int(self.data.sum().value)}"
 
     def __repr__(self) -> str:
-        out = f"DetectorReading: '{self.name}'\n"
-        out += f"  distance: {self.distance:c}\n"
-        return out + self._repr_stats() + "\n"
+        return f"""DetectorReading: '{self.name}'
+  distance: {self.distance:c}
+  neutrons: {self._repr_stats()}
+"""
 
     def __str__(self) -> str:
         return self.__repr__()
