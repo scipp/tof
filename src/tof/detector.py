@@ -48,7 +48,6 @@ class DetectorReading(ComponentReading):
     def __repr__(self) -> str:
         out = f"DetectorReading: '{self.name}'\n"
         out += f"  distance: {self.distance:c}\n"
-        out += "  fields: toa, wavelength, birth_time, speed\n  "
         return out + self._repr_stats() + "\n"
 
     def __str__(self) -> str:

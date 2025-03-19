@@ -210,7 +210,6 @@ class ChopperReading(ComponentReading):
         out += f"  frequency: {self.frequency:c}\n"
         out += f"  phase: {self.phase:c}\n"
         out += f"  cutouts: {len(self.open)}\n"
-        out += "  fields: toa, wavelength, birth_time, speed\n  "
         return out + self._repr_stats() + "\n"
 
     def __str__(self) -> str:
