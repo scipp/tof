@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
+# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
 from __future__ import annotations
 
-from functools import reduce
 from itertools import chain
 from types import MappingProxyType
 from typing import Dict, Optional, Tuple, Union
@@ -15,28 +14,8 @@ from matplotlib.collections import LineCollection
 
 from .chopper import Chopper, ChopperReading
 from .detector import Detector, DetectorReading
-from .reading import ReadingData, ReadingField
 from .source import Source, SourceParameters
 from .utils import Plot
-
-
-def _make_reading_data(component, dim, is_chopper=False):
-    visible = {}
-    blocked = {} if is_chopper else None
-    keep_dim = (set(component.dims) - {'pulse'}).pop()
-    for name, da in sc.collapse(component, keep=keep_dim).items():
-        one_mask = ~reduce(lambda a, b: a | b, da.masks.values())
-        vsel = da[one_mask]
-        visible[name] = sc.DataArray(data=vsel.data, coords={dim: vsel.coords[dim]})
-        if is_chopper:
-            bsel = da[da.masks['blocked_by_me']]
-            blocked[name] = sc.DataArray(data=bsel.data, coords={dim: bsel.coords[dim]})
-    return ReadingField(
-        visible=ReadingData(data=sc.DataGroup(visible), dim=dim),
-        blocked=(
-            ReadingData(data=sc.DataGroup(blocked), dim=dim) if is_chopper else None
-        ),
-    )
 
 
 def _add_rays(
@@ -99,12 +78,6 @@ class Result:
         self._masks = {}
         self._arrival_times = {}
         self._choppers = {}
-        fields = {
-            'toas': 'toa',
-            'wavelengths': 'wavelength',
-            'birth_times': 'time',
-            'speeds': 'speed',
-        }
         for name, chopper in choppers.items():
             self._masks[name] = chopper['visible_mask']
             self._arrival_times[name] = chopper['data'].coords['toa']
@@ -118,10 +91,6 @@ class Result:
                 open_times=chopper['open_times'],
                 close_times=chopper['close_times'],
                 data=chopper['data'],
-                **{
-                    key: _make_reading_data(chopper['data'], dim=dim, is_chopper=True)
-                    for key, dim in fields.items()
-                },
             )
 
         self._detectors = {}
@@ -129,13 +98,7 @@ class Result:
             self._masks[name] = det['visible_mask']
             self._arrival_times[name] = det['data'].coords['toa']
             self._detectors[name] = DetectorReading(
-                distance=det['distance'],
-                name=det['name'],
-                data=det['data'],
-                **{
-                    key: _make_reading_data(det['data'], dim=dim)
-                    for key, dim in fields.items()
-                },
+                distance=det['distance'], name=det['name'], data=det['data']
             )
 
         self._choppers = MappingProxyType(self._choppers)
@@ -186,7 +149,7 @@ class Result:
             inds = np.random.choice(len(toas), size=max_rays, replace=False)
         else:
             inds = slice(None)
-        birth_times = visible.coords['time'][inds]
+        birth_times = visible.coords['birth_time'][inds]
         wavelengths = visible.coords['wavelength'][inds]
         distances = furthest_detector.distance.broadcast(sizes=birth_times.sizes)
         _add_rays(
@@ -217,7 +180,7 @@ class Result:
             inds = np.random.choice(nrays, size=blocked_rays, replace=False)
         else:
             inds = slice(None)
-        birth_times = self._source.data.coords['time'][slc][inv_mask][inds]
+        birth_times = self._source.data.coords['birth_time'][slc][inv_mask][inds]
 
         components = sorted(
             chain(self._choppers.values(), [furthest_detector]),
@@ -251,7 +214,7 @@ class Result:
         )
 
     def _plot_pulse(self, pulse_index: int, ax: plt.Axes):
-        time_coord = self.source.data.coords['time']['pulse', pulse_index]
+        time_coord = self.source.data.coords['birth_time']['pulse', pulse_index]
         tmin = time_coord.min().value
         ax.plot(
             [tmin, time_coord.max().value],
@@ -324,12 +287,10 @@ class Result:
             )
             self._plot_pulse(pulse_index=i, ax=ax)
 
-        comp_data = furthest_component.toas.visible.data
-        if sum(da.sum().value for da in comp_data.values()) > 0:
-            times = (da.coords['toa'].max() for da in comp_data.values())
+        if furthest_component.toa.data.sum().value > 0:
+            toa_max = furthest_component.toa.max().value
         else:
-            times = (ch.close_times.max() for ch in self._choppers.values())
-        toa_max = reduce(max, times).value
+            toa_max = furthest_component.toa.data.coords['toa'].max().value
         dx = 0.05 * toa_max
         # Plot choppers
         for ch in self._choppers.values():
@@ -381,10 +342,10 @@ class Result:
             f"{source_sizes[other_dim]} neutrons per pulse.\n  Choppers:\n"
         )
         for name, ch in self._choppers.items():
-            out += f"    {name}: {ch.toas._repr_string_body()}\n"
+            out += f"    {name}: {ch._repr_stats()}\n"
         out += "  Detectors:\n"
         for name, det in self._detectors.items():
-            out += f"    {name}: {det.toas._repr_string_body()}\n"
+            out += f"    {name}: {det._repr_stats()}\n"
         return out
 
     def __str__(self) -> str:
@@ -426,7 +387,7 @@ class Result:
             'toa'
         ) % period.to(unit=dt.unit)
         out = (
-            event_data.drop_coords(['tof', 'speed', 'time', 'wavelength'])
+            event_data.drop_coords(['tof', 'speed', 'birth_time', 'wavelength'])
             .group('distance')
             .rename_dims(distance='detector_number')
         )

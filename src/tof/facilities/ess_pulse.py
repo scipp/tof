@@ -11,9 +11,9 @@ import scipp as sc
 from ..utils import FacilityPulse
 
 pulse = FacilityPulse(
-    time=sc.DataArray(
+    birth_time=sc.DataArray(
         data=sc.array(
-            dims=['time'],
+            dims=['birth_time'],
             values=[
                 3.35837383e-04,
                 7.11462527e-04,
@@ -219,8 +219,8 @@ pulse = FacilityPulse(
             ],
         ),
         coords={
-            'time': sc.array(
-                dims=['time'],
+            'birth_time': sc.array(
+                dims=['birth_time'],
                 values=[
                     1.24378109e-05,
                     3.73134328e-05,

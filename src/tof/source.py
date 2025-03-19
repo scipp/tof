@@ -1,17 +1,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
+# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
 from typing import Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import plopp as pp
 import scipp as sc
 from scipp.scipy.interpolate import interp1d
 
 from .facilities import library as facilities
-from .utils import Plot, wavelength_to_speed
+from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
 WAV_UNIT = "angstrom"
@@ -74,7 +73,7 @@ def _make_pulses(
     wmax:
         Maximum neutron wavelength.
     """
-    t_dim = "time"
+    t_dim = "birth_time"
     w_dim = "wavelength"
 
     p_time = _convert_coord(p_time, unit=TIME_UNIT, coord=t_dim)
@@ -167,7 +166,7 @@ def _make_pulses(
     ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons})
     speed = wavelength_to_speed(wavelength)
     return {
-        "time": birth_time,
+        "birth_time": birth_time,
         "wavelength": wavelength,
         "speed": speed,
     }
@@ -219,7 +218,7 @@ class Source:
             self.frequency = facility_params.frequency
             pulse_params = _make_pulses(
                 neutrons=self.neutrons,
-                p_time=facility_params.time,
+                p_time=facility_params.birth_time,
                 p_wav=facility_params.wavelength,
                 sampling=sampling,
                 frequency=self.frequency,
@@ -229,14 +228,14 @@ class Source:
                 seed=seed,
             )
             self.data = sc.DataArray(
-                data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),
+                data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
                 coords={
-                    "time": pulse_params["time"],
+                    "birth_time": pulse_params["birth_time"],
                     "wavelength": pulse_params["wavelength"],
                     "speed": pulse_params["speed"],
-                    "id": sc.arange("event", pulse_params["time"].size, unit=None).fold(
-                        "event", sizes=pulse_params["time"].sizes
-                    ),
+                    "id": sc.arange(
+                        "event", pulse_params["birth_time"].size, unit=None
+                    ).fold("event", sizes=pulse_params["birth_time"].sizes),
                 },
             )
 
@@ -278,7 +277,7 @@ class Source:
         source.data = sc.DataArray(
             data=sc.ones(sizes=birth_times.sizes, unit="counts"),
             coords={
-                "time": birth_times,
+                "birth_time": birth_times,
                 "wavelength": wavelengths,
                 "speed": wavelength_to_speed(wavelengths).to(unit="m/s", copy=False),
                 "id": sc.arange("event", birth_times.size, unit=None).fold(
@@ -339,14 +338,14 @@ class Source:
             seed=seed,
         )
         source.data = sc.DataArray(
-            data=sc.ones(sizes=pulse_params["time"].sizes, unit="counts"),
+            data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
             coords={
-                "time": pulse_params["time"],
+                "birth_time": pulse_params["birth_time"],
                 "wavelength": pulse_params["wavelength"],
                 "speed": pulse_params["speed"],
-                "id": sc.arange("event", pulse_params["time"].size, unit=None).fold(
-                    "event", sizes=pulse_params["time"].sizes
-                ),
+                "id": sc.arange(
+                    "event", pulse_params["birth_time"].size, unit=None
+                ).fold("event", sizes=pulse_params["birth_time"].sizes),
             },
         )
         return source
@@ -363,20 +362,15 @@ class Source:
         bins:
             Number of bins to use for histogramming the neutrons.
         """
-        fig, ax = plt.subplots(1, 2)
         dim = (set(self.data.dims) - {"pulse"}).pop()
         collapsed = sc.collapse(self.data, keep=dim)
-        pp.plot(
-            {k: da.hist(time=bins) for k, da in collapsed.items()},
-            ax=ax[0],
+        f1 = pp.plot(
+            {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
         )
-        pp.plot(
+        f2 = pp.plot(
             {k: da.hist(wavelength=bins) for k, da in collapsed.items()},
-            ax=ax[1],
         )
-        fig.set_size_inches(10, 4)
-        fig.tight_layout()
-        return Plot(fig=fig, ax=ax)
+        return f1 + f2
 
     def as_readonly(self):
         return SourceParameters(

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
+# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
 import uuid
 from dataclasses import dataclass
@@ -8,8 +8,7 @@ from typing import Optional, Tuple
 
 import scipp as sc
 
-from .deprecation import deprecated
-from .reading import ComponentReading, ReadingField
+from .reading import ComponentReading
 from .utils import two_pi
 
 
@@ -198,27 +197,21 @@ class ChopperReading(ComponentReading):
     open_times: sc.Variable
     close_times: sc.Variable
     data: sc.DataArray
-    toas: ReadingField
-    wavelengths: ReadingField
-    birth_times: ReadingField
-    speeds: ReadingField
+
+    def _repr_stats(self) -> str:
+        return (
+            f"visible={int(self.data.sum().value)}, "
+            f"blocked={int(self.data.masks['blocked_by_me'].sum().value)}"
+        )
 
     def __repr__(self) -> str:
-        out = f"ChopperReading: '{self.name}'\n"
-        out += f"  distance: {self.distance:c}\n"
-        out += f"  frequency: {self.frequency:c}\n"
-        out += f"  phase: {self.phase:c}\n"
-        out += f"  cutouts: {len(self.open)}\n"
-        out += "\n".join(
-            f"  {key}: {getattr(self, key)}"
-            for key in ('toas', 'wavelengths', 'birth_times', 'speeds')
-        )
-        return out
+        return f"""ChopperReading: '{self.name}'
+  distance: {self.distance:c}
+  frequency: {self.frequency:c}
+  phase: {self.phase:c}
+  cutouts: {len(self.open)}
+  neutrons: {self._repr_stats()}
+"""
 
     def __str__(self) -> str:
         return self.__repr__()
-
-    @property
-    @deprecated("Use 'toas' instead.")
-    def tofs(self) -> ReadingField:
-        return self.toas

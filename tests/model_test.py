@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import numpy as np
 import pytest
 import scipp as sc
 
@@ -46,25 +47,28 @@ def test_one_chopper_one_opening():
     model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
     res = model.run()
 
-    key = 'pulse:0'
-    visible = res.choppers['chopper'].toas.visible.data[key]
-    blocked = res.choppers['chopper'].toas.blocked.data[key]
-
-    assert len(visible) == 1
-    assert len(blocked) == 2
-    assert sc.isclose(
-        visible.coords['toa'][0],
-        (0.5 * (topen + tclose)).to(unit='us'),
+    toa = res.choppers['chopper'].toa.data
+    assert toa.sum().value == 1
+    assert toa.masks['blocked_by_me'].sum().value == 2
+    assert np.array_equal(
+        toa.masks['blocked_by_me'].squeeze().values, [True, False, True]
     )
-    assert sc.isclose(blocked.coords['toa'][0], (0.9 * topen).to(unit='us'))
-    assert sc.isclose(blocked.coords['toa'][1], (1.1 * tclose).to(unit='us'))
-
-    det = res.detectors['detector'].toas.visible.data[key]
-    assert len(det) == 1
-    assert sc.isclose(
-        det.coords['toa'][0],
+    assert sc.allclose(
+        toa.coords['toa']['pulse', 0],
         (
-            source.data.coords['wavelength']['pulse', 0][1]
+            source.data.coords['wavelength']['pulse', 0]
+            * chopper.distance
+            * tof.utils.m_over_h
+        ).to(unit='us'),
+    )
+
+    toa = res.detectors['detector'].toa.data
+    assert toa.sum().value == 1
+    assert toa.masks['blocked_by_others'].sum().value == 2
+    assert sc.allclose(
+        toa.coords['toa']['pulse', 0],
+        (
+            source.data.coords['wavelength']['pulse', 0]
             * detector.distance
             * tof.utils.m_over_h
         ).to(unit='us'),
@@ -110,39 +114,51 @@ def test_two_choppers_one_opening():
     )
     res = model.run()
 
-    key = 'pulse:0'
-    ch1_toas = res.choppers['chopper1'].toas.data
-    ch2_toas = res.choppers['chopper2'].toas.data
-    wavs = source.data.coords['wavelength']['pulse', 0]
-    det = res.detectors['detector'].toas.visible.data[key]
+    ch1_toas = res.choppers['chopper1'].toa.data
+    ch2_toas = res.choppers['chopper2'].toa.data
+    det = res.detectors['detector'].toa.data
 
-    assert len(ch1_toas['visible'][key]) == 2
-    assert len(ch1_toas['blocked'][key]) == 1
-    assert sc.isclose(
-        ch1_toas['visible'][key].coords['toa'][0], (1.5 * topen).to(unit='us')
+    # Blocks the third neutron
+    assert ch1_toas.sum().value == 2
+    assert ch1_toas.masks['blocked_by_me'].sum().value == 1
+    assert ch1_toas.masks['blocked_by_others'].sum().value == 0
+    assert np.array_equal(
+        ch1_toas.masks['blocked_by_me'].squeeze().values, [False, False, True]
     )
-    assert sc.isclose(
-        ch1_toas['visible'][key].coords['toa'][1],
-        (0.5 * (topen + tclose)).to(unit='us'),
+    assert sc.allclose(
+        ch1_toas.coords['toa']['pulse', 0],
+        (
+            source.data.coords['wavelength']['pulse', 0]
+            * chopper1.distance
+            * tof.utils.m_over_h
+        ).to(unit='us'),
     )
-    assert sc.isclose(
-        ch1_toas['blocked'][key].coords['toa'][0], (1.1 * tclose).to(unit='us')
+
+    # Blocks the first neutron
+    assert ch2_toas.sum().value == 1
+    assert ch2_toas.masks['blocked_by_me'].sum().value == 1
+    assert ch2_toas.masks['blocked_by_others'].sum().value == 1
+    assert np.array_equal(
+        ch2_toas.masks['blocked_by_me'].squeeze().values, [True, False, False]
     )
-    assert len(ch2_toas['visible'][key]) == 1
-    # Blocks only one neutron, the other is blocked by chopper1
-    assert len(ch2_toas['blocked'][key]) == 1
-    assert sc.isclose(
-        ch2_toas['visible'][key].coords['toa'][0],
-        (wavs[1] * chopper2.distance * tof.utils.m_over_h).to(unit='us'),
+    assert sc.allclose(
+        ch2_toas.coords['toa']['pulse', 0],
+        (
+            source.data.coords['wavelength']['pulse', 0]
+            * chopper2.distance
+            * tof.utils.m_over_h
+        ).to(unit='us'),
     )
-    assert sc.isclose(
-        ch2_toas['blocked'][key].coords['toa'][0],
-        (wavs[0] * chopper2.distance * tof.utils.m_over_h).to(unit='us'),
-    )
-    assert len(det) == 1
-    assert sc.isclose(
-        det.coords['toa'][0],
-        (wavs[1] * detector.distance * tof.utils.m_over_h).to(unit='us'),
+
+    assert det.sum().value == 1
+    assert det.masks['blocked_by_others'].sum().value == 2
+    assert sc.allclose(
+        det.coords['toa']['pulse', 0],
+        (
+            source.data.coords['wavelength']['pulse', 0]
+            * detector.distance
+            * tof.utils.m_over_h
+        ).to(unit='us'),
     )
 
 
@@ -194,12 +210,14 @@ def test_two_choppers_one_and_two_openings():
     )
     res = model.run()
 
-    key = 'pulse:0'
-    assert len(res.choppers['chopper1'].toas.visible.data[key]) == 5
-    assert len(res.choppers['chopper1'].toas.blocked.data[key]) == 2
-    assert len(res.choppers['chopper2'].toas.visible.data[key]) == 2
-    assert len(res.choppers['chopper2'].toas.blocked.data[key]) == 3
-    assert len(res.detectors['detector'].toas.visible.data[key]) == 2
+    assert res.choppers['chopper1'].toa.data.sum().value == 5
+    assert res.choppers['chopper1'].toa.data.masks['blocked_by_me'].sum().value == 2
+    assert res.choppers['chopper2'].toa.data.sum().value == 2
+    assert res.choppers['chopper2'].toa.data.masks['blocked_by_me'].sum().value == 3
+    assert res.detectors['detector'].toa.data.sum().value == 2
+    assert (
+        res.detectors['detector'].toa.data.masks['blocked_by_others'].sum().value == 5
+    )
 
 
 def test_neutron_conservation():
@@ -229,19 +247,19 @@ def test_neutron_conservation():
     )
     res = model.run()
 
-    key = 'pulse:0'
-    ch1 = res.choppers['chopper1'].toas.data
-    ch2 = res.choppers['chopper2'].toas.data
+    ch1 = res.choppers['chopper1'].toa.data
+    ch2 = res.choppers['chopper2'].toa.data
+    det = res.detectors['detector'].toa.data
 
-    assert (ch1['visible'][key].sum() + ch1['blocked'][key].sum()).value == N
+    assert ch1.sizes['event'] == N
+    assert ch2.sizes['event'] == N
+
+    assert sc.identical(ch1.masks['blocked_by_me'], ch2.masks['blocked_by_others'])
     assert sc.identical(
-        ch2['visible'][key].sum() + ch2['blocked'][key].sum(),
-        ch1['visible'][key].sum(),
+        det.masks['blocked_by_others'],
+        ch2.masks['blocked_by_me'] | ch1.masks['blocked_by_me'],
     )
-    assert sc.identical(
-        res.detectors['detector'].toas.data['visible'][key].sum(),
-        ch2['visible'][key].sum(),
-    )
+    assert det.sum().value + det.masks['blocked_by_others'].sum().value == N
 
 
 def test_add_chopper_and_detector():
