@@ -65,12 +65,8 @@ class Result:
         detectors: Dict[str, Detector],
     ):
         self._source = source.as_readonly()
-        self._masks = {}
-        self._arrival_times = {}
         self._choppers = {}
         for name, chopper in choppers.items():
-            self._masks[name] = chopper["visible_mask"]
-            self._arrival_times[name] = chopper["data"].coords["toa"]
             self._choppers[name] = ChopperReading(
                 distance=chopper["distance"],
                 name=chopper["name"],
@@ -85,16 +81,12 @@ class Result:
 
         self._detectors = {}
         for name, det in detectors.items():
-            self._masks[name] = det["visible_mask"]
-            self._arrival_times[name] = det["data"].coords["toa"]
             self._detectors[name] = DetectorReading(
                 distance=det["distance"], name=det["name"], data=det["data"]
             )
 
         self._choppers = MappingProxyType(self._choppers)
         self._detectors = MappingProxyType(self._detectors)
-        self._masks = MappingProxyType(self._masks)
-        self._arrival_times = MappingProxyType(self._arrival_times)
 
     @property
     def choppers(self) -> MappingProxyType[str, ChopperReading]:
