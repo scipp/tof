@@ -170,28 +170,29 @@ class Result:
             # Plot visible rays
             blocked = one_mask(component_data.masks).values
             nblocked = int(blocked.sum())
-            inds = np.random.choice(
-                ids[~blocked],
-                size=min(self.source.neutrons - nblocked, visible_rays),
-                replace=False,
-            )
+            if nblocked < self.source.neutrons:
+                inds = np.random.choice(
+                    ids[~blocked],
+                    size=min(self.source.neutrons - nblocked, visible_rays),
+                    replace=False,
+                )
 
-            xstart = source_data.coords["birth_time"].values[inds]
-            xend = component_data.coords["toa"].values[inds]
-            ystart = np.zeros_like(xstart)
-            yend = np.full_like(ystart, furthest_component.distance.value)
+                xstart = source_data.coords["birth_time"].values[inds]
+                xend = component_data.coords["toa"].values[inds]
+                ystart = np.zeros_like(xstart)
+                yend = np.full_like(ystart, furthest_component.distance.value)
 
-            _add_rays(
-                ax=ax,
-                x=np.stack((xstart, xend), axis=1),
-                y=np.stack((ystart, yend), axis=1),
-                color=source_data.coords["wavelength"].values[inds],
-                cbar=cbar and (i == 0),
-                cmap=cmap,
-                vmin=wmin.value,
-                vmax=wmax.value,
-                cax=cax,
-            )
+                _add_rays(
+                    ax=ax,
+                    x=np.stack((xstart, xend), axis=1),
+                    y=np.stack((ystart, yend), axis=1),
+                    color=source_data.coords["wavelength"].values[inds],
+                    cbar=cbar and (i == 0),
+                    cmap=cmap,
+                    vmin=wmin.value,
+                    vmax=wmax.value,
+                    cax=cax,
+                )
 
             # Plot blocked rays
             inds = np.random.choice(
