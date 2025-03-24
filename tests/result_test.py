@@ -220,24 +220,24 @@ def test_result_plot_does_not_raise():
     model = make_ess_model()
     res = model.run()
     res.plot()
-    res.plot(max_rays=5000)
-    res.plot(max_rays=50, blocked_rays=3000)
+    res.plot(visible_rays=5000)
+    res.plot(visible_rays=50, blocked_rays=3000)
 
 
 def test_result_multiple_pulses_plot_does_not_raise():
     model = make_ess_model(pulses=3)
     res = model.run()
     res.plot()
-    res.plot(max_rays=2000)
-    res.plot(max_rays=50, blocked_rays=3000)
+    res.plot(visible_rays=2000)
+    res.plot(visible_rays=50, blocked_rays=3000)
 
 
 def test_result_multiple_pulses_plot_with_no_events_in_last_frame_does_not_raise():
     model = make_ess_model(pulses=3, frequency=10.0 * Hz)
     res = model.run()
     res.plot()
-    res.plot(max_rays=2000)
-    res.plot(max_rays=50, blocked_rays=3000)
+    res.plot(visible_rays=2000)
+    res.plot(visible_rays=50, blocked_rays=3000)
 
 
 def test_result_all_neutrons_blocked_does_not_raise():
@@ -258,8 +258,8 @@ def test_result_plot_no_detectors_does_not_raise():
     model._detectors = {}
     res = model.run()
     res.plot()
-    res.plot(max_rays=5000)
-    res.plot(max_rays=50, blocked_rays=3000)
+    res.plot(visible_rays=5000)
+    res.plot(visible_rays=50, blocked_rays=3000)
 
 
 def test_result_repr_does_not_raise():
