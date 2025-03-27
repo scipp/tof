@@ -148,7 +148,6 @@ class Model:
             # TODO: remove 'tof' coordinate once deprecation period is over
             container[c.name]['data'].coords['tof'] = t
             if isinstance(c, Detector):
-                container[c.name]['visible_mask'] = initial_mask
                 container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
                 continue
             m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
@@ -157,9 +156,6 @@ class Model:
             for i in range(len(to)):
                 m |= (t > to[i]) & (t < tc[i])
             combined = initial_mask & m
-            container[c.name].update(
-                {'visible_mask': combined, 'blocked_mask': ~m & initial_mask}
-            )
             container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
             container[c.name]['data'].masks['blocked_by_me'] = ~m & initial_mask
             initial_mask = combined
