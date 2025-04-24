@@ -6,7 +6,9 @@ import ipywidgets as ipw
 
 from functools import partial, reduce
 from itertools import chain
+from typing import Any, Callable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.backend_bases import PickEvent
 import scipp as sc
 
 from .source import Source
@@ -62,7 +64,7 @@ class ChopperWidget(ipw.VBox):
             },
         )
 
-    def continuous_update(self, callback):
+    def continuous_update(self, callback: Callable):
         self.frequency_widget.observe(callback, names="value")
         self.phase_widget.observe(callback, names="value")
         self.distance_widget.observe(callback, names="value")
@@ -105,7 +107,7 @@ class DetectorWidget(ipw.VBox):
             },
         )
 
-    def continuous_update(self, callback):
+    def continuous_update(self, callback: Callable):
         self.distance_widget.observe(callback, names="value")
         self.enabled_widget.observe(callback, names="value")
 
@@ -119,7 +121,7 @@ class SourceWidget(ipw.VBox):
             [self.facility_widget, self.neutrons_widget, self.pulses_widget]
         )
 
-    def continuous_update(self, callback):
+    def continuous_update(self, callback: Callable):
         self.facility_widget.observe(callback, names="value")
         self.neutrons_widget.observe(callback, names="value")
         self.pulses_widget.observe(callback, names="value")
@@ -214,13 +216,13 @@ class TofWidget:
         self.toa_wav_ax[0].set_yscale(scale)
         self.toa_wav_ax[1].set_yscale(scale)
 
-    def maybe_update(self, _):
+    def maybe_update(self, _: Any):
         if self.continuous_update.value:
             self.run(None)
         else:
             self.run_button.style = {"button_color": "lightgreen"}
 
-    def sync_chopper_titles(self, _):
+    def sync_chopper_titles(self, _: Any):
         self.choppers_container.titles = tuple(
             f"{c.name_widget.value} ({int(c.frequency_widget.value)}Hz - "
             f"{c.distance_widget.value:.1f}m)"
@@ -234,7 +236,7 @@ class TofWidget:
             f"Detectors ({len(self.detectors_container.children)})",
         ]
 
-    def add_chopper(self, _):
+    def add_chopper(self, _: Any):
         new_chopper = ChopperWidget()
         new_chopper.name_widget.observe(self.sync_chopper_titles)
         new_chopper.frequency_widget.observe(self.sync_chopper_titles, names="value")
@@ -248,20 +250,20 @@ class TofWidget:
         self.choppers_container.selected_index = len(children) - 1
         self.update_tab_titles()
 
-    def remove_chopper(self, _, uid):
+    def remove_chopper(self, _: Any, uid: str):
         self.choppers_container.children = tuple(
             c for c in self.choppers_container.children if c._uid != uid
         )
         self.update_tab_titles()
         self.maybe_update(None)
 
-    def sync_detector_titles(self, _):
+    def sync_detector_titles(self, _: Any):
         self.detectors_container.titles = tuple(
             f"{d.name_widget.value} ({d.distance_widget.value:.1f}m)"
             for d in self.detectors_container.children
         )
 
-    def add_detector(self, _):
+    def add_detector(self, _: Any):
         new_detector = DetectorWidget()
         new_detector.name_widget.observe(self.sync_detector_titles, names="value")
         new_detector.distance_widget.observe(self.sync_detector_titles, names="value")
@@ -274,14 +276,14 @@ class TofWidget:
         self.detectors_container.selected_index = len(children) - 1
         self.update_tab_titles()
 
-    def remove_detector(self, _, uid):
+    def remove_detector(self, _: Any, uid: str):
         self.detectors_container.children = tuple(
             d for d in self.detectors_container.children if d._uid != uid
         )
         self.update_tab_titles()
         self.maybe_update(None)
 
-    def plot_time_distance(self, _=None):
+    def plot_time_distance(self, _: Any | None = None):
         self.time_distance_ax.clear()
         self.time_distance_cax.clear()
         self.results.plot(
@@ -292,7 +294,7 @@ class TofWidget:
         )
         self.time_distance_fig.tight_layout()
 
-    def run(self, _):
+    def run(self, _: Any):
         source = Source(
             facility=self.source_widget.facility_widget.value,
             neutrons=int(self.source_widget.neutrons_widget.value),
@@ -395,7 +397,7 @@ class TofWidget:
 
         self.run_button.style = {"button_color": "#eeeeee"}
 
-    def on_legend_pick(self, event):
+    def on_legend_pick(self, event: PickEvent):
         legend_patch = event.artist
         # Do nothing if the source of the event is not a legend line.
         if legend_patch not in self.map_legend_to_ax:
@@ -413,6 +415,10 @@ class TofWidget:
 
 
 def app():
+    """
+    An interactive app that allows to add choppers and detectors in a widget-powered
+    dashboard.
+    """
     w = TofWidget()
     w.add_chopper_button.click()
     ch = w.choppers_container.children[0]
