@@ -1,20 +1,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import uuid
-import matplotlib.pyplot as plt
-import ipywidgets as ipw
-
 from functools import partial, reduce
 from itertools import chain
 from typing import Any, Callable
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.backend_bases import PickEvent
-import scipp as sc
 
-from .source import Source
-from .chopper import Chopper, Clockwise, AntiClockwise
+import ipywidgets as ipw
+import matplotlib.pyplot as plt
+import scipp as sc
+from matplotlib.backend_bases import PickEvent
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from .chopper import AntiClockwise, Chopper, Clockwise
 from .detector import Detector
 from .model import Model
+from .source import Source
 
 
 class ChopperWidget(ipw.VBox):
