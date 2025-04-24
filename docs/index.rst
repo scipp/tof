@@ -38,6 +38,7 @@ You can install from ``conda`` using
    :hidden:
 
    short-example
+   dashboard
    sources
    components
    multiple-pulses
