@@ -12,7 +12,7 @@ cycler==0.12.1
 fonttools==4.57.0
     # via matplotlib
 importlib-resources==6.5.2
-    # via -r base.in
+    # via -r nightly.in
 kiwisolver==1.4.8
     # via matplotlib
 lazy-loader==0.4
@@ -32,14 +32,14 @@ packaging==25.0
 pillow==11.2.1
     # via matplotlib
 plopp==25.4.0
-    # via -r base.in
+    # via -r nightly.in
 pyparsing==3.2.3
     # via matplotlib
 python-dateutil==2.9.0.post0
     # via matplotlib
 scipp==25.4.0
-    # via -r base.in
+    # via -r nightly.in
 scipy==1.15.2
-    # via -r base.in
+    # via -r nightly.in
 six==1.17.0
     # via python-dateutil
