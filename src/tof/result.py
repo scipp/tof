@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from itertools import chain
 from types import MappingProxyType
-from typing import Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,8 +60,8 @@ class Result:
     def __init__(
         self,
         source: Source,
-        choppers: Dict[str, Chopper],
-        detectors: Dict[str, Detector],
+        choppers: dict[str, Chopper],
+        detectors: dict[str, Detector],
     ):
         self._source = source.as_readonly()
         self._choppers = {}
@@ -106,7 +105,7 @@ class Result:
     def __iter__(self):
         return chain(self._choppers, self._detectors)
 
-    def __getitem__(self, name: str) -> Union[ChopperReading, DetectorReading]:
+    def __getitem__(self, name: str) -> ChopperReading | DetectorReading:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
         return self._choppers[name] if name in self._choppers else self._detectors[name]
@@ -115,8 +114,8 @@ class Result:
         self,
         visible_rays: int = 1000,
         blocked_rays: int = 0,
-        figsize: Optional[Tuple[float, float]] = None,
-        ax: Optional[plt.Axes] = None,
+        figsize: tuple[float, float] | None = None,
+        ax: plt.Axes | None = None,
         cax: plt.Axes | None = None,
         cbar: bool = True,
         cmap: str = "gist_rainbow_r",
@@ -292,7 +291,7 @@ class Result:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def to_nxevent_data(self, key: Optional[str] = None) -> sc.DataArray:
+    def to_nxevent_data(self, key: str | None = None) -> sc.DataArray:
         """
         Convert a detector reading to event data that resembles event data found in a
         NeXus file.
