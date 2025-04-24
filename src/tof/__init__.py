@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from .chopper import AntiClockwise, Chopper, ChopperReading, Clockwise
+from .dashboard import app
 from .detector import Detector, DetectorReading
 from .facilities import library as facilities
 from .model import Model
@@ -23,4 +24,5 @@ __all__ = [
     'Result',
     'Source',
     'SourceParameters',
+    'app',
 ]
