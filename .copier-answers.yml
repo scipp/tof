@@ -5,9 +5,9 @@ description: A simple tool to create time-of-flight chopper cascade diagrams
 max_python: '3.13'
 min_python: '3.10'
 namespace_package: ''
-nightly_deps: scipp,plopp,scipy
+nightly_deps: scipp,plopp
 orgname: scipp
-prettyname: tof
+prettyname: Tof
 projectname: tof
-related_projects: Scipp,Sciline,Plopp
+related_projects: Scipp,Scippneutron,Plopp
 year: 2025

@@ -23,6 +23,6 @@ python -m pip install tof
 
 ## Documentation
 
-[https://tof.readthedocs.io/](https://tof.readthedocs.io/)
+[https://scipp.github.io/tof/](https://scipp.github.io/tof/)
 
 ![example](https://tof.readthedocs.io/en/latest/_images/short-example_13_1.png)
