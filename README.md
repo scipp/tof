@@ -5,6 +5,8 @@
 
 # tof
 
+[![Try it](https://img.shields.io/badge/try_it_in_your_browser!-8A2BE2)](https://scipp.github.io/toflite/lab/index.html?path=app.ipynb)
+
 ## About
 
 A simple tool to create time-of-flight chopper cascade diagrams
