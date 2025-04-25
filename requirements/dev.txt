@@ -40,9 +40,9 @@ fqdn==1.5.1
     # via jsonschema
 funcy==2.0
     # via copier
-h11==0.14.0
+h11==0.16.0
     # via httpcore
-httpcore==1.0.8
+httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via jupyterlab
