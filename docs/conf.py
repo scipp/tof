@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath('.'))
 logger = logging.getLogger(__name__)
 
 # General information about the project.
-project = 'tof'
+project = 'Tof'
 copyright = '2025 Scipp contributors'
 author = 'Scipp contributors'
 
@@ -200,7 +200,7 @@ html_sidebars = {
     "**": ["sidebar-nav-bs", "page-toc"],
 }
 
-html_title = "tof"
+html_title = "Tof"
 html_logo = "_static/logo.svg"
 html_favicon = "_static/favicon.ico"
 

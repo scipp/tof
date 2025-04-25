@@ -1,6 +1,6 @@
 # Installation
 
-To install tof and all of its dependencies, use
+To install Tof and all of its dependencies, use
 
 `````{tab-set}
 ````{tab-item} pip

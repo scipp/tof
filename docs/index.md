@@ -1,12 +1,12 @@
 :::{image} _static/logo.svg
 :class: only-light
-:alt: tof
+:alt: Tof
 :width: 60%
 :align: center
 :::
 :::{image} _static/logo.svg
 :class: only-dark
-:alt: tof
+:alt: Tof
 :width: 60%
 :align: center
 :::
@@ -21,7 +21,7 @@
 ```{role} transparent
 ```
 
-# {transparent}`tof`
+# {transparent}`Tof`
 
 <span style="font-size:1.2em;font-style:italic;color:var(--pst-color-text-muted)">
   A simple tool to create time-of-flight chopper cascade diagrams
