@@ -46,6 +46,8 @@ docutils==0.21.2
     #   nbsphinx
     #   pydata-sphinx-theme
     #   sphinx
+exceptiongroup==1.2.2
+    # via ipython
 executing==2.2.0
     # via stack-data
 fastjsonschema==2.21.1
@@ -62,13 +64,11 @@ ipykernel==6.29.5
     # via -r docs.in
 ipympl==0.9.7
     # via -r docs.in
-ipython==9.2.0
+ipython==8.36.0
     # via
     #   ipykernel
     #   ipympl
     #   ipywidgets
-ipython-pygments-lexers==1.1.1
-    # via ipython
 ipywidgets==8.1.6
     # via
     #   -r docs.in
@@ -155,7 +155,6 @@ pygments==2.19.1
     # via
     #   accessible-pygments
     #   ipython
-    #   ipython-pygments-lexers
     #   nbconvert
     #   pydata-sphinx-theme
     #   sphinx
@@ -215,6 +214,8 @@ stack-data==0.6.3
     # via ipython
 tinycss2==1.4.0
     # via bleach
+tomli==2.2.1
+    # via sphinx
 tornado==6.4.2
     # via
     #   ipykernel
@@ -236,6 +237,8 @@ traitlets==5.14.3
 typing-extensions==4.13.2
     # via
     #   beautifulsoup4
+    #   ipython
+    #   mistune
     #   pydata-sphinx-theme
     #   referencing
 urllib3==2.4.0
