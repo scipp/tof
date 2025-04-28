@@ -12,6 +12,7 @@ except importlib.metadata.PackageNotFoundError:
 del importlib
 
 from .chopper import AntiClockwise, Chopper, ChopperReading, Clockwise
+from .dashboard import Dashboard
 from .detector import Detector, DetectorReading
 from .facilities import library as facilities
 from .model import Model
@@ -25,6 +26,7 @@ __all__ = [
     'ChopperReading',
     'Clockwise',
     'ComponentReading',
+    'Dashboard',
     'Detector',
     'DetectorReading',
     'Model',

@@ -13,6 +13,7 @@
    Chopper
    ChopperReading
    ComponentReading
+   Dashboard
    Detector
    DetectorReading
    Model
@@ -20,7 +21,6 @@
    Result
    Source
    SourceParameters
-   utils
 ```
 
 ## Top-level functions
@@ -38,4 +38,6 @@
    :toctree: ../generated/modules
    :template: module-template.rst
    :recursive:
+
+   utils
 ```
