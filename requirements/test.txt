@@ -6,13 +6,9 @@
 #    requirements upgrade
 #
 -r base.txt
-exceptiongroup==1.2.2
-    # via pytest
 iniconfig==2.1.0
     # via pytest
 pluggy==1.5.0
     # via pytest
 pytest==8.3.5
     # via -r test.in
-tomli==2.2.1
-    # via pytest
