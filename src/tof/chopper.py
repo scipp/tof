@@ -4,7 +4,6 @@
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Tuple
 
 import scipp as sc
 
@@ -59,11 +58,11 @@ class Chopper:
         frequency: sc.Variable,
         distance: sc.Variable,
         name: str,
-        phase: Optional[sc.Variable] = None,
-        open: Optional[sc.Variable] = None,
-        close: Optional[sc.Variable] = None,
-        centers: Optional[sc.Variable] = None,
-        widths: Optional[sc.Variable] = None,
+        phase: sc.Variable | None = None,
+        open: sc.Variable | None = None,
+        close: sc.Variable | None = None,
+        centers: sc.Variable | None = None,
+        widths: sc.Variable | None = None,
         direction: Direction = Clockwise,
     ):
         if frequency <= (0.0 * frequency.unit):
@@ -110,8 +109,8 @@ class Chopper:
         return two_pi * self.frequency
 
     def open_close_times(
-        self, time_limit: Optional[sc.Variable] = None, unit: Optional[str] = None
-    ) -> Tuple[sc.Variable, sc.Variable]:
+        self, time_limit: sc.Variable | None = None, unit: str | None = None
+    ) -> tuple[sc.Variable, sc.Variable]:
         """
         The times at which the chopper opens and closes.
 

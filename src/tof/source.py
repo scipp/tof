@@ -2,7 +2,6 @@
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
-from typing import Optional, Union
 
 import numpy as np
 import plopp as pp
@@ -16,7 +15,7 @@ TIME_UNIT = "us"
 WAV_UNIT = "angstrom"
 
 
-def _default_frequency(frequency: Union[None, sc.Variable], pulses: int) -> sc.Variable:
+def _default_frequency(frequency: sc.Variable | None, pulses: int) -> sc.Variable:
     if frequency is None:
         if pulses > 1:
             raise ValueError(
@@ -39,9 +38,9 @@ def _make_pulses(
     p_time: sc.DataArray,
     p_wav: sc.DataArray,
     sampling: int,
-    seed: Optional[int],
-    wmin: Optional[sc.Variable] = None,
-    wmax: Optional[sc.Variable] = None,
+    seed: int | None,
+    wmin: sc.Variable | None = None,
+    wmax: sc.Variable | None = None,
 ):
     """
     Create pulses from time a wavelength probability distributions.
@@ -155,9 +154,7 @@ def _make_pulses(
         unit=TIME_UNIT,
     ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons}) + (
         sc.arange("pulse", pulses) / frequency
-    ).to(
-        unit=TIME_UNIT, copy=False
-    )
+    ).to(unit=TIME_UNIT, copy=False)
 
     wavelength = sc.array(
         dims=[dim],
@@ -204,9 +201,9 @@ class Source:
         neutrons: int = 1_000_000,
         pulses: int = 1,
         sampling: int = 1000,
-        wmin: Optional[sc.Variable] = None,
-        wmax: Optional[sc.Variable] = None,
-        seed: Optional[int] = None,
+        wmin: sc.Variable | None = None,
+        wmax: sc.Variable | None = None,
+        seed: int | None = None,
     ):
         self.facility = facility
         self.neutrons = int(neutrons)
@@ -244,7 +241,7 @@ class Source:
         cls,
         birth_times: sc.Variable,
         wavelengths: sc.Variable,
-        frequency: Optional[sc.Variable] = None,
+        frequency: sc.Variable | None = None,
         pulses: int = 1,
     ):
         """
@@ -295,9 +292,9 @@ class Source:
         p_wav: sc.DataArray,
         neutrons: int = 1_000_000,
         pulses: int = 1,
-        frequency: Optional[sc.Variable] = None,
-        sampling: Optional[int] = 1000,
-        seed: Optional[int] = None,
+        frequency: sc.Variable | None = None,
+        sampling: int = 1000,
+        seed: int | None = None,
     ):
         """
         Create source pulses from time a wavelength probability distributions.
@@ -396,7 +393,7 @@ class SourceParameters:
     """
 
     data: sc.DataArray
-    facility: Optional[str]
+    facility: str | None
     neutrons: int
     frequency: sc.Variable
     pulses: int

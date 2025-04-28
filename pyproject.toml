@@ -1,47 +1,133 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm", "wheel"]
+requires = ["setuptools>=68", "setuptools_scm[toml]>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "tof"
-dynamic = ["version"]
 description = "A simple tool to create time-of-flight chopper cascade diagrams"
-license = {text = "BSD-3-Clause"}
-authors = [{name = "Neil Vaytet"}]
+authors = [{ name = "Scipp contributors" }]
+license = { file = "LICENSE" }
 readme = "README.md"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent"
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
 ]
-requires-python = ">=3.8"
-dependencies = [
-    "importlib-resources",
-    "plopp",
-    "scipp",
-    "scipy",
-]
+requires-python = ">=3.10"
+
+# IMPORTANT:
+# Run 'tox -e deps' after making changes here. This will update requirement files.
+# Make sure to list one dependency per line.
+dependencies = ["plopp", "scipp", "scipy"]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/scipp/tof/issues"
+"Documentation" = "https://scipp.github.io/tof"
+"Source" = "https://github.com/scipp/tof"
 
 [tool.setuptools_scm]
 
-[tool.setuptools.packages.find]
-where = ["./src"]
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = """
+--strict-config
+--strict-markers
+--import-mode=importlib
+-ra
+-v
+"""
+testpaths = "tests"
+filterwarnings = ["error"]
 
-[tool.bandit]
-# Excluding tests because bandit doesn't like `assert`.
-exclude_dirs = ["docs/conf.py", "tests", "install"]
+[tool.ruff]
+line-length = 88
+extend-include = ["*.ipynb"]
+extend-exclude = [".*", "__pycache__", "build", "dist", "install"]
 
-[tool.codespell]
-ignore-words-list = "elemt"
-skip = "./.git,./install,./build,./.tox,*/*_cache,*/.virtual_documents,*/.ipynb_checkpoints,*.pdf,*.svg"
+[tool.ruff.lint]
+# See https://docs.astral.sh/ruff/rules/
+select = [
+    "B",
+    "C4",
+    "DTZ",
+    "E",
+    "F",
+    "G",
+    "I",
+    "PERF",
+    "PGH",
+    "PT",
+    "PYI",
+    "RUF",
+    "S",
+    "T20",
+    "UP",
+    "W",
+]
+ignore = [
+    # Conflict with ruff format, see
+    # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "COM812",
+    "COM819",
+    "D206",
+    "D300",
+    "E111",
+    "E114",
+    "E117",
+    "ISC001",
+    "ISC002",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "W191",
+]
+fixable = ["B010", "I001", "PT001", "RUF022"]
+isort.known-first-party = ["tof"]
+pydocstyle.convention = "numpy"
 
-[tool.black]
-skip-string-normalization = true
-
-[tool.isort]
-skip_gitignore = true
-profile = "black"
+[tool.ruff.lint.per-file-ignores]
+# those files have an increased risk of relying on import order
+"tests/*" = [
+    "S101", # asserts are fine in tests
+    "B018", # 'useless expressions' are ok because some tests just check for exceptions
+]
+"*.ipynb" = [
+    "E501", # longer lines are sometimes more readable
+    "F403", # *-imports used with domain types
+    "F405", # linter may fail to find names because of *-imports
+    "I",    # we don't collect imports at the top
+    "S101", # asserts are used for demonstration and are safe in notebooks
+    "T201", # printing is ok for demonstration purposes
+]
 
 [tool.ruff.format]
 quote-style = "preserve"
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_unreachable = true
+
+[tool.codespell]
+ignore-words-list = [
+    # Codespell wants "socioeconomic" which seems to be the standard spelling.
+    # But we use the word in our code of conduct which is the contributor covenant.
+    # Let's not modify it if we don't have to.
+    "socio-economic",
+]

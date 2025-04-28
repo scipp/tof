@@ -436,7 +436,7 @@ def test_to_nxevent_data():
 
     # There should be 1 pulse for monitor data, and 2 pulses for detector data as it
     # wraps around the pulse period.
-    for key, npulses in zip(('monitor', 'detector'), (1, 2)):
+    for key, npulses in zip(('monitor', 'detector'), (1, 2), strict=True):
         nxevent_data = res.to_nxevent_data(key)
         assert sc.identical(res['monitor'].data.sum().data, nxevent_data.sum().data)
         grouped = nxevent_data.group('event_time_zero')

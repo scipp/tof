@@ -1,7 +1,13 @@
-[![Documentation Status](https://readthedocs.org/projects/tof/badge/?version=latest)](https://tof.readthedocs.io/en/latest/?badge=latest)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![PyPI badge](http://img.shields.io/pypi/v/tof.svg)](https://pypi.python.org/pypi/tof)
+[![Anaconda-Server Badge](https://anaconda.org/scipp/tof/badges/version.svg)](https://anaconda.org/scipp/tof)
+[![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](LICENSE)
 [![Try it](https://img.shields.io/badge/try_it_in_your_browser!-8A2BE2)](https://scipp.github.io/toflite/lab/index.html?path=app.ipynb)
 
-# tof
+# Tof
+
+
+## About
 
 A simple tool to create time-of-flight chopper cascade diagrams
 
@@ -14,11 +20,11 @@ A simple tool to create time-of-flight chopper cascade diagrams
 ## Installation
 
 ```sh
-pip install tof
+python -m pip install tof
 ```
 
 ## Documentation
 
-[https://tof.readthedocs.io/](https://tof.readthedocs.io/)
+[https://scipp.github.io/tof/](https://scipp.github.io/tof/)
 
 ![example](https://tof.readthedocs.io/en/latest/_images/short-example_13_1.png)

@@ -2,7 +2,6 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
 from itertools import chain
-from typing import Dict, List, Optional, Tuple, Union
 
 import scipp as sc
 
@@ -11,20 +10,18 @@ from .detector import Detector
 from .result import Result
 from .source import Source
 
-ComponentType = Union[Chopper, Detector]
+ComponentType = Chopper | Detector
 
 
 def _input_to_dict(
-    obj: Union[
-        None,
-        Dict[str, ComponentType],
-        List[ComponentType],
-        Tuple[ComponentType, ...],
-        ComponentType,
-    ],
+    obj: None
+    | dict[str, ComponentType]
+    | list[ComponentType]
+    | tuple[ComponentType, ...]
+    | ComponentType,
     kind: type,
 ):
-    if isinstance(obj, (list, tuple)):
+    if isinstance(obj, list | tuple):
         out = {}
         for item in obj:
             out.update(_input_to_dict(item, kind=kind))
@@ -58,10 +55,8 @@ class Model:
     def __init__(
         self,
         source: Source,
-        choppers: Optional[Union[Chopper, List[Chopper], Tuple[Chopper, ...]]] = None,
-        detectors: Optional[
-            Union[Detector, List[Detector], Tuple[Detector, ...]]
-        ] = None,
+        choppers: Chopper | list[Chopper] | tuple[Chopper, ...] | None = None,
+        detectors: Detector | list[Detector] | tuple[Detector, ...] | None = None,
     ):
         self.choppers = _input_to_dict(choppers, kind=Chopper)
         self.detectors = _input_to_dict(detectors, kind=Detector)
@@ -112,7 +107,7 @@ class Model:
     def __iter__(self):
         return chain(self.choppers, self.detectors)
 
-    def __getitem__(self, name) -> Union[Chopper, Detector]:
+    def __getitem__(self, name) -> Chopper | Detector:
         if name not in self:
             raise KeyError(f"No component with name {name} was found.")
         return self.choppers[name] if name in self.choppers else self.detectors[name]
