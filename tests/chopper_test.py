@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import numpy as np
 import pytest
 import scipp as sc
 
@@ -11,7 +12,7 @@ deg = sc.Unit('deg')
 rad = sc.Unit('rad')
 meter = sc.Unit('m')
 sec = sc.Unit('s')
-two_pi = 2.0 * rad * sc.constants.pi
+two_pi = 2.0 * np.pi * rad
 
 
 def test_angular_speed():

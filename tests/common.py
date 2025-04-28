@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+import numpy as np
 import scipp as sc
 
 import tof
@@ -9,7 +10,7 @@ Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')
 ms = sc.Unit('ms')
-two_pi = sc.constants.pi * (2.0 * sc.units.rad)
+two_pi = 2.0 * np.pi * sc.units.rad
 
 
 def make_chopper(topen, tclose, f, phase, distance, name):

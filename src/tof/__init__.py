@@ -9,30 +9,22 @@ try:
 except importlib.metadata.PackageNotFoundError:
     __version__ = "0.0.0"
 
+
+import lazy_loader as lazy
+
+__getattr__, __dir__, __all__ = lazy.attach(
+    __name__,
+    submodules=[],
+    submod_attrs={
+        'chopper': ['AntiClockwise', 'Chopper', 'ChopperReading', 'Clockwise'],
+        'dashboard': ['Dashboard'],
+        'detector': ['Detector', 'DetectorReading'],
+        'model': ['Model'],
+        'reading': ['ComponentReading', 'ReadingField'],
+        'result': ['Result'],
+        'source': ['Source', 'SourceParameters'],
+    },
+)
+
 del importlib
-
-from .chopper import AntiClockwise, Chopper, ChopperReading, Clockwise
-from .dashboard import Dashboard
-from .detector import Detector, DetectorReading
-from .facilities import library as facilities
-from .model import Model
-from .reading import ComponentReading, ReadingField
-from .result import Result
-from .source import Source, SourceParameters
-
-__all__ = [
-    'AntiClockwise',
-    'Chopper',
-    'ChopperReading',
-    'Clockwise',
-    'ComponentReading',
-    'Dashboard',
-    'Detector',
-    'DetectorReading',
-    'Model',
-    'ReadingField',
-    'Result',
-    'Source',
-    'SourceParameters',
-    'facilities',
-]
+del lazy
