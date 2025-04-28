@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import uuid
+from collections.abc import Callable
 from functools import partial, reduce
 from itertools import chain
-from typing import Any, Callable
+from typing import Any
 
 import ipywidgets as ipw
 import matplotlib.pyplot as plt
@@ -385,7 +386,11 @@ class TofWidget:
         # Clickable legend
         self.map_legend_to_ax = {}
         for i, (toa_patch, wav_patch) in enumerate(
-            zip(self.toa_legend.get_patches(), self.wav_legend.get_patches())
+            zip(
+                self.toa_legend.get_patches(),
+                self.wav_legend.get_patches(),
+                strict=True,
+            )
         ):
             toa_patch.set_picker(5)
             wav_patch.set_picker(5)
