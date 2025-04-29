@@ -165,11 +165,7 @@ html_theme_options = {
         "image_light": "_static/logo.svg",
         "image_dark": "_static/logo-dark.svg",
     },
-    "external_links": [
-        {"name": "Plopp", "url": "https://scipp.github.io/plopp"},
-        {"name": "Sciline", "url": "https://scipp.github.io/sciline"},
-        {"name": "Scipp", "url": "https://scipp.github.io"},
-    ],
+    "external_links": [],
     "icon_links": [
         {
             "name": "GitHub",
@@ -188,6 +184,13 @@ html_theme_options = {
             "url": "https://anaconda.org/scipp/tof",
             "icon": "fa-custom fa-anaconda",
             "type": "fontawesome",
+        },
+        {
+            "name": "Scipp",
+            # TODO: this should be a link to a docs landing page once we have one
+            "url": "https://github.com/scipp",
+            "icon": "_static/scipp.ico",
+            "type": "local",
         },
     ],
     "footer_start": ["copyright", "sphinx-version"],
