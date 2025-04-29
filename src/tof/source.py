@@ -2,13 +2,13 @@
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
 from dataclasses import dataclass
+from importlib import import_module
 
 import numpy as np
 import plopp as pp
 import scipp as sc
 from scipp.scipy.interpolate import interp1d
 
-from .facilities import library as facilities
 from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
@@ -211,7 +211,10 @@ class Source:
         self.data = None
 
         if facility is not None:
-            facility_params = facilities[self.facility]
+            try:
+                facility_params = import_module(f"tof.facilities.{facility}_pulse")
+            except ModuleNotFoundError as e:
+                raise ValueError(f"Facility '{facility}' not found.") from e
             self.frequency = facility_params.frequency
             pulse_params = _make_pulses(
                 neutrons=self.neutrons,

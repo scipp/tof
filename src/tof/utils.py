@@ -87,13 +87,6 @@ def one_mask(
     return out
 
 
-@dataclass(frozen=True)
-class FacilityPulse:
-    birth_time: sc.DataArray
-    wavelength: sc.DataArray
-    frequency: sc.Variable
-
-
 @dataclass
 class Plot:
     ax: plt.Axes

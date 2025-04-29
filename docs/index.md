@@ -4,7 +4,7 @@
 :width: 60%
 :align: center
 :::
-:::{image} _static/logo.svg
+:::{image} _static/logo-dark.svg
 :class: only-dark
 :alt: Tof
 :width: 60%
@@ -28,9 +28,22 @@
   </br></br>
 </span>
 
-:::{include} user-guide/installation.md
-:heading-offset: 1
-:::
+## Installation
+
+To install Tof and all of its dependencies, use
+
+`````{tab-set}
+````{tab-item} pip
+```sh
+pip install tof
+```
+````
+````{tab-item} conda
+```sh
+conda install -c conda-forge -c scipp tof
+```
+````
+`````
 
 ## Get in touch
 
@@ -42,7 +55,12 @@
 hidden:
 ---
 
-user-guide/index
+demo
+sources
+components
+multiple-pulses
+wfm
+dashboard
 ess/index
 api-reference/index
 developer/index

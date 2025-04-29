@@ -1,6 +1,7 @@
 -r base.in
 gitpython
 ipykernel
+ipympl
 ipywidgets
 nbsphinx
 sphinx
