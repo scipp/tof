@@ -143,13 +143,13 @@ class TofWidget:
             description="Visible rays",
             value=1000,
             continuous_update=True,
-            layout={"width": "200px"},
+            layout={"width": "170px"},
         )
         self.blocked_rays = ipw.IntText(
             description="Blocked rays",
             value=0,
             continuous_update=True,
-            layout={"width": "200px"},
+            layout={"width": "170px"},
         )
         with plt.ioff():
             self.time_distance_fig, self.time_distance_ax = plt.subplots(figsize=(8, 6))
