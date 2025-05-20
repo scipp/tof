@@ -119,6 +119,7 @@ class Result:
         cax: plt.Axes | None = None,
         cbar: bool = True,
         cmap: str = "gist_rainbow_r",
+        seed: int | None = None,
     ) -> Plot:
         """
         Plot the time-distance diagram for the instrument, including the rays of
@@ -144,6 +145,8 @@ class Result:
             Show a colorbar for the wavelength if ``True``.
         cmap:
             Colormap to use for the wavelength colorbar.
+        seed:
+            Random seed for reproducibility.
         """
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize)
@@ -162,6 +165,8 @@ class Result:
         )
         wmin, wmax = wavelengths.min(), wavelengths.max()
 
+        rng = np.random.default_rng(seed)
+
         for i in range(self._source.data.sizes["pulse"]):
             source_data = self.source.data["pulse", i]
             component_data = furthest_component.data["pulse", i]
@@ -170,7 +175,7 @@ class Result:
             blocked = one_mask(component_data.masks).values
             nblocked = int(blocked.sum())
             if nblocked < self.source.neutrons:
-                inds = np.random.choice(
+                inds = rng.choice(
                     ids[~blocked],
                     size=min(self.source.neutrons - nblocked, visible_rays),
                     replace=False,
@@ -194,7 +199,7 @@ class Result:
                 )
 
             # Plot blocked rays
-            inds = np.random.choice(
+            inds = rng.choice(
                 ids[blocked], size=min(blocked_rays, nblocked), replace=False
             )
             x = np.repeat(
