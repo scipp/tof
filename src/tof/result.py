@@ -120,6 +120,8 @@ class Result:
         cbar: bool = True,
         cmap: str = "gist_rainbow_r",
         seed: int | None = None,
+        vmin: float | None = None,
+        vmax: float | None = None,
     ) -> Plot:
         """
         Plot the time-distance diagram for the instrument, including the rays of
@@ -147,6 +149,10 @@ class Result:
             Colormap to use for the wavelength colorbar.
         seed:
             Random seed for reproducibility.
+        vmin:
+            Minimum value for the colorbar.
+        vmax:
+            Maximum value for the colorbar.
         """
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize)
@@ -193,8 +199,8 @@ class Result:
                     color=source_data.coords["wavelength"].values[inds],
                     cbar=cbar and (i == 0),
                     cmap=cmap,
-                    vmin=wmin.value,
-                    vmax=wmax.value,
+                    vmin=wmin.value if vmin is None else vmin,
+                    vmax=wmax.value if vmax is None else vmax,
                     cax=cax,
                 )
 
