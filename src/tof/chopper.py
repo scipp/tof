@@ -128,7 +128,7 @@ class Chopper:
             unit = time_limit.unit
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
         # We make a unique dim name that is different from self.open.dim and
-        # self.close.dim.
+        # self.close.dim to make use of automatic broadcasting below.
         # We also start at -1 to catch early openings in case the phase or opening
         # angles are large
         phases = sc.arange(
