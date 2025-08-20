@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
-import uuid
 from dataclasses import dataclass
 from enum import Enum
 
@@ -128,11 +127,13 @@ class Chopper:
         if unit is None:
             unit = time_limit.unit
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
-        # Start at -1 to catch early openings in case the phase or opening angles are
-        # large
-        phases = sc.arange(uuid.uuid4().hex, -1, nrot) * two_pi + self.phase.to(
-            unit='rad'
-        )
+        # We make a unique dim name that is different from self.open.dim and
+        # self.close.dim to make use of automatic broadcasting below.
+        # We also start at -1 to catch early openings in case the phase or opening
+        # angles are large
+        phases = sc.arange(
+            f"{self.open.dim}-{self.close.dim}", -1, nrot
+        ) * two_pi + self.phase.to(unit='rad')
 
         open_times = self.open.to(unit='rad', copy=False)
         close_times = self.close.to(unit='rad', copy=False)
