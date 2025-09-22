@@ -293,6 +293,19 @@ def test_add_components_with_same_name_raises():
         model.add(detector2)
 
 
+def test_create_model_with_duplicate_component_names_raises():
+    chopper = dummy_chopper()
+    detector = dummy_detector()
+    with pytest.raises(
+        ValueError, match="More than one component named 'dummy_chopper' found"
+    ):
+        tof.Model(source=dummy_source(), choppers=[chopper, chopper])
+    with pytest.raises(
+        ValueError, match="More than one component named 'dummy_detector' found"
+    ):
+        tof.Model(source=dummy_source(), detectors=[detector, detector])
+
+
 def test_iter():
     chopper = dummy_chopper()
     detector = dummy_detector()

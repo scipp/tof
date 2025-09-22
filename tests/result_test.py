@@ -309,7 +309,7 @@ def test_plot_reading_pulse_skipping_does_not_raise():
 
 
 def test_plot_reading_nothing_to_plot_raises():
-    model = make_ess_model(pulses=2)
+    model = make_ess_model(pulses=1)
     skip = tof.Chopper(
         frequency=1 * Hz,
         open=sc.array(dims=['cutout'], values=[0.0], unit='deg'),
@@ -321,4 +321,4 @@ def test_plot_reading_nothing_to_plot_raises():
     model.choppers['skip'] = skip
     res = model.run()
     with pytest.raises(RuntimeError, match="Nothing to plot."):
-        res.choppers['detector'].toa.plot()
+        res.detectors['detector'].toa.plot()

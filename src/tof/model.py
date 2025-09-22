@@ -14,30 +14,27 @@ ComponentType = Chopper | Detector
 
 
 def _input_to_dict(
-    obj: None
-    | dict[str, ComponentType]
-    | list[ComponentType]
-    | tuple[ComponentType, ...]
-    | ComponentType,
+    obj: None | list[ComponentType] | tuple[ComponentType, ...] | ComponentType,
     kind: type,
 ):
-    if isinstance(obj, dict):
-        if not all(isinstance(v, kind) for v in obj.values()):
-            raise TypeError(f"All values in the dictionary must be of type {kind}.")
-        return obj
     if isinstance(obj, list | tuple):
         out = {}
         for item in obj:
-            out.update(_input_to_dict(item, kind=kind))
+            new = _input_to_dict(item, kind=kind)
+            for key in new.keys():
+                if key in out:
+                    raise ValueError(f"More than one component named '{key}' found.")
+            out.update(new)
         return out
-    if isinstance(obj, kind):
+    elif isinstance(obj, kind):
         return {obj.name: obj}
-    if obj is None:
+    elif obj is None:
         return {}
-    raise TypeError(
-        "Invalid input type. Must be a Chopper or a Detector, "
-        "or a list/tuple of Choppers or Detectors."
-    )
+    else:
+        raise TypeError(
+            "Invalid input type. Must be a Chopper or a Detector, "
+            "or a list/tuple of Choppers or Detectors."
+        )
 
 
 class Model:
