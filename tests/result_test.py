@@ -280,3 +280,45 @@ def test_componentdata_repr_does_not_raise():
     res = model.run()
     assert repr(res.choppers['chopper'].toa) is not None
     assert repr(res.detectors['detector'].wavelength) is not None
+
+
+def test_plot_reading_does_not_raise(model):
+    res = model.run()
+    res.choppers['chopper'].toa.plot()
+    res.choppers['chopper'].wavelength.plot()
+    res.detectors['detector'].toa.plot()
+    res.detectors['detector'].wavelength.plot()
+
+
+def test_plot_reading_pulse_skipping_does_not_raise():
+    model = make_ess_model(pulses=3)
+    skip = tof.Chopper(
+        frequency=7 * Hz,
+        open=sc.array(dims=['cutout'], values=[0.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[180.0], unit='deg'),
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='skip',
+    )
+    model.choppers['skip'] = skip
+    res = model.run()
+    res.choppers['chopper'].toa.plot()
+    res.choppers['chopper'].wavelength.plot()
+    res.detectors['detector'].toa.plot()
+    res.detectors['detector'].wavelength.plot()
+
+
+def test_plot_reading_nothing_to_plot_raises():
+    model = make_ess_model(pulses=2)
+    skip = tof.Chopper(
+        frequency=1 * Hz,
+        open=sc.array(dims=['cutout'], values=[0.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[1.0], unit='deg'),
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='skip',
+    )
+    model.choppers['skip'] = skip
+    res = model.run()
+    with pytest.raises(RuntimeError, match="Nothing to plot."):
+        res.choppers['detector'].toa.plot()

@@ -20,6 +20,8 @@ class ReadingField:
         color = {}
         for key, da in by_pulse.items():
             sel = da[~da.masks["blocked_by_others"]]
+            if sel.size == 0:
+                continue
             to_plot[key] = sel.hist({self.dim: bins})
             if "blocked_by_me" in self.data.masks:
                 name = f"blocked-{key}"
@@ -29,6 +31,8 @@ class ReadingField:
                     .hist({self.dim: to_plot[key].coords[self.dim]})
                 )
                 color[name] = "gray"
+        if not to_plot:
+            raise RuntimeError("Nothing to plot.")
         return pp.plot(to_plot, **{**{"color": color}, **kwargs})
 
     def min(self):

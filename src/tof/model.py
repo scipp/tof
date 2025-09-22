@@ -21,20 +21,23 @@ def _input_to_dict(
     | ComponentType,
     kind: type,
 ):
+    if isinstance(obj, dict):
+        if not all(isinstance(v, kind) for v in obj.values()):
+            raise TypeError(f"All values in the dictionary must be of type {kind}.")
+        return obj
     if isinstance(obj, list | tuple):
         out = {}
         for item in obj:
             out.update(_input_to_dict(item, kind=kind))
         return out
-    elif isinstance(obj, kind):
+    if isinstance(obj, kind):
         return {obj.name: obj}
-    elif obj is None:
+    if obj is None:
         return {}
-    else:
-        raise TypeError(
-            "Invalid input type. Must be a Chopper or a Detector, "
-            "or a list/tuple of Choppers or Detectors."
-        )
+    raise TypeError(
+        "Invalid input type. Must be a Chopper or a Detector, "
+        "or a list/tuple of Choppers or Detectors."
+    )
 
 
 class Model:
