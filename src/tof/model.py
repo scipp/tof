@@ -14,17 +14,17 @@ ComponentType = Chopper | Detector
 
 
 def _input_to_dict(
-    obj: None
-    | dict[str, ComponentType]
-    | list[ComponentType]
-    | tuple[ComponentType, ...]
-    | ComponentType,
+    obj: None | list[ComponentType] | tuple[ComponentType, ...] | ComponentType,
     kind: type,
 ):
     if isinstance(obj, list | tuple):
         out = {}
         for item in obj:
-            out.update(_input_to_dict(item, kind=kind))
+            new = _input_to_dict(item, kind=kind)
+            for key in new.keys():
+                if key in out:
+                    raise ValueError(f"More than one component named '{key}' found.")
+            out.update(new)
         return out
     elif isinstance(obj, kind):
         return {obj.name: obj}
