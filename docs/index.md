@@ -28,6 +28,9 @@
   </br></br>
 </span>
 
+## ✨ [Try it in your browser](https://scipp.github.io/toflite/lab/index.html?path=app.ipynb) ✨
+
+
 ## Installation
 
 To install Tof and all of its dependencies, use
