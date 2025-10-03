@@ -23,10 +23,10 @@
 
 # {transparent}`Tof`
 
-<span style="font-size:1.2em;font-style:italic;color:var(--pst-color-text-muted)">
+<div style="font-size:1.2em;font-style:italic;color:var(--pst-color-text-muted);text-align:center;">
   A simple tool to create time-of-flight chopper cascade diagrams
   </br></br>
-</span>
+</div>
 
 ## ✨ [Try it in your browser](https://scipp.github.io/toflite/lab/index.html?path=app.ipynb) ✨
 
