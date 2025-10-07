@@ -5,21 +5,21 @@
 #
 #    requirements upgrade
 #
-contourpy==1.3.2
+contourpy==1.3.3
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-fonttools==4.57.0
+fonttools==4.60.1
     # via matplotlib
-kiwisolver==1.4.8
+kiwisolver==1.4.9
     # via matplotlib
 lazy-loader==0.4
     # via
     #   -r base.in
     #   plopp
-matplotlib==3.10.1
+matplotlib==3.10.6
     # via plopp
-numpy==2.2.5
+numpy==2.3.3
     # via
     #   contourpy
     #   matplotlib
@@ -29,17 +29,17 @@ packaging==25.0
     # via
     #   lazy-loader
     #   matplotlib
-pillow==11.2.1
+pillow==11.3.0
     # via matplotlib
-plopp==25.4.1
+plopp==25.9.0
     # via -r base.in
-pyparsing==3.2.3
+pyparsing==3.2.5
     # via matplotlib
 python-dateutil==2.9.0.post0
     # via matplotlib
-scipp==25.5.1
+scipp==25.8.0
     # via -r base.in
-scipy==1.15.2
+scipy==1.16.2
     # via -r base.in
 six==1.17.0
     # via python-dateutil
