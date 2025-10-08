@@ -205,16 +205,16 @@ class Source:
         wmax: sc.Variable | None = None,
         seed: int | None = None,
     ):
-        self.facility = facility
+        self.facility = facility.lower() if facility is not None else None
         self.neutrons = int(neutrons)
         self.pulses = int(pulses)
         self.data = None
 
-        if facility is not None:
+        if self.facility is not None:
             try:
-                facility_params = import_module(f"tof.facilities.{facility}_pulse")
+                facility_params = import_module(f"tof.facilities.{self.facility}").pulse
             except ModuleNotFoundError as e:
-                raise ValueError(f"Facility '{facility}' not found.") from e
+                raise ValueError(f"Facility '{self.facility}' not found.") from e
             self.frequency = facility_params.frequency
             pulse_params = _make_pulses(
                 neutrons=self.neutrons,
