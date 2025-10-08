@@ -80,18 +80,37 @@ class ComponentReading:
 
     @property
     def toa(self) -> ReadingField:
+        """
+        Time of arrival of the neutrons at the component.
+        """
         return _make_reading_field(self.data, dim="toa")
 
     @property
+    def eto(self) -> ReadingField:
+        """
+        Event time offset of the neutrons at the component (= toa modulo pulse period).
+        """
+        return _make_reading_field(self.data, dim="eto")
+
+    @property
     def wavelength(self) -> ReadingField:
+        """
+        Wavelength of the neutrons at the component.
+        """
         return _make_reading_field(self.data, dim="wavelength")
 
     @property
     def birth_time(self) -> ReadingField:
+        """
+        Birth time of the neutrons at the source.
+        """
         return _make_reading_field(self.data, dim="birth_time")
 
     @property
     def speed(self) -> ReadingField:
+        """
+        Speed of the neutrons at the component.
+        """
         return _make_reading_field(self.data, dim="speed")
 
     def plot(self, bins: int = 300) -> Plot:
