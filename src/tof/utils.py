@@ -91,3 +91,23 @@ def one_mask(
 class Plot:
     ax: plt.Axes
     fig: plt.Figure
+
+
+@dataclass
+class PulseProfile:
+    """
+    Parameters of a neutron pulse (typically from a neutron facility).
+
+    Parameters
+    ----------
+    frequency:
+        Frequency of the pulse in Hz.
+    birth_time:
+        Probability distribution of neutrons in time within a single pulse.
+    wavelength:
+        Probability distribution of neutrons in wavelength within a single pulse.
+    """
+
+    frequency: sc.Variable
+    birth_time: sc.DataArray
+    wavelength: sc.DataArray

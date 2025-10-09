@@ -12,6 +12,7 @@ import scipp as sc
 from matplotlib.backend_bases import PickEvent
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from . import facilities
 from .chopper import AntiClockwise, Chopper, Clockwise
 from .detector import Detector
 from .model import Model
@@ -113,19 +114,42 @@ class DetectorWidget(ipw.VBox):
         self.enabled_widget.observe(callback, names="value")
 
 
-class SourceWidget(ipw.VBox):
+class SetupWidget(ipw.VBox):
     def __init__(self):
         self.facility_widget = ipw.Dropdown(options=["ess"], description="Facility")
         self.neutrons_widget = ipw.IntText(value=100_000, description="Neutrons")
         self.pulses_widget = ipw.IntText(value=1, description="Pulses")
+        self.instrument_widget = ipw.Dropdown(
+            options=[
+                "ESS: Odin",
+                "ESS: Odin (pulse-skipping)",
+                "ESS: Dream (high-flux)",
+            ],
+            description="Instrument",
+            value=None,
+        )
         super().__init__(
-            [self.facility_widget, self.neutrons_widget, self.pulses_widget]
+            [
+                ipw.Label(value="Source:"),
+                self.facility_widget,
+                self.neutrons_widget,
+                self.pulses_widget,
+                ipw.HTML("<hr>"),
+                self.instrument_widget,
+            ]
         )
 
     def continuous_update(self, callback: Callable):
         self.facility_widget.observe(callback, names="value")
         self.neutrons_widget.observe(callback, names="value")
         self.pulses_widget.observe(callback, names="value")
+
+
+INSTRUMENT_LIBRARY = {
+    "ESS: Odin": facilities.ess.odin(pulse_skipping=False),
+    "ESS: Odin (pulse-skipping)": facilities.ess.odin(pulse_skipping=True),
+    "ESS: Dream (high-flux)": facilities.ess.dream(high_flux=True),
+}
 
 
 class TofWidget:
@@ -165,8 +189,11 @@ class TofWidget:
                 ("Logy", "Toggle log scale", "arrows-alt-v", "toggle_yscale"),
             ]
 
-        self.source_widget = SourceWidget()
-        self.source_widget.continuous_update(self.maybe_update)
+        self.setup_widget = SetupWidget()
+        self.setup_widget.continuous_update(self.maybe_update)
+        self.setup_widget.instrument_widget.observe(
+            self.populate_from_instrument, names="value"
+        )
 
         self.choppers_container = ipw.Accordion()
         self.add_chopper_button = ipw.Button(description="Add chopper")
@@ -182,8 +209,8 @@ class TofWidget:
             [self.add_detector_button, self.detectors_container]
         )
 
-        tab_contents = ["Source", "Choppers", "Detectors"]
-        children = [self.source_widget, self.choppers_widget, self.detectors_widget]
+        tab_contents = ["Setup", "Choppers", "Detectors"]
+        children = [self.setup_widget, self.choppers_widget, self.detectors_widget]
         self.tab = ipw.Tab(layout={"height": "650px", "width": "374px"})
         self.tab.children = children
         self.tab.titles = tab_contents
@@ -211,6 +238,35 @@ class TofWidget:
         self.blocked_rays.observe(self.plot_time_distance, names="value")
 
         self.main_widget = ipw.VBox([self.top_bar, self.toa_wav_fig.canvas])
+
+    def populate_from_instrument(self, change):
+        cont_update_value = self.continuous_update.value
+        self.continuous_update.value = False
+        for ch in self.choppers_container.children:
+            self.remove_chopper(None, uid=ch._uid)
+        for det in self.detectors_container.children:
+            self.remove_detector(None, uid=det._uid)
+        params = INSTRUMENT_LIBRARY[change["new"]]
+        for ch in params["choppers"]:
+            self.add_chopper(None)
+            chop = self.choppers_container.children[-1]
+            chop.frequency_widget.value = ch.frequency.to(unit='Hz').value
+            chop.open_widget.value = ", ".join(
+                str(x) for x in ch.open.to(unit='deg').values
+            )
+            chop.close_widget.value = ", ".join(
+                str(x) for x in ch.close.to(unit='deg').values
+            )
+            chop.phase_widget.value = ch.phase.to(unit='deg').value
+            chop.distance_widget.value = ch.distance.to(unit='m').value
+            chop.name_widget.value = ch.name
+        for d in params["detectors"]:
+            self.add_detector(None)
+            det = self.detectors_container.children[-1]
+            det.distance_widget.value = d.distance.to(unit='m').value
+            det.name_widget.value = d.name
+        self.run(None)
+        self.continuous_update.value = cont_update_value
 
     def toggle_yscale(self):
         scale = "log" if self.toa_wav_ax[0].get_yscale() == "linear" else "linear"
@@ -297,9 +353,9 @@ class TofWidget:
 
     def run(self, _: Any):
         source = Source(
-            facility=self.source_widget.facility_widget.value,
-            neutrons=int(self.source_widget.neutrons_widget.value),
-            pulses=int(self.source_widget.pulses_widget.value),
+            facility=self.setup_widget.facility_widget.value,
+            neutrons=int(self.setup_widget.neutrons_widget.value),
+            pulses=int(self.setup_widget.pulses_widget.value),
         )
         choppers = [
             Chopper(
@@ -425,16 +481,5 @@ def Dashboard():
     dashboard.
     """
     w = TofWidget()
-    w.add_chopper_button.click()
-    ch = w.choppers_container.children[0]
-    ch.frequency_widget.value = 48.0
-    ch.open_widget.value = "10, 50, 150, 270"
-    ch.close_widget.value = "50, 90, 190, 320"
-    ch.distance_widget.value = 10.0
-    ch.name_widget.value = "ChopChop"
-    w.add_detector_button.click()
-    d = w.detectors_container.children[0]
-    d.distance_widget.value = 35.0
-    d.name_widget.value = "Monitor"
-    w.run(None)
+    w.setup_widget.instrument_widget.value = "ESS: Odin (pulse-skipping)"
     return w.main_widget
