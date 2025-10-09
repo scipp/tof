@@ -2,7 +2,7 @@
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import scipp as sc
 
