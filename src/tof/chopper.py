@@ -220,14 +220,4 @@ class ChopperReading(ComponentReading):
     def __getitem__(self, val: int | slice | tuple[str, int | slice]) -> ChopperReading:
         if isinstance(val, int):
             val = ('pulse', val)
-        return self.__class__(
-            data=self.data[val],
-            distance=self.distance,
-            name=self.name,
-            frequency=self.frequency,
-            open=self.open,
-            close=self.close,
-            phase=self.phase,
-            open_times=self.open_times,
-            close_times=self.close_times,
-        )
+        return replace(self, data=self.data[val])
