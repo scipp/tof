@@ -216,6 +216,51 @@ def test_component_results_data_slice_step(chopper, detector, multi_pulse_source
     assert 'event' in toas.dims
 
 
+def test_component_results_slice_all_results(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
+    )
+    res = model.run()
+    ch = res.choppers['chopper']
+
+    reading = ch['pulse', 0]
+    toas = reading.toa.data
+    assert 'pulse' not in toas.dims
+    assert 'event' in toas.dims
+    wavelengths = reading.wavelength.data
+    assert 'pulse' not in wavelengths.dims
+    assert 'event' in wavelengths.dims
+
+
+def test_component_results_slice_no_pulse_dim(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
+    )
+    res = model.run()
+    ch = res.choppers['chopper']
+
+    reading = ch[0]  # No pulse dim
+    data = reading.data
+    assert 'pulse' not in data.dims
+    assert 'event' in data.dims
+
+    toas = ch.toa[1].data
+    assert 'pulse' not in toas.dims
+    assert 'event' in toas.dims
+
+
+def test_component_results_eto(chopper, detector, multi_pulse_source):
+    model = tof.Model(
+        source=multi_pulse_source, choppers=[chopper], detectors=[detector]
+    )
+    res = model.run()
+    data = res['detector'].data
+    assert 'eto' in data.coords
+    assert data.coords['eto'].max() < (1 / model.source.frequency).to(
+        unit=data.coords['eto'].unit
+    )
+
+
 def test_result_plot_does_not_raise():
     model = make_ess_model()
     res = model.run()

@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
+from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 
 import scipp as sc
@@ -215,3 +216,8 @@ class ChopperReading(ComponentReading):
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    def __getitem__(self, val: int | slice | tuple[str, int | slice]) -> ChopperReading:
+        if isinstance(val, int):
+            val = ('pulse', val)
+        return replace(self, data=self.data[val])
