@@ -60,6 +60,4 @@ class DetectorReading(ComponentReading):
     ) -> DetectorReading:
         if isinstance(val, int):
             val = ('pulse', val)
-        return self.__class__(
-            data=self.data[val], distance=self.distance, name=self.name
-        )
+        return replace(self, data=self.data[val])
