@@ -22,6 +22,15 @@ def test_ess_pulse():
     assert (wavs[:150].sum() > 1.5 * wavs[150:].sum()).value
 
 
+@pytest.mark.parametrize('facility', ['ESS', 'Ess'])
+def test_ess_pulse_uppercase(facility):
+    source = tof.Source(facility=facility, neutrons=100_000)
+    assert source.neutrons == 100_000
+    assert sc.identical(source.frequency, sc.scalar(14.0, unit="Hz"))
+    assert source.pulses == 1
+    assert source.facility == 'ess'
+
+
 def test_creation_from_neutrons():
     birth_times = sc.array(dims=['event'], values=[1000.0, 1500.0, 2000.0], unit='us')
     wavelengths = sc.array(dims=['event'], values=[1.0, 5.0, 10.0], unit='angstrom')
