@@ -8,7 +8,7 @@ import copy
 
 from ...chopper import Chopper
 from ...detector import Detector
-from .beamline import make_beamline
+from ..common import make_beamline
 
 odin_non_pulse_skipping = {
     "choppers": {

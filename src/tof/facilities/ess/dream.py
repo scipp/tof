@@ -6,7 +6,7 @@ Pre-configured chopper and detector parameters for Dream.
 
 from ...chopper import Chopper
 from ...detector import Detector
-from .beamline import make_beamline
+from ..common import make_beamline
 
 dream_high_flux = {
     "choppers": {
