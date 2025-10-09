@@ -3,8 +3,16 @@
 
 import scipp as sc
 
-from ...chopper import AntiClockwise, Chopper, Clockwise
-from ...detector import Detector
+from ..chopper import AntiClockwise, Chopper, Clockwise
+from ..detector import Detector
+
+
+def _array_or_none(container, key):
+    return (
+        sc.array(dims=["cutout"], values=container[key], unit="deg")
+        if key in container
+        else None
+    )
 
 
 def make_beamline(instrument) -> dict[str, list[Chopper] | list[Detector]]:
@@ -14,18 +22,10 @@ def make_beamline(instrument) -> dict[str, list[Chopper] | list[Detector]]:
             direction={"clockwise": Clockwise, "anti-clockwise": AntiClockwise}[
                 ch["direction"]
             ],
-            open=sc.array(dims=["cutout"], values=ch["open"], unit="deg")
-            if "open" in ch
-            else None,
-            close=sc.array(dims=["cutout"], values=ch["close"], unit="deg")
-            if "close" in ch
-            else None,
-            centers=sc.array(dims=["cutout"], values=ch["centers"], unit="deg")
-            if "centers" in ch
-            else None,
-            widths=sc.array(dims=["cutout"], values=ch["widths"], unit="deg")
-            if "widths" in ch
-            else None,
+            open=_array_or_none(ch, "open"),
+            close=_array_or_none(ch, "close"),
+            centers=_array_or_none(ch, "centers"),
+            widths=_array_or_none(ch, "widths"),
             phase=ch["phase"] * sc.Unit("deg"),
             distance=ch["distance"] * sc.Unit("m"),
             name=key,
