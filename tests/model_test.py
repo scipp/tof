@@ -505,16 +505,17 @@ def test_model_from_json():
         with open(fname, "w") as f:
             json.dump(params, f)
         model = tof.Model.from_json(fname)
-        assert 'chopper1' in model.choppers
-        assert 'chopper2' in model.choppers
-        assert 'detector' in model.detectors
-        assert model.source.facility == 'ess'
-        assert model.source.neutrons == 10_000
-        assert model.source.pulses == 1
-        results = model.run()
-        assert 'chopper1' in results.choppers
-        assert 'chopper2' in results.choppers
-        assert 'detector' in results.detectors
+
+    assert 'chopper1' in model.choppers
+    assert 'chopper2' in model.choppers
+    assert 'detector' in model.detectors
+    assert model.source.facility == 'ess'
+    assert model.source.neutrons == 10_000
+    assert model.source.pulses == 1
+    results = model.run()
+    assert 'chopper1' in results.choppers
+    assert 'chopper2' in results.choppers
+    assert 'detector' in results.detectors
 
 
 def test_model_from_json_no_source():
@@ -551,17 +552,16 @@ def test_model_from_json_no_source():
         with open(fname, "w") as f:
             json.dump(params, f)
         model = tof.Model.from_json(fname)
-        assert 'chopper1' in model.choppers
-        assert 'chopper2' in model.choppers
-        assert 'detector' in model.detectors
-        assert model.source is None
-        with pytest.raises(
-            ValueError, match="No source has been defined for this model"
-        ):
-            _ = model.run()
 
-        model.source = tof.Source(facility='ess', neutrons=10_000, pulses=1)
-        results = model.run()
-        assert 'chopper1' in results.choppers
-        assert 'chopper2' in results.choppers
-        assert 'detector' in results.detectors
+    assert 'chopper1' in model.choppers
+    assert 'chopper2' in model.choppers
+    assert 'detector' in model.detectors
+    assert model.source is None
+    with pytest.raises(ValueError, match="No source has been defined for this model"):
+        _ = model.run()
+
+    model.source = tof.Source(facility='ess', neutrons=10_000, pulses=1)
+    results = model.run()
+    assert 'chopper1' in results.choppers
+    assert 'chopper2' in results.choppers
+    assert 'detector' in results.detectors
