@@ -54,13 +54,21 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
     detectors = []
     for name, comp in instrument.items():
         if comp["type"] == "chopper":
+            direction = comp["direction"].lower()
+            if direction == "clockwise":
+                _dir = Clockwise
+            elif any(x in direction for x in ("anti", "counter")):
+                _dir = AntiClockwise
+            else:
+                raise ValueError(
+                    f"Chopper direction must be 'clockwise' or 'anti-clockwise', got "
+                    f"'{comp['direction']}' for component {name}."
+                )
             choppers.append(
                 Chopper(
                     frequency=comp["frequency"]["value"]
                     * sc.Unit(comp["frequency"]["unit"]),
-                    direction={"clockwise": Clockwise, "anti-clockwise": AntiClockwise}[
-                        comp["direction"]
-                    ],
+                    direction=_dir,
                     open=_array_or_none(comp, "open"),
                     close=_array_or_none(comp, "close"),
                     centers=_array_or_none(comp, "centers"),
@@ -78,6 +86,13 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
                     * sc.Unit(comp["distance"]["unit"]),
                     name=name,
                 )
+            )
+        elif comp["type"] == "source":
+            continue
+        else:
+            raise ValueError(
+                f"Unknown component type: {comp['type']} for component {name}. "
+                "Supported types are 'chopper', 'detector', and 'source'."
             )
     return {"choppers": choppers, "detectors": detectors}
 
@@ -99,7 +114,7 @@ class Model:
 
     def __init__(
         self,
-        source: Source,
+        source: Source | None = None,
         choppers: Chopper | list[Chopper] | tuple[Chopper, ...] | None = None,
         detectors: Detector | list[Detector] | tuple[Detector, ...] | None = None,
     ):

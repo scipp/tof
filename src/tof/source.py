@@ -197,7 +197,7 @@ class Source:
 
     def __init__(
         self,
-        facility: str,
+        facility: str | None,
         neutrons: int = 1_000_000,
         pulses: int = 1,
         sampling: int = 1000,
