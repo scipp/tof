@@ -515,3 +515,53 @@ def test_model_from_json():
         assert 'chopper1' in results.choppers
         assert 'chopper2' in results.choppers
         assert 'detector' in results.detectors
+
+
+def test_model_from_json_no_source():
+    params = {
+        "chopper1": {
+            "type": "chopper",
+            "frequency": {"value": 56.0, "unit": "Hz"},
+            "phase": {"value": 93.244, "unit": "deg"},
+            "distance": {"value": 6.85, "unit": "m"},
+            "open": {
+                "value": [-1.9419, 49.5756, 98.9315, 146.2165, 191.5176, 234.9179],
+                "unit": "deg",
+            },
+            "close": {
+                "value": [1.9419, 55.7157, 107.2332, 156.5891, 203.8741, 249.1752],
+                "unit": "deg",
+            },
+            "direction": "clockwise",
+        },
+        "chopper2": {
+            "type": "chopper",
+            "frequency": {"value": 14.0, "unit": "Hz"},
+            "phase": {"value": 31.080 + 14.0, "unit": "deg"},
+            "distance": {"value": 8.45, "unit": "m"},
+            "open": {"value": [-23.6029], "unit": "deg"},
+            "close": {"value": [23.6029], "unit": "deg"},
+            "direction": "clockwise",
+        },
+        "detector": {"type": "detector", "distance": {"value": 60.5, "unit": "m"}},
+    }
+
+    with tempfile.TemporaryDirectory() as path:
+        fname = os.path.join(path, "my_instrument.json")
+        with open(fname, "w") as f:
+            json.dump(params, f)
+        model = tof.Model.from_json(fname)
+        assert 'chopper1' in model.choppers
+        assert 'chopper2' in model.choppers
+        assert 'detector' in model.detectors
+        assert model.source is None
+        with pytest.raises(
+            ValueError, match="No source has been defined for this model"
+        ):
+            _ = model.run()
+
+        model.source = tof.Source(facility='ess', neutrons=10_000, pulses=1)
+        results = model.run()
+        assert 'chopper1' in results.choppers
+        assert 'chopper2' in results.choppers
+        assert 'detector' in results.detectors
