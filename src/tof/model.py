@@ -50,6 +50,21 @@ def _array_or_none(container: dict, key: str) -> sc.Variable | None:
 
 
 def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]:
+    """
+    Create choppers and detectors from a dictionary.
+    The dictionary is typically loaded from a pre-configured instrument library, or
+    from a JSON file.
+
+    Parameters
+    ----------
+    instrument:
+        A dictionary defining the instrument components.
+        Each key is the name of a component, and the value is a dictionary with the
+        component parameters. Each component dictionary must have a "type" key, which
+        must be either "chopper" or "detector". Other keys depend on the component
+        type, see the documentation of the :class:`Chopper` and :class:`Detector`
+        classes for details.
+    """
     choppers = []
     detectors = []
     for name, comp in instrument.items():
