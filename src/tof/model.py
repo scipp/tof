@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
+from __future__ import annotations
+
 from itertools import chain
 
 import scipp as sc
 
-from .chopper import Chopper
+from .chopper import AntiClockwise, Chopper, Clockwise
 from .detector import Detector
 from .result import Result
 from .source import Source
@@ -37,6 +39,49 @@ def _input_to_dict(
         )
 
 
+def _array_or_none(container: dict, key: str) -> sc.Variable | None:
+    return (
+        sc.array(
+            dims=["cutout"], values=container[key]["value"], unit=container[key]["unit"]
+        )
+        if key in container
+        else None
+    )
+
+
+def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]:
+    choppers = []
+    detectors = []
+    for name, comp in instrument.items():
+        if comp["type"] == "chopper":
+            choppers.append(
+                Chopper(
+                    frequency=comp["frequency"]["value"]
+                    * sc.Unit(comp["frequency"]["unit"]),
+                    direction={"clockwise": Clockwise, "anti-clockwise": AntiClockwise}[
+                        comp["direction"]
+                    ],
+                    open=_array_or_none(comp, "open"),
+                    close=_array_or_none(comp, "close"),
+                    centers=_array_or_none(comp, "centers"),
+                    widths=_array_or_none(comp, "widths"),
+                    phase=comp["phase"]["value"] * sc.Unit(comp["phase"]["unit"]),
+                    distance=comp["distance"]["value"]
+                    * sc.Unit(comp["distance"]["unit"]),
+                    name=name,
+                )
+            )
+        elif comp["type"] == "detector":
+            detectors.append(
+                Detector(
+                    distance=comp["distance"]["value"]
+                    * sc.Unit(comp["distance"]["unit"]),
+                    name=name,
+                )
+            )
+    return {"choppers": choppers, "detectors": detectors}
+
+
 class Model:
     """
     A class that represents a neutron instrument.
@@ -61,6 +106,35 @@ class Model:
         self.choppers = _input_to_dict(choppers, kind=Chopper)
         self.detectors = _input_to_dict(detectors, kind=Detector)
         self.source = source
+
+    @classmethod
+    def from_json(cls, filename: str) -> Model:
+        """
+        Create a model from a JSON file.
+
+        Parameters
+        ----------
+        filename:
+            The path to the JSON file.
+        """
+        import json
+
+        with open(filename) as f:
+            instrument = json.load(f)
+        beamline = make_beamline(instrument)
+        source = None
+        for item in instrument.values():
+            if item.get("type") == "source":
+                if "facility" not in item:
+                    raise ValueError(
+                        "Currently, only sources from facilities are supported when "
+                        "loading from JSON."
+                    )
+                source_args = item.copy()
+                del source_args["type"]
+                source = Source(**source_args)
+                break
+        return cls(source=source, **beamline)
 
     def add(self, component):
         """
