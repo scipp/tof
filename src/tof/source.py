@@ -205,29 +205,31 @@ class Source:
         wmax: sc.Variable | None = None,
         seed: int | None = None,
     ):
-        self.facility = facility.lower() if facility is not None else None
-        self.neutrons = int(neutrons)
-        self.pulses = int(pulses)
-        self.data = None
+        self._facility = facility.lower() if facility is not None else None
+        self._neutrons = int(neutrons)
+        self._pulses = int(pulses)
+        self._data = None
 
-        if self.facility is not None:
+        if self._facility is not None:
             try:
-                facility_params = import_module(f"tof.facilities.{self.facility}").pulse
+                facility_params = import_module(
+                    f"tof.facilities.{self._facility}"
+                ).pulse
             except ModuleNotFoundError as e:
-                raise ValueError(f"Facility '{self.facility}' not found.") from e
-            self.frequency = facility_params.frequency
+                raise ValueError(f"Facility '{self._facility}' not found.") from e
+            self._frequency = facility_params.frequency
             pulse_params = _make_pulses(
-                neutrons=self.neutrons,
+                neutrons=self._neutrons,
                 p_time=facility_params.birth_time,
                 p_wav=facility_params.wavelength,
                 sampling=sampling,
-                frequency=self.frequency,
-                pulses=pulses,
+                frequency=self._frequency,
+                pulses=self._pulses,
                 wmin=wmin,
                 wmax=wmax,
                 seed=seed,
             )
-            self.data = sc.DataArray(
+            self._data = sc.DataArray(
                 data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
                 coords={
                     "birth_time": pulse_params["birth_time"],
@@ -238,6 +240,41 @@ class Source:
                     ).fold("event", sizes=pulse_params["birth_time"].sizes),
                 },
             )
+
+    @property
+    def facility(self) -> str | None:
+        """
+        The name of the facility used to create the source.
+        """
+        return self._facility
+
+    @property
+    def neutrons(self) -> int:
+        """
+        The number of neutrons per pulse.
+        """
+        return self._neutrons
+
+    @property
+    def frequency(self) -> sc.Variable:
+        """
+        The frequency of the pulse.
+        """
+        return self._frequency
+
+    @property
+    def pulses(self) -> int:
+        """
+        The number of pulses.
+        """
+        return self._pulses
+
+    @property
+    def data(self) -> sc.DataArray:
+        """
+        The data array containing the neutrons in the pulse.
+        """
+        return self._data
 
     @classmethod
     def from_neutrons(
@@ -265,16 +302,16 @@ class Source:
             Number of pulses.
         """
         source = cls(facility=None, neutrons=len(birth_times), pulses=pulses)
-        source.frequency = _default_frequency(frequency, pulses)
+        source._frequency = _default_frequency(frequency, pulses)
 
-        birth_times = (sc.arange("pulse", pulses) / source.frequency).to(
+        birth_times = (sc.arange("pulse", pulses) / source._frequency).to(
             unit=TIME_UNIT, copy=False
         ) + birth_times.to(unit=TIME_UNIT, copy=False)
         wavelengths = sc.broadcast(
             wavelengths.to(unit=WAV_UNIT, copy=False), sizes=birth_times.sizes
         )
 
-        source.data = sc.DataArray(
+        source._data = sc.DataArray(
             data=sc.ones(sizes=birth_times.sizes, unit="counts"),
             coords={
                 "birth_time": birth_times,
@@ -327,17 +364,17 @@ class Source:
         """
 
         source = cls(facility=None, neutrons=neutrons, pulses=pulses)
-        source.frequency = _default_frequency(frequency, pulses)
+        source._frequency = _default_frequency(frequency, pulses)
         pulse_params = _make_pulses(
             neutrons=neutrons,
             p_time=p_time,
             p_wav=p_wav,
-            frequency=source.frequency,
+            frequency=source._frequency,
             pulses=pulses,
             sampling=sampling,
             seed=seed,
         )
-        source.data = sc.DataArray(
+        source._data = sc.DataArray(
             data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
             coords={
                 "birth_time": pulse_params["birth_time"],

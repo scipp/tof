@@ -193,6 +193,11 @@ class Model:
         """
         Run the simulation.
         """
+        if self.source is None:
+            raise RuntimeError(
+                "No source has been defined for this model. Please add a source using "
+                "`model.source = Source(...)` before running the simulation."
+            )
         components = sorted(
             chain(self.choppers.values(), self.detectors.values()),
             key=lambda c: c.distance.value,
