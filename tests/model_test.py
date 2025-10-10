@@ -538,7 +538,7 @@ def test_model_from_json_no_source():
         "chopper2": {
             "type": "chopper",
             "frequency": {"value": 14.0, "unit": "Hz"},
-            "phase": {"value": 31.080 + 14.0, "unit": "deg"},
+            "phase": {"value": 45.080, "unit": "deg"},
             "distance": {"value": 8.45, "unit": "m"},
             "open": {"value": [-23.6029], "unit": "deg"},
             "close": {"value": [23.6029], "unit": "deg"},
