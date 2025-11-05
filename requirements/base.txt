@@ -17,9 +17,9 @@ lazy-loader==0.4
     # via
     #   -r base.in
     #   plopp
-matplotlib==3.10.6
+matplotlib==3.10.7
     # via plopp
-numpy==2.3.3
+numpy==2.3.4
     # via
     #   contourpy
     #   matplotlib
@@ -29,9 +29,9 @@ packaging==25.0
     # via
     #   lazy-loader
     #   matplotlib
-pillow==11.3.0
+pillow==12.0.0
     # via matplotlib
-plopp==25.9.0
+plopp==25.10.0
     # via -r base.in
 pyparsing==3.2.5
     # via matplotlib
@@ -39,7 +39,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 scipp==25.11.0
     # via -r base.in
-scipy==1.16.2
+scipy==1.16.3
     # via -r base.in
 six==1.17.0
     # via python-dateutil
