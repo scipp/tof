@@ -14,7 +14,7 @@ cycler==0.12.1
     # via matplotlib
 fonttools==4.60.1
     # via matplotlib
-iniconfig==2.1.0
+iniconfig==2.3.0
     # via pytest
 kiwisolver==1.4.10rc0
     # via matplotlib
@@ -22,9 +22,9 @@ lazy-loader==0.4
     # via
     #   -r nightly.in
     #   plopp
-matplotlib==3.10.6
+matplotlib==3.10.7
     # via plopp
-numpy==2.3.3
+numpy==2.3.4
     # via
     #   contourpy
     #   matplotlib
@@ -35,7 +35,7 @@ packaging==25.0
     #   lazy-loader
     #   matplotlib
     #   pytest
-pillow==11.3.0
+pillow==12.0.0
     # via matplotlib
 plopp @ git+https://github.com/scipp/plopp@main
     # via -r nightly.in
@@ -51,7 +51,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 scipp==100.0.0.dev0
     # via -r nightly.in
-scipy==1.16.2
+scipy==1.16.3
     # via -r nightly.in
 six==1.17.0
     # via python-dateutil
