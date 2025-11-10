@@ -171,6 +171,8 @@ class Model:
         Return the model as a JSON-serializable dictionary.
         """
         instrument_dict = {}
+        if self.source is not None:
+            instrument_dict['source'] = self.source.as_json()
         for ch in self.choppers.values():
             instrument_dict[ch.name] = ch.as_json()
         for det in self.detectors.values():

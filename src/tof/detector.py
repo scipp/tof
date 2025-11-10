@@ -46,6 +46,11 @@ class Detector:
             'name': self.name,
         }
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Detector):
+            return NotImplemented
+        return self.name == other.name and sc.identical(self.distance, other.distance)
+
 
 @dataclass(frozen=True)
 class DetectorReading(ComponentReading):

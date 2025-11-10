@@ -189,15 +189,31 @@ class Chopper:
         """
         Return the chopper as a JSON-serializable dictionary.
         """
-        return {
-            'type': 'chopper',
-            'frequency': var_to_dict(self.frequency),
-            'distance': var_to_dict(self.distance),
-            'phase': var_to_dict(self.phase),
-            'open': var_to_dict(self.open),
-            'close': var_to_dict(self.close),
-            'direction': self.direction.name.lower(),
+        out = {
+            key: var_to_dict(value)
+            for key, value in self.as_dict().items()
+            if isinstance(value, sc.Variable)
         }
+        out.update(
+            {
+                'type': 'chopper',
+                'direction': self.direction.name.lower(),
+                'name': self.name,
+            }
+        )
+        return out
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Chopper):
+            return NotImplemented
+        if self.name != other.name:
+            return False
+        if self.direction != other.direction:
+            return False
+        return all(
+            sc.identical(getattr(self, field), getattr(other, field))
+            for field in ('frequency', 'distance', 'phase', 'open', 'close')
+        )
 
 
 @dataclass(frozen=True)

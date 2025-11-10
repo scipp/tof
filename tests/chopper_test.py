@@ -354,3 +354,29 @@ def test_chopper_create_raises_when_both_edges_and_centers_are_supplied():
             distance=5.0 * meter,
             name='chopper',
         )
+
+
+def test_as_json():
+    f = 10.0 * Hz
+    chopper = tof.Chopper(
+        frequency=f,
+        open=7.7 * deg,
+        close=31.0 * deg,
+        phase=0.5 * deg,
+        distance=5.0 * meter,
+        name='Achopper',
+    )
+    json_str = chopper.as_json()
+    assert json_str['type'] == 'chopper'
+    assert json_str['frequency']['value'] == chopper.frequency.value
+    assert json_str['frequency']['unit'] == chopper.frequency.unit
+    assert np.allclose(json_str['open']['value'], chopper.open.values)
+    assert json_str['open']['unit'] == chopper.open.unit
+    assert np.allclose(json_str['close']['value'], chopper.close.values)
+    assert json_str['close']['unit'] == chopper.close.unit
+    assert json_str['phase']['value'] == chopper.phase.value
+    assert json_str['phase']['unit'] == chopper.phase.unit
+    assert json_str['distance']['value'] == chopper.distance.value
+    assert json_str['distance']['unit'] == chopper.distance.unit
+    assert json_str['name'] == chopper.name
+    assert json_str['direction'] == chopper.direction.name.lower()

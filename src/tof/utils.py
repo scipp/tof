@@ -97,7 +97,7 @@ def var_to_dict(var: sc.Variable) -> dict:
         The variable to convert.
     """
     return {
-        'value': var.values.tolist() if var.ndim > 0 else var.value,
+        'value': var.values.tolist() if var.ndim > 0 else float(var.value),
         'unit': str(var.unit),
     }
 
