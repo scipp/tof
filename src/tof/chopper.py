@@ -171,7 +171,10 @@ class Chopper:
             f"direction={self.direction.name}, cutouts={len(self.open)})"
         )
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
+        """
+        Return the chopper as a dictionary.
+        """
         return {
             'frequency': self.frequency,
             'open': self.open,
@@ -183,6 +186,9 @@ class Chopper:
         }
 
     def as_json(self) -> dict:
+        """
+        Return the chopper as a JSON-serializable dictionary.
+        """
         return {
             'type': 'chopper',
             'frequency': var_to_dict(self.frequency),

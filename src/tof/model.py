@@ -166,6 +166,17 @@ class Model:
                 break
         return cls(source=source, **beamline)
 
+    def as_json(self) -> dict:
+        """
+        Return the model as a JSON-serializable dictionary.
+        """
+        instrument_dict = {}
+        for ch in self.choppers.values():
+            instrument_dict[ch.name] = ch.as_json()
+        for det in self.detectors.values():
+            instrument_dict[det.name] = det.as_json()
+        return instrument_dict
+
     def to_json(self, filename: str):
         """
         Save the model to a JSON file.
@@ -177,13 +188,8 @@ class Model:
         """
         import json
 
-        instrument_dict = {}
-        for ch in self.choppers.values():
-            instrument_dict[ch.name] = ch.as_json()
-        for det in self.detectors.values():
-            instrument_dict[det.name] = det.as_json()
         with open(filename, 'w') as f:
-            json.dump(instrument_dict, f, indent=2)
+            json.dump(self.as_json(), f, indent=2)
 
     def add(self, component):
         """

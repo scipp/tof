@@ -30,10 +30,16 @@ class Detector:
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
+        """
+        Return the detector as a dictionary.
+        """
         return {'distance': self.distance, 'name': self.name}
 
     def as_json(self) -> dict:
+        """
+        Return the detector as a JSON-serializable dictionary.
+        """
         return {
             'type': 'detector',
             'distance': var_to_dict(self.distance),
