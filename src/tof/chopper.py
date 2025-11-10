@@ -8,7 +8,7 @@ from enum import Enum
 import scipp as sc
 
 from .reading import ComponentReading
-from .utils import two_pi
+from .utils import two_pi, var_to_dict
 
 
 class Direction(Enum):
@@ -180,6 +180,17 @@ class Chopper:
             'phase': self.phase,
             'name': self.name,
             'direction': self.direction,
+        }
+
+    def as_json(self) -> dict:
+        return {
+            'type': 'chopper',
+            'frequency': var_to_dict(self.frequency),
+            'distance': var_to_dict(self.distance),
+            'phase': var_to_dict(self.phase),
+            'open': var_to_dict(self.open),
+            'close': var_to_dict(self.close),
+            'direction': self.direction.name.lower(),
         }
 
 

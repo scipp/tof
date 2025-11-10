@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 import scipp as sc
 
 from .reading import ComponentReading
+from .utils import var_to_dict
 
 
 class Detector:
@@ -31,6 +32,13 @@ class Detector:
 
     def as_dict(self):
         return {'distance': self.distance, 'name': self.name}
+
+    def as_json(self) -> dict:
+        return {
+            'type': 'detector',
+            'distance': var_to_dict(self.distance),
+            'name': self.name,
+        }
 
 
 @dataclass(frozen=True)

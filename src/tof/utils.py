@@ -87,6 +87,21 @@ def one_mask(
     return out
 
 
+def var_to_dict(var: sc.Variable) -> dict:
+    """
+    Convert a scipp Variable to a dictionary with 'value' and 'unit' keys.
+
+    Parameters
+    ----------
+    var:
+        The variable to convert.
+    """
+    return {
+        'value': var.values.tolist() if var.ndim > 0 else var.value,
+        'unit': str(var.unit),
+    }
+
+
 @dataclass
 class Plot:
     ax: plt.Axes
