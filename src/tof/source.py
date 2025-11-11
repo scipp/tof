@@ -431,7 +431,7 @@ class Source:
         Return the source as a JSON-serializable dictionary.
         """
         return {
-            'facility': str(self.facility),
+            'facility': self.facility,
             'neutrons': int(self.neutrons),
             'pulses': self.pulses,
             'seed': self.seed,

@@ -46,7 +46,7 @@ class Detector:
             'name': self.name,
         }
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Detector):
             return NotImplemented
         return self.name == other.name and sc.identical(self.distance, other.distance)

@@ -142,6 +142,8 @@ class Model:
         """
         Create a model from a JSON file.
 
+        Currently, only sources from facilities are supported when loading from JSON.
+
         Parameters
         ----------
         filename:
@@ -169,9 +171,10 @@ class Model:
     def as_json(self) -> dict:
         """
         Return the model as a JSON-serializable dictionary.
+        If the source is not from a facility, it is not included in the output.
         """
         instrument_dict = {}
-        if self.source is not None:
+        if (self.source is not None) and (self.source.facility is not None):
             instrument_dict['source'] = self.source.as_json()
         for ch in self.choppers.values():
             instrument_dict[ch.name] = ch.as_json()
@@ -182,6 +185,7 @@ class Model:
     def to_json(self, filename: str):
         """
         Save the model to a JSON file.
+        If the source is not from a facility, it is not included in the output.
 
         Parameters
         ----------
