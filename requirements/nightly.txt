@@ -45,7 +45,7 @@ pygments==2.19.2
     # via pytest
 pyparsing==3.3.0a1
     # via matplotlib
-pytest==8.4.2
+pytest==9.0.0
     # via -r nightly.in
 python-dateutil==2.9.0.post0
     # via matplotlib
