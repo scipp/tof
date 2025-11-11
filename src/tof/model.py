@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import warnings
 from itertools import chain
 
 import scipp as sc
@@ -174,8 +175,16 @@ class Model:
         If the source is not from a facility, it is not included in the output.
         """
         instrument_dict = {}
-        if (self.source is not None) and (self.source.facility is not None):
-            instrument_dict['source'] = self.source.as_json()
+        if self.source is not None:
+            if self.source.facility is None:
+                warnings.warn(
+                    "The source is not from a facility, so it will not be included in "
+                    "the JSON output.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            else:
+                instrument_dict['source'] = self.source.as_json()
         for ch in self.choppers.values():
             instrument_dict[ch.name] = ch.as_json()
         for det in self.detectors.values():
