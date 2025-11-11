@@ -4,6 +4,7 @@ ipykernel
 ipympl
 ipywidgets
 nbsphinx
+scippneutron
 sphinx
 sphinx-autodoc-typehints
 sphinx-book-theme
