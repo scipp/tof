@@ -4,11 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import scipp as sc
 
 from .reading import ComponentReading
 from .utils import two_pi, var_to_dict
+
+if TYPE_CHECKING:
+    try:
+        from scippneutron.chopper import DiskChopper
+    except ImportError:
+        DiskChopper = object
 
 
 class Direction(Enum):
@@ -213,6 +220,79 @@ class Chopper:
         return all(
             sc.identical(getattr(self, field), getattr(other, field))
             for field in ('frequency', 'distance', 'phase', 'open', 'close')
+        )
+
+    @classmethod
+    def from_diskchopper(cls, disk_chopper: DiskChopper) -> Chopper:
+        distance = disk_chopper.axle_position.fields.z
+        freq = abs(disk_chopper.frequency)
+        return cls(
+            frequency=freq,
+            direction=AntiClockwise
+            if (disk_chopper.frequency.value > 0.0)
+            else Clockwise,
+            open=disk_chopper.slit_begin - disk_chopper.beam_position,
+            close=disk_chopper.slit_end - disk_chopper.beam_position,
+            phase=disk_chopper.phase
+            if disk_chopper.frequency.value > 0.0
+            else -disk_chopper.phase,
+            distance=distance,
+            name=(
+                f"Chopper@{distance.value:.1f}{distance.unit}_"
+                f"{int(freq.value)}{freq.unit}"
+            ),
+        )
+
+    @classmethod
+    def from_nexus(cls, nexus_chopper) -> Chopper:
+        # DiskChopper.from_nexus({'type': DiskChopperType.single,
+        #     'position': sc.vector([0.0, 0.0, 2.0], unit='m'),
+        #     'rotation_speed': sc.scalar(-12.0, unit='Hz'),
+        #     'beam_position': sc.scalar(45.0, unit='deg'),
+        #     'phase': sc.scalar(-20.0, unit='deg'),
+        #     'slit_edges': sc.array(
+        #         dims=['slit'],
+        #         values=[0.0, 60.0, 124.0, 126.0],
+        #         unit='deg',
+        #     ),
+        #     'slit_height': sc.scalar(0.4, unit='m'),
+        #     'radius': sc.scalar(0.5, unit='m'),
+        #                     })
+        distance = nexus_chopper['position'].fields.z
+        freq = abs(nexus_chopper['rotation_speed'])
+        return cls(
+            frequency=freq,
+            direction=AntiClockwise
+            if (nexus_chopper['rotation_speed'].value > 0.0)
+            else Clockwise,
+            open=nexus_chopper['slit_edges'][::2] - nexus_chopper['beam_position'],
+            close=nexus_chopper['slit_edges'][1::2] - nexus_chopper['beam_position'],
+            phase=nexus_chopper['phase']
+            if nexus_chopper['rotation_speed'].value > 0.0
+            else -nexus_chopper['phase'],
+            distance=distance,
+            name=(
+                f"Chopper@{distance.value:.1f}{distance.unit}_"
+                f"{int(freq.value)}{freq.unit}",
+            ),
+        )
+
+    def to_diskchopper(self) -> DiskChopper:
+        from scippneutron.chopper import DiskChopper
+
+        frequency = (
+            self.frequency if self.direction == AntiClockwise else -self.frequency
+        )
+        phase = self.phase if self.direction == AntiClockwise else -self.phase
+        return DiskChopper(
+            frequency=frequency,
+            beam_position=sc.scalar(0.0, unit='deg'),
+            slit_begin=self.open,
+            slit_end=self.close,
+            phase=phase,
+            axle_position=sc.vector(
+                value=[0.0, 0.0, self.distance.value], unit=self.distance.unit
+            ),
         )
 
 
