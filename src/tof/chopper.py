@@ -229,6 +229,8 @@ class Chopper:
 
         Example
         -------
+        >>> import scipp as sc
+        >>> import tof
         >>> from scippneutron.chopper import DiskChopper
         >>> disk_chopper = DiskChopper(
         ...     frequency=sc.scalar(28.0, unit='Hz'),
@@ -242,7 +244,7 @@ class Chopper:
         ...     phase=sc.scalar(15.0, unit='deg'),
         ...     axle_position=sc.vector(value=[0.0, 0.0, 13.0], unit='m'),
         ... )
-        >>> chopper = Chopper.from_diskchopper(disk_chopper)
+        >>> chopper = tof.Chopper.from_diskchopper(disk_chopper)
         """
 
         distance = disk_chopper.axle_position.fields.z
@@ -272,8 +274,9 @@ class Chopper:
         Example
         -------
         >>> # Assuming a chopper NeXus structure
+        >>> import scipp as sc
+        >>> import tof
         >>> nexus_chopper = {
-        ...     'type': DiskChopperType.single,
         ...     'position': sc.vector([0.0, 0.0, 2.0], unit='m'),
         ...     'rotation_speed': sc.scalar(12.0, unit='Hz'),
         ...     'beam_position': sc.scalar(45.0, unit='deg'),
@@ -286,7 +289,7 @@ class Chopper:
         ...     'slit_height': sc.scalar(0.4, unit='m'),
         ...     'radius': sc.scalar(0.5, unit='m'),
         ... }
-        >>> chopper = Chopper.from_nexus(nexus_chopper)
+        >>> chopper = tof.Chopper.from_nexus(nexus_chopper)
         """
         distance = nexus_chopper['position'].fields.z
         freq = abs(nexus_chopper['rotation_speed'])
