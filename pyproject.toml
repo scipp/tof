@@ -34,7 +34,7 @@ dependencies = ["plopp", "scipp", "scipy", "lazy-loader"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "scippneutron"]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/scipp/tof/issues"
