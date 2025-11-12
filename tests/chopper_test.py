@@ -528,6 +528,20 @@ def test_from_diskchopper_clockwise():
     assert chopper.direction == tof.Clockwise
 
 
+def test_from_diskchopper_with_name():
+    disk_chopper = DiskChopper(
+        axle_position=sc.vector([0.0, 0.0, 2.0], unit='m'),
+        frequency=sc.scalar(12.0, unit='Hz'),
+        beam_position=sc.scalar(45.0, unit='deg'),
+        phase=sc.scalar(20.0, unit='deg'),
+        slit_begin=sc.array(dims=['slit'], values=[0.0, 124.0], unit='deg'),
+        slit_end=sc.array(dims=['slit'], values=[60.0, 126.0], unit='deg'),
+    )
+
+    chopper = tof.Chopper.from_diskchopper(disk_chopper, name="TestChopper")
+    assert chopper.name == "TestChopper"
+
+
 def test_to_diskchopper():
     chopper = tof.Chopper(
         frequency=12.0 * Hz,
