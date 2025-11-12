@@ -11,21 +11,13 @@ import scipp as sc
 
 import tof
 
-from .common import (
-    dummy_chopper,
-    dummy_detector,
-    dummy_source,
-    make_chopper,
-    make_source,
-)
-
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')
 ms = sc.Unit('ms')
 
 
-def test_one_chopper_one_opening():
+def test_one_chopper_one_opening(make_chopper, make_source):
     # Make a chopper open from 10-20 ms. Assume zero phase.
     topen = 10.0 * ms
     tclose = 20.0 * ms
@@ -79,7 +71,7 @@ def test_one_chopper_one_opening():
     )
 
 
-def test_two_choppers_one_opening():
+def test_two_choppers_one_opening(make_chopper, make_source):
     # Make a first chopper open from 5-16 ms. Assume zero phase.
     topen = 5.0 * ms
     tclose = 16.0 * ms
@@ -166,7 +158,7 @@ def test_two_choppers_one_opening():
     )
 
 
-def test_two_choppers_one_and_two_openings():
+def test_two_choppers_one_and_two_openings(make_chopper, make_source):
     topen = 5.0 * ms
     tclose = 16.0 * ms
     chopper1 = make_chopper(
@@ -224,7 +216,7 @@ def test_two_choppers_one_and_two_openings():
     )
 
 
-def test_neutron_conservation():
+def test_neutron_conservation(make_chopper):
     N = 100_000
     source = tof.Source(facility='ess', neutrons=N)
 
@@ -266,20 +258,22 @@ def test_neutron_conservation():
     assert det.sum().value + det.masks['blocked_by_others'].sum().value == N
 
 
-def test_add_chopper_and_detector():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
-    model = tof.Model(source=dummy_source())
+def test_add_chopper_and_detector(dummy_chopper, dummy_detector, dummy_source):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(source=dummy_source)
     model.add(chopper)
     assert 'dummy_chopper' in model.choppers
     model.add(detector)
     assert 'dummy_detector' in model.detectors
 
 
-def test_add_components_with_same_name_raises():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
-    model = tof.Model(source=dummy_source())
+def test_add_components_with_same_name_raises(
+    dummy_chopper, dummy_detector, dummy_source
+):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(source=dummy_source)
     model.add(chopper)
     with pytest.raises(
         KeyError, match='Component with name dummy_chopper already exists'
@@ -297,33 +291,35 @@ def test_add_components_with_same_name_raises():
         model.add(detector2)
 
 
-def test_create_model_with_duplicate_component_names_raises():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
+def test_create_model_with_duplicate_component_names_raises(
+    dummy_chopper, dummy_detector, dummy_source
+):
+    chopper = dummy_chopper
+    detector = dummy_detector
     with pytest.raises(
         ValueError, match="More than one component named 'dummy_chopper' found"
     ):
-        tof.Model(source=dummy_source(), choppers=[chopper, chopper])
+        tof.Model(source=dummy_source, choppers=[chopper, chopper])
     with pytest.raises(
         ValueError, match="More than one component named 'dummy_detector' found"
     ):
-        tof.Model(source=dummy_source(), detectors=[detector, detector])
+        tof.Model(source=dummy_source, detectors=[detector, detector])
 
 
-def test_iter():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
-    model = tof.Model(source=dummy_source())
+def test_iter(dummy_chopper, dummy_detector, dummy_source):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(source=dummy_source)
     model.add(chopper)
     assert 'dummy_chopper' in model.choppers
     model.add(detector)
     assert 'dummy_detector' in model.detectors
 
 
-def test_remove():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
-    model = tof.Model(source=dummy_source(), choppers=[chopper], detectors=[detector])
+def test_remove(dummy_chopper, dummy_detector, dummy_source):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(source=dummy_source, choppers=[chopper], detectors=[detector])
     del model['dummy_chopper']
     assert 'dummy_chopper' not in model
     assert 'dummy_detector' in model
@@ -331,42 +327,42 @@ def test_remove():
     assert 'dummy_detector' not in model
 
 
-def test_getitem():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
-    model = tof.Model(source=dummy_source(), choppers=[chopper], detectors=[detector])
+def test_getitem(dummy_chopper, dummy_detector, dummy_source):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(source=dummy_source, choppers=[chopper], detectors=[detector])
     assert model['dummy_chopper'] is chopper
     assert model['dummy_detector'] is detector
     with pytest.raises(KeyError, match='No component with name foo'):
         model['foo']
 
 
-def test_input_can_be_single_component():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
-    model = tof.Model(source=dummy_source(), choppers=chopper, detectors=detector)
+def test_input_can_be_single_component(dummy_chopper, dummy_detector, dummy_source):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(source=dummy_source, choppers=chopper, detectors=detector)
     assert 'dummy_chopper' in model.choppers
     assert 'dummy_detector' in model.detectors
 
 
-def test_bad_input_type_raises():
-    chopper = dummy_chopper()
-    detector = dummy_detector()
+def test_bad_input_type_raises(dummy_chopper, dummy_detector, dummy_source):
+    chopper = dummy_chopper
+    detector = dummy_detector
     with pytest.raises(TypeError, match='Invalid input type'):
-        _ = tof.Model(source=dummy_source(), choppers='bad chopper')
+        _ = tof.Model(source=dummy_source, choppers='bad chopper')
     with pytest.raises(TypeError, match='Invalid input type'):
-        _ = tof.Model(source=dummy_source(), choppers=[chopper], detectors='abc')
+        _ = tof.Model(source=dummy_source, choppers=[chopper], detectors='abc')
     with pytest.raises(TypeError, match='Invalid input type'):
-        _ = tof.Model(source=dummy_source(), choppers=[chopper, 'bad chopper'])
+        _ = tof.Model(source=dummy_source, choppers=[chopper, 'bad chopper'])
     with pytest.raises(TypeError, match='Invalid input type'):
-        _ = tof.Model(source=dummy_source(), detectors=(1234, detector))
+        _ = tof.Model(source=dummy_source, detectors=(1234, detector))
     with pytest.raises(TypeError, match='Invalid input type'):
-        _ = tof.Model(source=dummy_source(), choppers=[detector])
+        _ = tof.Model(source=dummy_source, choppers=[detector])
     with pytest.raises(TypeError, match='Invalid input type'):
-        _ = tof.Model(source=dummy_source(), detectors=[chopper])
+        _ = tof.Model(source=dummy_source, detectors=[chopper])
 
 
-def test_model_repr_does_not_raise():
+def test_model_repr_does_not_raise(make_chopper, make_source):
     N = 10_000
     source = tof.Source(facility='ess', neutrons=N)
     chopper1 = make_chopper(
@@ -392,7 +388,7 @@ def test_model_repr_does_not_raise():
     assert repr(model) is not None
 
 
-def test_component_distance():
+def test_component_distance(make_chopper, make_source):
     # Make a chopper open from 10-20 ms. Assume zero phase.
     topen = 10.0 * ms
     tclose = 20.0 * ms

@@ -29,12 +29,20 @@ requires-python = ">=3.11"
 # IMPORTANT:
 # Run 'tox -e deps' after making changes here. This will update requirement files.
 # Make sure to list one dependency per line.
-dependencies = ["plopp", "scipp", "scipy", "lazy-loader"]
+dependencies = [
+  "plopp>=23.10.0",
+  "scipp>=24.11.0",
+  "scipy>=1.12.0",
+  "lazy-loader>=0.3",
+]
 
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["pytest", "scippneutron"]
+test = [
+  "pytest>=8.0",
+  "scippneutron>=24.12.0",
+]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/scipp/tof/issues"
