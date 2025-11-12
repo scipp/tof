@@ -8,8 +8,6 @@ import scipp as sc
 
 import tof
 
-from .common import make_chopper, make_source
-
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')
@@ -19,7 +17,7 @@ tclose = 20.0 * ms
 
 
 @pytest.fixture
-def chopper():
+def chopper(make_chopper):
     return make_chopper(
         topen=[topen],
         tclose=[tclose],
@@ -36,7 +34,7 @@ def detector():
 
 
 @pytest.fixture
-def source(chopper):
+def source(chopper, make_source):
     return make_source(
         arrival_times=sc.concat(
             [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
@@ -46,7 +44,7 @@ def source(chopper):
 
 
 @pytest.fixture
-def multi_pulse_source(chopper):
+def multi_pulse_source(chopper, make_source):
     return make_source(
         arrival_times=sc.concat(
             [0.9 * topen, 0.5 * (topen + tclose), 1.1 * tclose], dim='event'
