@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 import scipp as sc
 
 from .reading import ComponentReading
+from .utils import var_to_dict
 
 
 class Detector:
@@ -29,8 +30,26 @@ class Detector:
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
+        """
+        Return the detector as a dictionary.
+        """
         return {'distance': self.distance, 'name': self.name}
+
+    def as_json(self) -> dict:
+        """
+        Return the detector as a JSON-serializable dictionary.
+        """
+        return {
+            'type': 'detector',
+            'distance': var_to_dict(self.distance),
+            'name': self.name,
+        }
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Detector):
+            return NotImplemented
+        return self.name == other.name and sc.identical(self.distance, other.distance)
 
 
 @dataclass(frozen=True)

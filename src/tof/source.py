@@ -209,6 +209,7 @@ class Source:
         self._neutrons = int(neutrons)
         self._pulses = int(pulses)
         self._data = None
+        self.seed = seed
 
         if self._facility is not None:
             try:
@@ -424,6 +425,18 @@ class Source:
             f"  pulses={self.pulses}, neutrons per pulse={self.neutrons}\n"
             f"  frequency={self.frequency:c}\n  facility='{self.facility}'"
         )
+
+    def as_json(self) -> dict:
+        """
+        Return the source as a JSON-serializable dictionary.
+        """
+        return {
+            'facility': self.facility,
+            'neutrons': int(self.neutrons),
+            'pulses': self.pulses,
+            'seed': self.seed,
+            'type': 'source',
+        }
 
 
 @dataclass(frozen=True)

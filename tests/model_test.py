@@ -429,16 +429,8 @@ def test_to_nxevent_data():
     choppers = [
         tof.Chopper(
             frequency=14.0 * Hz,
-            open=sc.array(
-                dims=['cutout'],
-                values=[0.0],
-                unit='deg',
-            ),
-            close=sc.array(
-                dims=['cutout'],
-                values=[10.0],
-                unit='deg',
-            ),
+            open=sc.array(dims=['cutout'], values=[0.0], unit='deg'),
+            close=sc.array(dims=['cutout'], values=[10.0], unit='deg'),
             phase=90.0 * deg,
             distance=8.0 * meter,
             name="chopper",
@@ -565,3 +557,88 @@ def test_model_from_json_no_source():
     assert 'chopper1' in results.choppers
     assert 'chopper2' in results.choppers
     assert 'detector' in results.detectors
+
+
+def test_as_json():
+    source = tof.Source(facility='ess', neutrons=100_000, pulses=1, seed=42)
+    choppers = [
+        tof.Chopper(
+            frequency=14.0 * Hz,
+            open=sc.array(dims=['cutout'], values=[0.1], unit='deg'),
+            close=sc.array(dims=['cutout'], values=[12.0], unit='deg'),
+            phase=88.0 * deg,
+            distance=9.5 * meter,
+            name="chopperZ",
+        )
+    ]
+    detectors = [
+        tof.Detector(distance=26.0 * meter, name='monitor'),
+        tof.Detector(distance=32.0 * meter, name='detector'),
+    ]
+    model = tof.Model(source=source, choppers=choppers, detectors=detectors)
+    json_dict = model.as_json()
+
+    json_source = json_dict['source']
+    assert json_source['facility'] == 'ess'
+    assert json_source['neutrons'] == 100_000
+    assert json_source['pulses'] == 1
+    assert json_source['seed'] == 42
+    assert json_source['type'] == 'source'
+
+    json_chop = json_dict['chopperZ']
+    assert json_chop['distance']['value'] == 9.5
+    assert json_chop['distance']['unit'] == 'm'
+    assert json_chop['frequency']['value'] == 14.0
+    assert json_chop['frequency']['unit'] == 'Hz'
+    assert json_chop['phase']['value'] == 88.0
+    assert json_chop['phase']['unit'] == 'deg'
+    assert json_chop['open']['value'] == [0.1]
+    assert json_chop['open']['unit'] == 'deg'
+    assert json_chop['close']['value'] == [12.0]
+    assert json_chop['close']['unit'] == 'deg'
+    assert json_chop['direction'] == 'clockwise'
+    assert json_chop['type'] == 'chopper'
+
+    json_det1 = json_dict['monitor']
+    assert json_det1['distance']['value'] == 26.0
+    assert json_det1['distance']['unit'] == 'm'
+    assert json_det1['type'] == 'detector'
+
+    json_det2 = json_dict['detector']
+    assert json_det2['distance']['value'] == 32.0
+    assert json_det2['distance']['unit'] == 'm'
+    assert json_det2['type'] == 'detector'
+
+
+def test_model_to_json_roundtrip():
+    source = tof.Source(facility='ess', neutrons=100_000, pulses=1, seed=42)
+    choppers = [
+        tof.Chopper(
+            frequency=14.0 * Hz,
+            open=sc.array(dims=['cutout'], values=[0.1], unit='deg'),
+            close=sc.array(dims=['cutout'], values=[12.0], unit='deg'),
+            phase=88.0 * deg,
+            distance=9.5 * meter,
+            name="chopperZ",
+        )
+    ]
+    detectors = [
+        tof.Detector(distance=26.0 * meter, name='monitor'),
+        tof.Detector(distance=32.0 * meter, name='detector'),
+    ]
+    original = tof.Model(source=source, choppers=choppers, detectors=detectors)
+
+    with tempfile.TemporaryDirectory() as path:
+        fname = os.path.join(path, "my_instrument.json")
+        original.to_json(fname)
+        loaded = tof.Model.from_json(fname)
+
+    assert source.facility == loaded.source.facility
+    assert source.neutrons == loaded.source.neutrons
+    assert source.pulses == loaded.source.pulses
+    assert source.seed == loaded.source.seed
+
+    for ch in choppers:
+        assert ch == loaded.choppers[ch.name]
+    for det in detectors:
+        assert det == loaded.detectors[det.name]

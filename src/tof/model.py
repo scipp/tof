@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import warnings
 from itertools import chain
 
 import scipp as sc
@@ -142,6 +143,8 @@ class Model:
         """
         Create a model from a JSON file.
 
+        Currently, only sources from facilities are supported when loading from JSON.
+
         Parameters
         ----------
         filename:
@@ -165,6 +168,43 @@ class Model:
                 source = Source(**source_args)
                 break
         return cls(source=source, **beamline)
+
+    def as_json(self) -> dict:
+        """
+        Return the model as a JSON-serializable dictionary.
+        If the source is not from a facility, it is not included in the output.
+        """
+        instrument_dict = {}
+        if self.source is not None:
+            if self.source.facility is None:
+                warnings.warn(
+                    "The source is not from a facility, so it will not be included in "
+                    "the JSON output.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            else:
+                instrument_dict['source'] = self.source.as_json()
+        for ch in self.choppers.values():
+            instrument_dict[ch.name] = ch.as_json()
+        for det in self.detectors.values():
+            instrument_dict[det.name] = det.as_json()
+        return instrument_dict
+
+    def to_json(self, filename: str):
+        """
+        Save the model to a JSON file.
+        If the source is not from a facility, it is not included in the output.
+
+        Parameters
+        ----------
+        filename:
+            The path to the JSON file.
+        """
+        import json
+
+        with open(filename, 'w') as f:
+            json.dump(self.as_json(), f, indent=2)
 
     def add(self, component):
         """

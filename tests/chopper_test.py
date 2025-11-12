@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
+# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
 import numpy as np
 import pytest
@@ -354,3 +354,126 @@ def test_chopper_create_raises_when_both_edges_and_centers_are_supplied():
             distance=5.0 * meter,
             name='chopper',
         )
+
+
+def test_as_json():
+    f = 10.0 * Hz
+    chopper = tof.Chopper(
+        frequency=f,
+        open=7.7 * deg,
+        close=31.0 * deg,
+        phase=0.5 * deg,
+        distance=5.0 * meter,
+        name='Achopper',
+    )
+    json_str = chopper.as_json()
+    assert json_str['type'] == 'chopper'
+    assert json_str['frequency']['value'] == chopper.frequency.value
+    assert json_str['frequency']['unit'] == chopper.frequency.unit
+    assert np.allclose(json_str['open']['value'], chopper.open.values)
+    assert json_str['open']['unit'] == chopper.open.unit
+    assert np.allclose(json_str['close']['value'], chopper.close.values)
+    assert json_str['close']['unit'] == chopper.close.unit
+    assert json_str['phase']['value'] == chopper.phase.value
+    assert json_str['phase']['unit'] == chopper.phase.unit
+    assert json_str['distance']['value'] == chopper.distance.value
+    assert json_str['distance']['unit'] == chopper.distance.unit
+    assert json_str['name'] == chopper.name
+    assert json_str['direction'] == chopper.direction.name.lower()
+
+
+def test_equal():
+    chop = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.arange('cutout', 0, 180, 20.0, unit='deg'),
+        close=sc.arange('cutout', 10, 190, 20.0, unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper',
+    )
+    assert chop == chop
+
+
+@pytest.mark.parametrize("attr", ["frequency", "open", "close", "phase", "distance"])
+def test_not_equal(attr):
+    chop1 = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.arange('cutout', 0, 180, 20.0, unit='deg'),
+        close=sc.arange('cutout', 10, 190, 20.0, unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper1',
+    )
+    chop2 = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.arange('cutout', 0, 180, 20.0, unit='deg'),
+        close=sc.arange('cutout', 10, 190, 20.0, unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper1',
+    )
+    setattr(
+        chop2,
+        attr,
+        getattr(chop1, attr) + sc.scalar(1.0, unit=getattr(chop1, attr).unit),
+    )
+    assert chop1 != chop2
+
+
+def test_not_equal_different_name():
+    chop1 = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.arange('cutout', 0, 180, 20.0, unit='deg'),
+        close=sc.arange('cutout', 10, 190, 20.0, unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper1',
+    )
+    chop2 = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.arange('cutout', 0, 180, 20.0, unit='deg'),
+        close=sc.arange('cutout', 10, 190, 20.0, unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper2',
+    )
+    assert chop1 != chop2
+
+
+@pytest.mark.parametrize("attr", ["frequency", "open", "close", "phase", "distance"])
+def test_not_equal_different_unit(attr):
+    chop1 = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.arange('cutout', 0, 180, 20.0, unit='deg'),
+        close=sc.arange('cutout', 10, 190, 20.0, unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper1',
+    )
+    chop2 = tof.Chopper(
+        frequency=10.0 * Hz,
+        open=sc.arange('cutout', 0, 180, 20.0, unit='deg'),
+        close=sc.arange('cutout', 10, 190, 20.0, unit='deg'),
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper1',
+    )
+    if attr == "frequency":
+        setattr(
+            chop2,
+            attr,
+            getattr(chop1, attr).to(unit='kHz'),
+        )
+    elif attr == "distance":
+        setattr(
+            chop2,
+            attr,
+            getattr(chop1, attr).to(unit='cm'),
+        )
+    elif attr in ["open", "close", "phase"]:
+        setattr(
+            chop2,
+            attr,
+            getattr(chop1, attr).to(unit='rad'),
+        )
+    assert chop1 != chop2

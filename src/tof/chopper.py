@@ -8,7 +8,7 @@ from enum import Enum
 import scipp as sc
 
 from .reading import ComponentReading
-from .utils import two_pi
+from .utils import two_pi, var_to_dict
 
 
 class Direction(Enum):
@@ -171,7 +171,10 @@ class Chopper:
             f"direction={self.direction.name}, cutouts={len(self.open)})"
         )
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
+        """
+        Return the chopper as a dictionary.
+        """
         return {
             'frequency': self.frequency,
             'open': self.open,
@@ -181,6 +184,36 @@ class Chopper:
             'name': self.name,
             'direction': self.direction,
         }
+
+    def as_json(self) -> dict:
+        """
+        Return the chopper as a JSON-serializable dictionary.
+        """
+        out = {
+            key: var_to_dict(value)
+            for key, value in self.as_dict().items()
+            if isinstance(value, sc.Variable)
+        }
+        out.update(
+            {
+                'type': 'chopper',
+                'direction': self.direction.name.lower(),
+                'name': self.name,
+            }
+        )
+        return out
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Chopper):
+            return NotImplemented
+        if self.name != other.name:
+            return False
+        if self.direction != other.direction:
+            return False
+        return all(
+            sc.identical(getattr(self, field), getattr(other, field))
+            for field in ('frequency', 'distance', 'phase', 'open', 'close')
+        )
 
 
 @dataclass(frozen=True)
