@@ -4,6 +4,7 @@
 import numpy as np
 import pytest
 import scipp as sc
+from scippneutron.chopper import DiskChopper, DiskChopperType
 
 import tof
 
@@ -477,3 +478,199 @@ def test_not_equal_different_unit(attr):
             getattr(chop1, attr).to(unit='rad'),
         )
     assert chop1 != chop2
+
+
+def test_from_diskchopper():
+    disk_chopper = DiskChopper(
+        axle_position=sc.vector([0.0, 0.0, 2.0], unit='m'),
+        frequency=sc.scalar(12.0, unit='Hz'),
+        beam_position=sc.scalar(45.0, unit='deg'),
+        phase=sc.scalar(20.0, unit='deg'),
+        slit_begin=sc.array(dims=['slit'], values=[0.0, 124.0], unit='deg'),
+        slit_end=sc.array(dims=['slit'], values=[60.0, 126.0], unit='deg'),
+    )
+
+    chopper = tof.Chopper.from_diskchopper(disk_chopper)
+
+    assert sc.identical(chopper.frequency, sc.abs(disk_chopper.frequency))
+    assert sc.identical(chopper.distance, disk_chopper.axle_position.fields.z)
+    assert sc.identical(chopper.phase, disk_chopper.phase)
+    assert sc.allclose(
+        chopper.open, disk_chopper.slit_begin - disk_chopper.beam_position
+    )
+    assert sc.allclose(
+        chopper.close, disk_chopper.slit_end - disk_chopper.beam_position
+    )
+    assert chopper.direction == tof.AntiClockwise
+
+
+def test_from_diskchopper_clockwise():
+    disk_chopper = DiskChopper(
+        axle_position=sc.vector([0.0, 0.0, 2.0], unit='m'),
+        frequency=sc.scalar(-12.0, unit='Hz'),
+        beam_position=sc.scalar(45.0, unit='deg'),
+        phase=sc.scalar(-20.0, unit='deg'),
+        slit_begin=sc.array(dims=['slit'], values=[0.0, 124.0], unit='deg'),
+        slit_end=sc.array(dims=['slit'], values=[60.0, 126.0], unit='deg'),
+    )
+
+    chopper = tof.Chopper.from_diskchopper(disk_chopper)
+
+    assert sc.identical(chopper.frequency, sc.abs(disk_chopper.frequency))
+    assert sc.identical(chopper.distance, disk_chopper.axle_position.fields.z)
+    assert sc.identical(chopper.phase, -disk_chopper.phase)
+    assert sc.allclose(
+        chopper.open, disk_chopper.slit_begin - disk_chopper.beam_position
+    )
+    assert sc.allclose(
+        chopper.close, disk_chopper.slit_end - disk_chopper.beam_position
+    )
+    assert chopper.direction == tof.Clockwise
+
+
+def test_to_diskchopper():
+    chopper = tof.Chopper(
+        frequency=12.0 * Hz,
+        open=sc.array(dims=['cutout'], values=[-15.0, 45.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[15.0, 75.0], unit='deg'),
+        phase=20.0 * deg,
+        distance=2.0 * meter,
+        name='chopper',
+        direction=tof.AntiClockwise,
+    )
+
+    disk_chopper = chopper.to_diskchopper()
+
+    assert sc.identical(disk_chopper.frequency, chopper.frequency)
+    assert sc.identical(
+        disk_chopper.axle_position,
+        sc.vector(value=[0.0, 0.0, chopper.distance.value], unit=chopper.distance.unit),
+    )
+    assert sc.identical(disk_chopper.phase, chopper.phase)
+    assert sc.allclose(disk_chopper.slit_begin, chopper.open)
+    assert sc.allclose(disk_chopper.slit_end, chopper.close)
+    assert sc.identical(disk_chopper.beam_position, sc.scalar(0.0, unit='deg'))
+
+
+def test_diskchopper_roundtrip():
+    original_disk_chopper = DiskChopper(
+        axle_position=sc.vector([0.0, 0.0, 2.0], unit='m'),
+        frequency=sc.scalar(12.0, unit='Hz'),
+        beam_position=sc.scalar(0.0, unit='deg'),
+        phase=sc.scalar(20.0, unit='deg'),
+        slit_begin=sc.array(dims=['slit'], values=[0.0, 124.0], unit='deg'),
+        slit_end=sc.array(dims=['slit'], values=[60.0, 126.0], unit='deg'),
+    )
+
+    chopper = tof.Chopper.from_diskchopper(original_disk_chopper)
+    converted_disk_chopper = chopper.to_diskchopper()
+
+    assert sc.identical(
+        original_disk_chopper.frequency, converted_disk_chopper.frequency
+    )
+    assert sc.identical(
+        original_disk_chopper.axle_position, converted_disk_chopper.axle_position
+    )
+    assert sc.identical(original_disk_chopper.phase, converted_disk_chopper.phase)
+    assert sc.allclose(
+        original_disk_chopper.slit_begin, converted_disk_chopper.slit_begin
+    )
+    assert sc.allclose(original_disk_chopper.slit_end, converted_disk_chopper.slit_end)
+    assert sc.identical(
+        original_disk_chopper.beam_position, converted_disk_chopper.beam_position
+    )
+
+
+def test_diskchopper_roundtrip_with_beamposition():
+    original_disk_chopper = DiskChopper(
+        axle_position=sc.vector([0.0, 0.0, 2.0], unit='m'),
+        frequency=sc.scalar(12.0, unit='Hz'),
+        beam_position=sc.scalar(45.0, unit='deg'),
+        phase=sc.scalar(20.0, unit='deg'),
+        slit_begin=sc.array(dims=['slit'], values=[0.0, 124.0], unit='deg'),
+        slit_end=sc.array(dims=['slit'], values=[60.0, 126.0], unit='deg'),
+    )
+
+    chopper = tof.Chopper.from_diskchopper(original_disk_chopper)
+    converted_disk_chopper = chopper.to_diskchopper()
+
+    assert sc.identical(
+        original_disk_chopper.frequency, converted_disk_chopper.frequency
+    )
+    assert sc.identical(
+        original_disk_chopper.axle_position, converted_disk_chopper.axle_position
+    )
+    assert sc.identical(original_disk_chopper.phase, converted_disk_chopper.phase)
+    assert sc.allclose(
+        original_disk_chopper.slit_begin,
+        converted_disk_chopper.slit_begin + original_disk_chopper.beam_position,
+    )
+    assert sc.allclose(
+        original_disk_chopper.slit_end,
+        converted_disk_chopper.slit_end + original_disk_chopper.beam_position,
+    )
+    assert sc.identical(
+        converted_disk_chopper.beam_position, sc.scalar(0.0, unit='deg')
+    )
+
+
+def test_from_nexus():
+    nexus_chopper = {
+        'type': DiskChopperType.single,
+        'position': sc.vector([0.0, 0.0, 2.0], unit='m'),
+        'rotation_speed': sc.scalar(12.0, unit='Hz'),
+        'beam_position': sc.scalar(45.0, unit='deg'),
+        'phase': sc.scalar(20.0, unit='deg'),
+        'slit_edges': sc.array(
+            dims=['slit'],
+            values=[0.0, 60.0, 124.0, 126.0],
+            unit='deg',
+        ),
+        'slit_height': sc.scalar(0.4, unit='m'),
+        'radius': sc.scalar(0.5, unit='m'),
+    }
+
+    chopper = tof.Chopper.from_nexus(nexus_chopper)
+
+    assert sc.identical(chopper.frequency, sc.abs(nexus_chopper['rotation_speed']))
+    assert sc.identical(chopper.distance, nexus_chopper['position'].fields.z)
+    assert sc.identical(chopper.phase, nexus_chopper['phase'])
+    assert sc.allclose(
+        chopper.open, nexus_chopper['slit_edges'][::2] - nexus_chopper['beam_position']
+    )
+    assert sc.allclose(
+        chopper.close,
+        nexus_chopper['slit_edges'][1::2] - nexus_chopper['beam_position'],
+    )
+    assert chopper.direction == tof.AntiClockwise
+
+
+def test_from_nexus_clockwise():
+    nexus_chopper = {
+        'type': DiskChopperType.single,
+        'position': sc.vector([0.0, 0.0, 2.0], unit='m'),
+        'rotation_speed': sc.scalar(-12.0, unit='Hz'),
+        'beam_position': sc.scalar(45.0, unit='deg'),
+        'phase': sc.scalar(-20.0, unit='deg'),
+        'slit_edges': sc.array(
+            dims=['slit'],
+            values=[0.0, 60.0, 124.0, 126.0],
+            unit='deg',
+        ),
+        'slit_height': sc.scalar(0.4, unit='m'),
+        'radius': sc.scalar(0.5, unit='m'),
+    }
+
+    chopper = tof.Chopper.from_nexus(nexus_chopper)
+
+    assert sc.identical(chopper.frequency, sc.abs(nexus_chopper['rotation_speed']))
+    assert sc.identical(chopper.distance, nexus_chopper['position'].fields.z)
+    assert sc.identical(chopper.phase, -nexus_chopper['phase'])
+    assert sc.allclose(
+        chopper.open, nexus_chopper['slit_edges'][::2] - nexus_chopper['beam_position']
+    )
+    assert sc.allclose(
+        chopper.close,
+        nexus_chopper['slit_edges'][1::2] - nexus_chopper['beam_position'],
+    )
+    assert chopper.direction == tof.Clockwise
