@@ -223,7 +223,9 @@ class Chopper:
         )
 
     @classmethod
-    def from_diskchopper(cls, disk_chopper: DiskChopper) -> Chopper:
+    def from_diskchopper(
+        cls, disk_chopper: DiskChopper, name: str | None = None
+    ) -> Chopper:
         """
         Create a Chopper from a scippneutron DiskChopper.
 
@@ -249,6 +251,12 @@ class Chopper:
 
         distance = disk_chopper.axle_position.fields.z
         freq = abs(disk_chopper.frequency)
+        if name is None:
+            name = (
+                f"Chopper@{distance.value:.1f}{distance.unit}_"
+                f"{int(freq.value)}{freq.unit}"
+            )
+
         return cls(
             frequency=freq,
             direction=AntiClockwise
@@ -260,14 +268,11 @@ class Chopper:
             if disk_chopper.frequency.value > 0.0
             else -disk_chopper.phase,
             distance=distance,
-            name=(
-                f"Chopper@{distance.value:.1f}{distance.unit}_"
-                f"{int(freq.value)}{freq.unit}"
-            ),
+            name=name,
         )
 
     @classmethod
-    def from_nexus(cls, nexus_chopper) -> Chopper:
+    def from_nexus(cls, nexus_chopper, name: str | None = None) -> Chopper:
         """
         Create a Chopper from a NeXus chopper group.
 
@@ -291,8 +296,15 @@ class Chopper:
         ... }
         >>> chopper = tof.Chopper.from_nexus(nexus_chopper)
         """
+
         distance = nexus_chopper['position'].fields.z
         freq = abs(nexus_chopper['rotation_speed'])
+        if name is None:
+            name = (
+                f"Chopper@{distance.value:.1f}{distance.unit}_"
+                f"{int(freq.value)}{freq.unit}"
+            )
+
         return cls(
             frequency=freq,
             direction=AntiClockwise
@@ -304,10 +316,7 @@ class Chopper:
             if nexus_chopper['rotation_speed'].value > 0.0
             else -nexus_chopper['phase'],
             distance=distance,
-            name=(
-                f"Chopper@{distance.value:.1f}{distance.unit}_"
-                f"{int(freq.value)}{freq.unit}",
-            ),
+            name=name,
         )
 
     def to_diskchopper(self) -> DiskChopper:
