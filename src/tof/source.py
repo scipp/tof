@@ -343,6 +343,8 @@ class Source:
         ----------
         p:
             2D probability distribution for a single pulse.
+
+            .. versionadded:: 25.12.0
         p_time:
             Time probability distribution (1D) for a single pulse.
         p_wav:
