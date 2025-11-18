@@ -12,7 +12,7 @@ alabaster==1.0.0
     # via sphinx
 annotated-types==0.7.0
     # via pydantic
-asttokens==3.0.0
+asttokens==3.0.1
     # via stack-data
 attrs==25.4.0
     # via
@@ -30,10 +30,6 @@ beautifulsoup4==4.14.2
     #   pydata-sphinx-theme
 bleach[css]==6.3.0
     # via nbconvert
-certifi==2025.10.5
-    # via requests
-charset-normalizer==3.4.4
-    # via requests
 comm==0.2.3
     # via
     #   ipykernel
@@ -62,10 +58,6 @@ h5py==3.15.1
     # via
     #   scippneutron
     #   scippnexus
-idna==3.11
-    # via
-    #   email-validator
-    #   requests
 imagesize==1.4.1
     # via sphinx
 ipykernel==7.1.0
@@ -151,8 +143,6 @@ parso==0.8.5
     # via jedi
 pexpect==4.9.0
     # via ipython
-platformdirs==4.5.0
-    # via jupyter-core
 prompt-toolkit==3.0.52
     # via ipython
 psutil==7.1.3
@@ -192,16 +182,18 @@ referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-requests==2.32.5
-    # via sphinx
-rpds-py==0.28.0
+rpds-py==0.29.0
     # via
     #   jsonschema
     #   referencing
 scippneutron==25.7.0
     # via -r docs.in
-scippnexus==25.6.0
+scippnexus==25.11.0
     # via scippneutron
+scipy==1.16.3
+    # via
+    #   scippneutron
+    #   scippnexus
 snowballstemmer==3.0.1
     # via sphinx
 soupsieve==2.8
@@ -271,8 +263,6 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-urllib3==2.5.0
-    # via requests
 wcwidth==0.2.14
     # via prompt-toolkit
 webencodings==0.5.1
