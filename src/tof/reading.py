@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import plopp as pp
 import scipp as sc
 
-from .utils import Plot, one_mask
+from .utils import Plot
 
 
 @dataclass(frozen=True)
