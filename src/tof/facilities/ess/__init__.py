@@ -3,6 +3,10 @@
 
 from .dream import dream
 from .odin import odin
-from .pulse_profile import pulse
 
-__all__ = ["dream", "odin", "pulse"]
+sources = {
+    "ess": "ess/ess.h5",
+    "ess-odin": "ess/ess-odin.h5",
+}
+
+__all__ = ["dream", "odin", "sources"]
