@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
-import pathlib
 from dataclasses import dataclass
-from importlib import import_module
 
 import numpy as np
 import plopp as pp
@@ -189,13 +187,9 @@ class Source:
         self.seed = seed
 
         if self._facility is not None:
-            facilities = import_module("tof.facilities")
-            if self._facility not in facilities.source_library:
-                raise KeyError(f"Facility '{self._facility}' not found.")
-            file_path = (
-                pathlib.Path(facilities.__file__).resolve().parent
-                / facilities.source_library[self._facility]
-            )
+            from .facilities import get_source_path
+
+            file_path = get_source_path(self._facility)
             facility_pulse = sc.io.load_hdf5(file_path)
 
             self._frequency = facility_pulse.coords["frequency"]
