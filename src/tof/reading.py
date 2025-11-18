@@ -48,11 +48,10 @@ class ReadingField:
         return da.max().data
 
     def __repr__(self) -> str:
-        mask = ~one_mask(self.data.masks)
-        mask.unit = ""
-        coord = self.data.coords[self.dim] * mask
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
         return (
-            f"{self.dim}: min={coord.min():c}, max={coord.max():c}, "
+            f"{self.dim}: min={da.min().data:c}, max={da.max().data:c}, "
             f"events={int(self.data.sum().value)}"
         )
 
