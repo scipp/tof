@@ -9,7 +9,7 @@ potentially other downstream packages that used to import pulse parameters from 
 This should be phased out in future releases.
 """
 
-from ..ess.pulse_profile import pulse
+from .pulse_profile import pulse
 
 frequency = pulse.frequency
 birth_time = pulse.birth_time

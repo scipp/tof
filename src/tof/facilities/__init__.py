@@ -3,4 +3,9 @@
 
 from . import ess
 
-__all__ = ["ess"]
+source_library = {
+    "ess": "ess/ess.h5",
+    "ess-odin": "ess/ess-odin.h5",
+}
+
+__all__ = ["ess", "source_library"]

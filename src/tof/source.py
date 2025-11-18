@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
+import pathlib
 from dataclasses import dataclass
 from importlib import import_module
 
 import numpy as np
 import plopp as pp
 import scipp as sc
-from scipp.scipy.interpolate import interp1d
 
 from .utils import wavelength_to_speed
 
@@ -25,20 +25,14 @@ def _default_frequency(frequency: sc.Variable | None, pulses: int) -> sc.Variabl
     return frequency
 
 
-def _convert_coord(da: sc.DataArray, unit: str, coord: str) -> sc.DataArray:
-    out = da.copy(deep=False)
-    out.coords[coord] = out.coords[coord].to(dtype=float, unit=unit)
-    return out
-
-
 def _make_pulses(
     neutrons: int,
     frequency: sc.Variable,
     pulses: int,
-    p_time: sc.DataArray,
-    p_wav: sc.DataArray,
-    sampling: int,
     seed: int | None,
+    p: sc.DataArray | None = None,
+    p_time: sc.DataArray | None = None,
+    p_wav: sc.DataArray | None = None,
     wmin: sc.Variable | None = None,
     wmax: sc.Variable | None = None,
 ):
@@ -59,14 +53,14 @@ def _make_pulses(
         Pulse frequency.
     pulses:
         Number of pulses.
+    seed:
+        Seed for the random number generator.
+    p:
+        2D probability distribution for a single pulse.
     p_time:
         Time probability distribution for a single pulse.
     p_wav:
         Wavelength probability distribution for a single pulse.
-    sampling:
-        Number of points used to sample the probability distributions.
-    seed:
-        Seed for the random number generator.
     wmin:
         Minimum neutron wavelength.
     wmax:
@@ -75,37 +69,24 @@ def _make_pulses(
     t_dim = "birth_time"
     w_dim = "wavelength"
 
-    p_time = _convert_coord(p_time, unit=TIME_UNIT, coord=t_dim)
-    p_wav = _convert_coord(p_wav, unit=WAV_UNIT, coord=w_dim)
-    sampling = int(sampling)
+    if p is None:
+        if None in (p_time, p_wav):
+            raise ValueError(
+                "Either p (2D) or both p_time (1D) and p_wav (1D) must be supplied."
+            )
+        p = (p_wav / p_wav.data.sum()) * (p_time / p_time.data.sum())
+    else:
+        p = p.copy(deep=False)
 
-    tmin = p_time.coords[t_dim].min()
-    tmax = p_time.coords[t_dim].max()
+    p.coords[t_dim] = p.coords[t_dim].to(dtype=float, unit=TIME_UNIT)
+    p.coords[w_dim] = p.coords[w_dim].to(dtype=float, unit=WAV_UNIT)
+
+    tmin = p.coords[t_dim].min()
+    tmax = p.coords[t_dim].max()
     if wmin is None:
-        wmin = p_wav.coords[w_dim].min()
+        wmin = p.coords[w_dim].min()
     if wmax is None:
-        wmax = p_wav.coords[w_dim].max()
-
-    time_interpolator = interp1d(p_time, dim=t_dim, fill_value="extrapolate")
-    wav_interpolator = interp1d(p_wav, dim=w_dim, fill_value="extrapolate")
-    x_time = sc.linspace(
-        dim=t_dim,
-        start=tmin.value,
-        stop=tmax.value,
-        num=sampling,
-        unit=TIME_UNIT,
-    )
-    x_wav = sc.linspace(
-        dim=w_dim,
-        start=wmin.value,
-        stop=wmax.value,
-        num=sampling,
-        unit=WAV_UNIT,
-    )
-    p_time = time_interpolator(x_time)
-    p_time /= p_time.data.sum()
-    p_wav = wav_interpolator(x_wav)
-    p_wav /= p_wav.data.sum()
+        wmax = p.coords[w_dim].max()
 
     # In the following, random.choice only allows to select from the values listed
     # in the coordinate of the probability distribution arrays. This leads to data
@@ -117,8 +98,8 @@ def _make_pulses(
     # prohibitively slow.
     # See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more
     # information.
-    dt = 0.5 * (tmax - tmin).value / (p_time.sizes[t_dim] - 1)
-    dw = 0.5 * (wmax - wmin).value / (p_wav.sizes[w_dim] - 1)
+    dt = 0.5 * (tmax - tmin).value / (p.sizes[t_dim] - 1)
+    dw = 0.5 * (wmax - wmin).value / (p.sizes[w_dim] - 1)
 
     # Because of the added noise, some values end up being outside the specified range
     # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
@@ -129,14 +110,13 @@ def _make_pulses(
     wavs = []
     ntot = pulses * neutrons
     rng = np.random.default_rng(seed)
+    p_flat = p.flatten(to='x')
+    p_flat /= p_flat.data.sum()
     while n < ntot:
         size = ntot - n
-        t = rng.choice(
-            p_time.coords[t_dim].values, size=size, p=p_time.values
-        ) + rng.normal(scale=dt, size=size)
-        w = rng.choice(
-            p_wav.coords[w_dim].values, size=size, p=p_wav.values
-        ) + rng.normal(scale=dw, size=size)
+        inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
+        t = p_flat.coords[t_dim].values[inds] + rng.normal(scale=dt, size=size)
+        w = p_flat.coords[w_dim].values[inds] + rng.normal(scale=dw, size=size)
         mask = (
             (t >= tmin.value)
             & (t <= tmax.value)
@@ -185,8 +165,6 @@ class Source:
         Number of neutrons per pulse.
     pulses:
         Number of pulses.
-    sampling:
-        Number of points used to interpolate the probability distributions.
     wmin:
         Minimum neutron wavelength.
     wmax:
@@ -200,7 +178,6 @@ class Source:
         facility: str | None,
         neutrons: int = 1_000_000,
         pulses: int = 1,
-        sampling: int = 1000,
         wmin: sc.Variable | None = None,
         wmax: sc.Variable | None = None,
         seed: int | None = None,
@@ -212,18 +189,19 @@ class Source:
         self.seed = seed
 
         if self._facility is not None:
-            try:
-                facility_params = import_module(
-                    f"tof.facilities.{self._facility}"
-                ).pulse
-            except ModuleNotFoundError as e:
-                raise ValueError(f"Facility '{self._facility}' not found.") from e
-            self._frequency = facility_params.frequency
+            facilities = import_module("tof.facilities")
+            if self._facility not in facilities.source_library:
+                raise KeyError(f"Facility '{self._facility}' not found.")
+            file_path = (
+                pathlib.Path(facilities.__file__).resolve().parent
+                / facilities.source_library[self._facility]
+            )
+            facility_pulse = sc.io.load_hdf5(file_path)
+
+            self._frequency = facility_pulse.coords["frequency"]
             pulse_params = _make_pulses(
                 neutrons=self._neutrons,
-                p_time=facility_params.birth_time,
-                p_wav=facility_params.wavelength,
-                sampling=sampling,
+                p=facility_pulse,
                 frequency=self._frequency,
                 pulses=self._pulses,
                 wmin=wmin,
@@ -334,7 +312,6 @@ class Source:
         neutrons: int = 1_000_000,
         pulses: int = 1,
         frequency: sc.Variable | None = None,
-        sampling: int = 1000,
         seed: int | None = None,
     ):
         """
@@ -358,8 +335,6 @@ class Source:
             Number of pulses.
         frequency:
             Frequency of the pulse.
-        sampling:
-            Number of points used to interpolate the probability distributions.
         seed:
             Seed for the random number generator.
         """
@@ -372,7 +347,6 @@ class Source:
             p_wav=p_wav,
             frequency=source._frequency,
             pulses=pulses,
-            sampling=sampling,
             seed=seed,
         )
         source._data = sc.DataArray(
