@@ -38,14 +38,14 @@ class ReadingField:
         return pp.plot(to_plot, **{**{"color": color}, **kwargs})
 
     def min(self):
-        mask = ~one_mask(self.data.masks)
-        mask.unit = ""
-        return (self.data.coords[self.dim] * mask).min()
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.min().data
 
     def max(self):
-        mask = ~one_mask(self.data.masks)
-        mask.unit = ""
-        return (self.data.coords[self.dim] * mask).max()
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.max().data
 
     def __repr__(self) -> str:
         mask = ~one_mask(self.data.masks)

@@ -163,6 +163,7 @@ class Result:
             key=lambda c: c.distance,
         )
         furthest_component = components[-1]
+        source_dist = self.source.distance.value
         repeats = [1] + [2] * len(components)
 
         wavelengths = sc.DataArray(
@@ -189,7 +190,7 @@ class Result:
 
                 xstart = source_data.coords["birth_time"].values[inds]
                 xend = component_data.coords["toa"].values[inds]
-                ystart = np.zeros_like(xstart)
+                ystart = np.full_like(xstart, source_dist)
                 yend = np.full_like(ystart, furthest_component.distance.value)
 
                 _add_rays(
@@ -222,7 +223,7 @@ class Result:
             )
             y = np.repeat(
                 np.stack(
-                    [np.zeros_like(x[:, 0])]
+                    [np.full_like(x[:, 0], source_dist)]
                     + [np.full_like(x[:, 0], c.distance.value) for c in components],
                     axis=1,
                 ),
@@ -243,9 +244,8 @@ class Result:
             # Plot pulse
             time_coord = source_data.coords["birth_time"].values
             tmin = time_coord.min()
-            ax.plot([tmin, time_coord.max()], [0, 0], color="gray", lw=3)
-            ax.text(tmin, 0, "Pulse", ha="left", va="top", color="gray")
-
+            ax.plot([tmin, time_coord.max()], [source_dist] * 2, color="gray", lw=3)
+            ax.text(tmin, source_dist, "Pulse", ha="left", va="top", color="gray")
         if furthest_component.toa.data.sum().value > 0:
             toa_max = furthest_component.toa.max().value
         else:

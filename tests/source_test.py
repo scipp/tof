@@ -72,7 +72,8 @@ def test_creation_from_distribution_flat():
     )
 
 
-def test_creation_from_distribution():
+@pytest.mark.parametrize('distribution_2d', [False, True])
+def test_creation_from_distribution(distribution_2d):
     v = np.ones(90) * 0.1
     v[30:60] = 1.0
 
@@ -88,8 +89,13 @@ def test_creation_from_distribution():
             'wavelength': sc.linspace('wavelength', 1.0, 4.0, 100, unit='angstrom')
         },
     )
+    if distribution_2d:
+        source = tof.Source.from_distribution(neutrons=100_000, p=p_wav * p_time)
+    else:
+        source = tof.Source.from_distribution(
+            neutrons=100_000, p_time=p_time, p_wav=p_wav
+        )
 
-    source = tof.Source.from_distribution(neutrons=100_000, p_time=p_time, p_wav=p_wav)
     assert source.neutrons == 100_000
     da = source.data['pulse', 0]
     assert da.hist(

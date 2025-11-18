@@ -199,6 +199,7 @@ class Source:
             facility_pulse = sc.io.load_hdf5(file_path)
 
             self._frequency = facility_pulse.coords["frequency"]
+            self._distance = facility_pulse.coords["distance"]
             pulse_params = _make_pulses(
                 neutrons=self._neutrons,
                 p=facility_pulse,
@@ -242,6 +243,13 @@ class Source:
         return self._frequency
 
     @property
+    def distance(self) -> sc.Variable:
+        """
+        The position of the source along the beamline.
+        """
+        return self._distance
+
+    @property
     def pulses(self) -> int:
         """
         The number of pulses.
@@ -262,6 +270,7 @@ class Source:
         wavelengths: sc.Variable,
         frequency: sc.Variable | None = None,
         pulses: int = 1,
+        distance: sc.Variable | None = None,
     ):
         """
         Create source pulses from a list of neutrons.
@@ -279,9 +288,14 @@ class Source:
             Frequency of the pulse.
         pulses:
             Number of pulses.
+        distance:
+            Position of the source along the beamline.
         """
         source = cls(facility=None, neutrons=len(birth_times), pulses=pulses)
         source._frequency = _default_frequency(frequency, pulses)
+        source._distance = (
+            distance if distance is not None else sc.scalar(0.0, unit="m")
+        )
 
         birth_times = (sc.arange("pulse", pulses) / source._frequency).to(
             unit=TIME_UNIT, copy=False
@@ -307,12 +321,14 @@ class Source:
     @classmethod
     def from_distribution(
         cls,
-        p_time: sc.DataArray,
-        p_wav: sc.DataArray,
+        p: sc.DataArray | None = None,
+        p_time: sc.DataArray | None = None,
+        p_wav: sc.DataArray | None = None,
         neutrons: int = 1_000_000,
         pulses: int = 1,
         frequency: sc.Variable | None = None,
         seed: int | None = None,
+        distance: sc.Variable | None = None,
     ):
         """
         Create source pulses from time a wavelength probability distributions.
@@ -325,10 +341,12 @@ class Source:
 
         Parameters
         ----------
+        p:
+            2D probability distribution for a single pulse.
         p_time:
-            Time probability distribution.
+            Time probability distribution (1D) for a single pulse.
         p_wav:
-            Wavelength probability distribution.
+            Wavelength probability distribution (1D) for a single pulse.
         neutrons:
             Number of neutrons in the pulse.
         pulses:
@@ -337,12 +355,18 @@ class Source:
             Frequency of the pulse.
         seed:
             Seed for the random number generator.
+        distance:
+            Position of the source along the beamline.
         """
 
         source = cls(facility=None, neutrons=neutrons, pulses=pulses)
+        source._distance = (
+            distance if distance is not None else sc.scalar(0.0, unit="m")
+        )
         source._frequency = _default_frequency(frequency, pulses)
         pulse_params = _make_pulses(
             neutrons=neutrons,
+            p=p,
             p_time=p_time,
             p_wav=p_wav,
             frequency=source._frequency,
@@ -391,13 +415,15 @@ class Source:
             neutrons=self.neutrons,
             frequency=self.frequency,
             pulses=self.pulses,
+            distance=self.distance,
         )
 
     def __repr__(self) -> str:
         return (
             f"Source:\n"
             f"  pulses={self.pulses}, neutrons per pulse={self.neutrons}\n"
-            f"  frequency={self.frequency:c}\n  facility='{self.facility}'"
+            f"  frequency={self.frequency:c}\n  facility='{self.facility}'\n"
+            f"  distance={self.distance:c}"
         )
 
     def as_json(self) -> dict:
@@ -424,3 +450,4 @@ class SourceParameters:
     neutrons: int
     frequency: sc.Variable
     pulses: int
+    distance: sc.Variable
