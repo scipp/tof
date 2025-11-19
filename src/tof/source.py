@@ -73,7 +73,19 @@ def _make_pulses(
             raise ValueError(
                 "Either p (2D) or both p_time (1D) and p_wav (1D) must be supplied."
             )
-        p = (p_wav / p_wav.data.sum()) * (p_time / p_time.data.sum())
+        p_wav_sum = p_wav.data.sum()
+        p_time_sum = p_time.data.sum()
+        if p_wav_sum.value <= 0:
+            raise ValueError(
+                "Wavelength distribution must have at least one positive "
+                f"probability value. Sum of probabilities is {p_wav_sum.value}"
+            )
+        if p_time_sum.value <= 0:
+            raise ValueError(
+                "Time distribution must have at least one positive "
+                f"probability value. Sum of probabilities is {p_time_sum.value}"
+            )
+        p = (p_wav / p_wav_sum) * (p_time / p_time_sum)
     else:
         p = p.copy(deep=False)
 
@@ -117,13 +129,13 @@ def _make_pulses(
     rng = np.random.default_rng(seed)
     p_flat = p.flatten(to='x')
 
-    prob_sum = p_flat.data.sum()
-    if prob_sum.value <= 0:
+    p_sum = p_flat.data.sum()
+    if p_sum.value <= 0:
         raise ValueError(
             "Distribution must have at least one positive probability value. "
-            f"Sum of probabilities is {prob_sum.value}"
+            f"Sum of probabilities is {p_sum.value}"
         )
-    p_flat /= prob_sum
+    p_flat /= p_sum
     while n < ntot:
         size = ntot - n
         inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
@@ -307,6 +319,11 @@ class Source:
         source._distance = (
             distance if distance is not None else sc.scalar(0.0, unit="m")
         )
+
+        if np.any(wavelengths.values <= 0):
+            warnings.warn(
+                "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
+            )
 
         birth_times = (sc.arange("pulse", pulses) / source._frequency).to(
             unit=TIME_UNIT, copy=False

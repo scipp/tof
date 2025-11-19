@@ -291,3 +291,72 @@ def test_seed_from_distribution():
         neutrons=100_000, p_time=p_time, p_wav=p_wav, seed=1
     )
     assert not sc.identical(a.data, c.data)
+
+
+def test_source_from_distribution_with_one_element_raises():
+    p_time = sc.DataArray(
+        data=sc.array(dims=['birth_time'], values=[1.0]),
+        coords={'birth_time': sc.array(dims=['birth_time'], values=[1.0], unit='ms')},
+    )
+    p_wav = sc.DataArray(
+        data=sc.array(dims=['wavelength'], values=[2.0]),
+        coords={
+            'wavelength': sc.array(dims=['wavelength'], values=[2.0], unit='angstrom')
+        },
+    )
+
+    with pytest.raises(
+        ValueError,
+        match='Distribution must have at least 2 points in each dimension',
+    ):
+        tof.Source.from_distribution(neutrons=10, p_time=p_time, p_wav=p_wav)
+
+
+def test_source_from_distrbution_all_zero_probability_raises():
+    # All zero p_time
+    p_time = sc.DataArray(
+        data=sc.array(dims=['birth_time'], values=[0.0, 0.0, 0.0]),
+        coords={'birth_time': sc.linspace('birth_time', 0.0, 2.0, 3, unit='ms')},
+    )
+    p_wav = sc.DataArray(
+        data=sc.array(dims=['wavelength'], values=[0.0, 1.0, 0.0]),
+        coords={'wavelength': sc.linspace('wavelength', 1.0, 3.0, 3, unit='angstrom')},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match='Time distribution must have at least one positive probability value.',
+    ):
+        tof.Source.from_distribution(neutrons=10, p_time=p_time, p_wav=p_wav)
+
+    # All zero p_wav
+    p_time = sc.DataArray(
+        data=sc.array(dims=['birth_time'], values=[0.0, 1.0, 0.0]),
+        coords={'birth_time': sc.linspace('birth_time', 0.0, 2.0, 3, unit='ms')},
+    )
+    p_wav = sc.DataArray(
+        data=sc.array(dims=['wavelength'], values=[0.0, 0.0, 0.0]),
+        coords={'wavelength': sc.linspace('wavelength', 1.0, 3.0, 3, unit='angstrom')},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match='Wavelength distribution must have at least one positive probability value.',
+    ):
+        tof.Source.from_distribution(neutrons=10, p_time=p_time, p_wav=p_wav)
+
+    # All zero p_time and p_wav
+    p_time = sc.DataArray(
+        data=sc.array(dims=['birth_time'], values=[0.0, 0.0, 0.0]),
+        coords={'birth_time': sc.linspace('birth_time', 0.0, 2.0, 3, unit='ms')},
+    )
+    p_wav = sc.DataArray(
+        data=sc.array(dims=['wavelength'], values=[0.0, 0.0, 0.0]),
+        coords={'wavelength': sc.linspace('wavelength', 1.0, 3.0, 3, unit='angstrom')},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match='Distribution must have at least one positive probability value.',
+    ):
+        tof.Source.from_distribution(neutrons=10, p=p_wav * p_time)

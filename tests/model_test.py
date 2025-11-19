@@ -687,3 +687,20 @@ def test_model_to_json_roundtrip():
         assert ch == loaded.choppers[ch.name]
     for det in detectors:
         assert det == loaded.detectors[det.name]
+
+
+def test_model_run_without_source_raises(dummy_chopper, dummy_detector):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(choppers=[chopper], detectors=[detector])
+    with pytest.raises(ValueError, match="No source has been defined for this model"):
+        model.run()
+
+
+def test_model_run_without_components_raises(dummy_source):
+    source = dummy_source
+    model = tof.Model(source=source)
+    with pytest.raises(
+        ValueError, match="Cannot run model: no components have been defined."
+    ):
+        model.run()
