@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import plopp as pp
 import scipp as sc
 
-from .utils import Plot, one_mask
+from .utils import Plot
 
 
 @dataclass(frozen=True)
@@ -38,21 +38,20 @@ class ReadingField:
         return pp.plot(to_plot, **{**{"color": color}, **kwargs})
 
     def min(self):
-        mask = ~one_mask(self.data.masks)
-        mask.unit = ""
-        return (self.data.coords[self.dim] * mask).min()
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.min().data
 
     def max(self):
-        mask = ~one_mask(self.data.masks)
-        mask.unit = ""
-        return (self.data.coords[self.dim] * mask).max()
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.max().data
 
     def __repr__(self) -> str:
-        mask = ~one_mask(self.data.masks)
-        mask.unit = ""
-        coord = self.data.coords[self.dim] * mask
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
         return (
-            f"{self.dim}: min={coord.min():c}, max={coord.max():c}, "
+            f"{self.dim}: min={da.min().data:c}, max={da.max().data:c}, "
             f"events={int(self.data.sum().value)}"
         )
 

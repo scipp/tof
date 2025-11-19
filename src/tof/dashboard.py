@@ -116,9 +116,14 @@ class DetectorWidget(ipw.VBox):
 
 class SetupWidget(ipw.VBox):
     def __init__(self):
-        self.facility_widget = ipw.Dropdown(options=["ess"], description="Facility")
+        self.facility_widget = ipw.Dropdown(
+            options=["ess", "ess-odin"], description="Facility"
+        )
         self.neutrons_widget = ipw.IntText(value=100_000, description="Neutrons")
         self.pulses_widget = ipw.IntText(value=1, description="Pulses")
+        self.distance_widget = ipw.FloatText(
+            description="Distance", continuous_update=True
+        )
         self.instrument_widget = ipw.Dropdown(
             options=[
                 "ESS: Odin",
@@ -128,21 +133,28 @@ class SetupWidget(ipw.VBox):
             description="Instrument",
             value=None,
         )
+        self.facility_widget.observe(self._update_source_distance, names="value")
         super().__init__(
             [
                 ipw.Label(value="Source:"),
                 self.facility_widget,
                 self.neutrons_widget,
                 self.pulses_widget,
+                self.distance_widget,
                 ipw.HTML("<hr>"),
                 self.instrument_widget,
             ]
         )
 
+    def _update_source_distance(self, _: dict):
+        source = Source(facility=self.facility_widget.value, neutrons=1, pulses=1)
+        self.distance_widget.value = source.distance.to(unit='m').value
+
     def continuous_update(self, callback: Callable):
         self.facility_widget.observe(callback, names="value")
         self.neutrons_widget.observe(callback, names="value")
         self.pulses_widget.observe(callback, names="value")
+        self.distance_widget.observe(callback, names="value")
 
 
 INSTRUMENT_LIBRARY = {
@@ -357,6 +369,8 @@ class TofWidget:
             neutrons=int(self.setup_widget.neutrons_widget.value),
             pulses=int(self.setup_widget.pulses_widget.value),
         )
+        source._distance = sc.scalar(self.setup_widget.distance_widget.value, unit="m")
+
         choppers = [
             Chopper(
                 frequency=sc.scalar(ch.frequency_widget.value, unit="Hz"),

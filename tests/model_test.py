@@ -258,6 +258,55 @@ def test_neutron_conservation(make_chopper):
     assert det.sum().value + det.masks['blocked_by_others'].sum().value == N
 
 
+def test_source_not_at_origin(make_chopper):
+    N = 100_000
+    source1 = tof.Source(facility='ess', neutrons=N, seed=123)
+
+    chopper1 = make_chopper(
+        topen=[5.0 * ms],
+        tclose=[16.0 * ms],
+        f=10.0 * Hz,
+        phase=0.0 * deg,
+        distance=10 * meter,
+        name='chopper1',
+    )
+    chopper2 = make_chopper(
+        topen=[9.0 * ms, 15.0 * ms],
+        tclose=[15.0 * ms, 20.0 * ms],
+        f=15.0 * Hz,
+        phase=0.0 * deg,
+        distance=15 * meter,
+        name='chopper2',
+    )
+
+    detector = tof.Detector(distance=20 * meter, name='detector')
+    model1 = tof.Model(
+        source=source1, choppers=[chopper1, chopper2], detectors=[detector]
+    )
+    res1 = model1.run()
+
+    source2 = tof.Source(facility='ess', neutrons=N, seed=123)
+    source2._distance = 7.0 * meter
+    model2 = tof.Model(
+        source=source2, choppers=[chopper1, chopper2], detectors=[detector]
+    )
+    res2 = model2.run()
+
+    # Less neutrons make it through when the source is closer to the choppers
+    assert res1['detector'].data.sum().value > res2['detector'].data.sum().value
+
+    # Less fast neutrons make it through when the source is closer
+    assert (
+        res2['detector'].wavelength.min().value
+        > res1['detector'].wavelength.min().value
+    )
+    # More slow neutrons make it through when the source is closer
+    assert (
+        res2['detector'].wavelength.max().value
+        > res1['detector'].wavelength.max().value
+    )
+
+
 def test_add_chopper_and_detector(dummy_chopper, dummy_detector, dummy_source):
     chopper = dummy_chopper
     detector = dummy_detector
@@ -362,7 +411,7 @@ def test_bad_input_type_raises(dummy_chopper, dummy_detector, dummy_source):
         _ = tof.Model(source=dummy_source, detectors=[chopper])
 
 
-def test_model_repr_does_not_raise(make_chopper, make_source):
+def test_model_repr_does_not_raise(make_chopper):
     N = 10_000
     source = tof.Source(facility='ess', neutrons=N)
     chopper1 = make_chopper(
@@ -638,3 +687,20 @@ def test_model_to_json_roundtrip():
         assert ch == loaded.choppers[ch.name]
     for det in detectors:
         assert det == loaded.detectors[det.name]
+
+
+def test_model_run_without_source_raises(dummy_chopper, dummy_detector):
+    chopper = dummy_chopper
+    detector = dummy_detector
+    model = tof.Model(choppers=[chopper], detectors=[detector])
+    with pytest.raises(ValueError, match="No source has been defined for this model"):
+        model.run()
+
+
+def test_model_run_without_components_raises(dummy_source):
+    source = dummy_source
+    model = tof.Model(source=source)
+    with pytest.raises(
+        ValueError, match="Cannot run model: no components have been defined."
+    ):
+        model.run()

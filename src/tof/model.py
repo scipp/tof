@@ -273,6 +273,15 @@ class Model:
             key=lambda c: c.distance.value,
         )
 
+        if len(components) == 0:
+            raise ValueError("Cannot run model: no components have been defined.")
+
+        if components[0].distance < self.source.distance:
+            raise ValueError(
+                "At least one component is located before the source "
+                "itself. Please check the distances of the components."
+            )
+
         birth_time = self.source.data.coords['birth_time']
         speed = self.source.data.coords['speed']
         initial_mask = sc.ones(sizes=birth_time.sizes, unit=None, dtype=bool)
@@ -280,13 +289,18 @@ class Model:
         result_choppers = {}
         result_detectors = {}
         time_limit = (
-            birth_time + (components[-1].distance / speed).to(unit=birth_time.unit)
+            birth_time
+            + ((components[-1].distance - self.source.distance) / speed).to(
+                unit=birth_time.unit
+            )
         ).max()
         for c in components:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
             container[c.name]['data'] = self.source.data.copy(deep=False)
-            t = birth_time + (c.distance / speed).to(unit=birth_time.unit, copy=False)
+            t = birth_time + ((c.distance - self.source.distance) / speed).to(
+                unit=birth_time.unit, copy=False
+            )
             container[c.name]['data'].coords['toa'] = t
             container[c.name]['data'].coords['eto'] = t % (
                 1 / self.source.frequency

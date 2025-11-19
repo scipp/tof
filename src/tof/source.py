@@ -1,13 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
+import warnings
 from dataclasses import dataclass
-from importlib import import_module
 
 import numpy as np
 import plopp as pp
 import scipp as sc
-from scipp.scipy.interpolate import interp1d
 
 from .utils import wavelength_to_speed
 
@@ -25,20 +24,14 @@ def _default_frequency(frequency: sc.Variable | None, pulses: int) -> sc.Variabl
     return frequency
 
 
-def _convert_coord(da: sc.DataArray, unit: str, coord: str) -> sc.DataArray:
-    out = da.copy(deep=False)
-    out.coords[coord] = out.coords[coord].to(dtype=float, unit=unit)
-    return out
-
-
 def _make_pulses(
     neutrons: int,
     frequency: sc.Variable,
     pulses: int,
-    p_time: sc.DataArray,
-    p_wav: sc.DataArray,
-    sampling: int,
     seed: int | None,
+    p: sc.DataArray | None = None,
+    p_time: sc.DataArray | None = None,
+    p_wav: sc.DataArray | None = None,
     wmin: sc.Variable | None = None,
     wmax: sc.Variable | None = None,
 ):
@@ -59,14 +52,14 @@ def _make_pulses(
         Pulse frequency.
     pulses:
         Number of pulses.
+    seed:
+        Seed for the random number generator.
+    p:
+        2D probability distribution for a single pulse.
     p_time:
         Time probability distribution for a single pulse.
     p_wav:
         Wavelength probability distribution for a single pulse.
-    sampling:
-        Number of points used to sample the probability distributions.
-    seed:
-        Seed for the random number generator.
     wmin:
         Minimum neutron wavelength.
     wmax:
@@ -75,37 +68,42 @@ def _make_pulses(
     t_dim = "birth_time"
     w_dim = "wavelength"
 
-    p_time = _convert_coord(p_time, unit=TIME_UNIT, coord=t_dim)
-    p_wav = _convert_coord(p_wav, unit=WAV_UNIT, coord=w_dim)
-    sampling = int(sampling)
+    if p is None:
+        if None in (p_time, p_wav):
+            raise ValueError(
+                "Either p (2D) or both p_time (1D) and p_wav (1D) must be supplied."
+            )
+        p_wav_sum = p_wav.data.sum()
+        p_time_sum = p_time.data.sum()
+        if p_wav_sum.value <= 0:
+            raise ValueError(
+                "Wavelength distribution must have at least one positive "
+                f"probability value. Sum of probabilities is {p_wav_sum.value}"
+            )
+        if p_time_sum.value <= 0:
+            raise ValueError(
+                "Time distribution must have at least one positive "
+                f"probability value. Sum of probabilities is {p_time_sum.value}"
+            )
+        p = (p_wav / p_wav_sum) * (p_time / p_time_sum)
+    else:
+        p = p.copy(deep=False)
 
-    tmin = p_time.coords[t_dim].min()
-    tmax = p_time.coords[t_dim].max()
+    if p.sizes[t_dim] < 2 or p.sizes[w_dim] < 2:
+        raise ValueError(
+            f"Distribution must have at least 2 points in each dimension. "
+            f"Got {p.sizes[t_dim]} in {t_dim}, {p.sizes[w_dim]} in {w_dim}"
+        )
+
+    p.coords[t_dim] = p.coords[t_dim].to(dtype=float, unit=TIME_UNIT)
+    p.coords[w_dim] = p.coords[w_dim].to(dtype=float, unit=WAV_UNIT)
+
+    tmin = p.coords[t_dim].min()
+    tmax = p.coords[t_dim].max()
     if wmin is None:
-        wmin = p_wav.coords[w_dim].min()
+        wmin = p.coords[w_dim].min()
     if wmax is None:
-        wmax = p_wav.coords[w_dim].max()
-
-    time_interpolator = interp1d(p_time, dim=t_dim, fill_value="extrapolate")
-    wav_interpolator = interp1d(p_wav, dim=w_dim, fill_value="extrapolate")
-    x_time = sc.linspace(
-        dim=t_dim,
-        start=tmin.value,
-        stop=tmax.value,
-        num=sampling,
-        unit=TIME_UNIT,
-    )
-    x_wav = sc.linspace(
-        dim=w_dim,
-        start=wmin.value,
-        stop=wmax.value,
-        num=sampling,
-        unit=WAV_UNIT,
-    )
-    p_time = time_interpolator(x_time)
-    p_time /= p_time.data.sum()
-    p_wav = wav_interpolator(x_wav)
-    p_wav /= p_wav.data.sum()
+        wmax = p.coords[w_dim].max()
 
     # In the following, random.choice only allows to select from the values listed
     # in the coordinate of the probability distribution arrays. This leads to data
@@ -117,8 +115,8 @@ def _make_pulses(
     # prohibitively slow.
     # See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more
     # information.
-    dt = 0.5 * (tmax - tmin).value / (p_time.sizes[t_dim] - 1)
-    dw = 0.5 * (wmax - wmin).value / (p_wav.sizes[w_dim] - 1)
+    dt = 0.5 * (tmax - tmin).value / (p.sizes[t_dim] - 1)
+    dw = 0.5 * (wmax - wmin).value / (p.sizes[w_dim] - 1)
 
     # Because of the added noise, some values end up being outside the specified range
     # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
@@ -129,14 +127,20 @@ def _make_pulses(
     wavs = []
     ntot = pulses * neutrons
     rng = np.random.default_rng(seed)
+    p_flat = p.flatten(to='x')
+
+    p_sum = p_flat.data.sum()
+    if p_sum.value <= 0:
+        raise ValueError(
+            "Distribution must have at least one positive probability value. "
+            f"Sum of probabilities is {p_sum.value}"
+        )
+    p_flat /= p_sum
     while n < ntot:
         size = ntot - n
-        t = rng.choice(
-            p_time.coords[t_dim].values, size=size, p=p_time.values
-        ) + rng.normal(scale=dt, size=size)
-        w = rng.choice(
-            p_wav.coords[w_dim].values, size=size, p=p_wav.values
-        ) + rng.normal(scale=dw, size=size)
+        inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
+        t = p_flat.coords[t_dim].values[inds] + rng.normal(scale=dt, size=size)
+        w = p_flat.coords[w_dim].values[inds] + rng.normal(scale=dw, size=size)
         mask = (
             (t >= tmin.value)
             & (t <= tmax.value)
@@ -156,11 +160,14 @@ def _make_pulses(
         sc.arange("pulse", pulses) / frequency
     ).to(unit=TIME_UNIT, copy=False)
 
-    wavelength = sc.array(
-        dims=[dim],
-        values=np.concatenate(wavs),
-        unit=WAV_UNIT,
-    ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons})
+    wavelengths = np.concatenate(wavs)
+    if np.any(wavelengths <= 0):
+        warnings.warn(
+            "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
+        )
+    wavelength = sc.array(dims=[dim], values=wavelengths, unit=WAV_UNIT).fold(
+        dim=dim, sizes={"pulse": pulses, dim: neutrons}
+    )
     speed = wavelength_to_speed(wavelength)
     return {
         "birth_time": birth_time,
@@ -185,8 +192,6 @@ class Source:
         Number of neutrons per pulse.
     pulses:
         Number of pulses.
-    sampling:
-        Number of points used to interpolate the probability distributions.
     wmin:
         Minimum neutron wavelength.
     wmax:
@@ -200,7 +205,6 @@ class Source:
         facility: str | None,
         neutrons: int = 1_000_000,
         pulses: int = 1,
-        sampling: int = 1000,
         wmin: sc.Variable | None = None,
         wmax: sc.Variable | None = None,
         seed: int | None = None,
@@ -212,18 +216,16 @@ class Source:
         self.seed = seed
 
         if self._facility is not None:
-            try:
-                facility_params = import_module(
-                    f"tof.facilities.{self._facility}"
-                ).pulse
-            except ModuleNotFoundError as e:
-                raise ValueError(f"Facility '{self._facility}' not found.") from e
-            self._frequency = facility_params.frequency
+            from .facilities import get_source_path
+
+            file_path = get_source_path(self._facility)
+            facility_pulse = sc.io.load_hdf5(file_path)
+
+            self._frequency = facility_pulse.coords["frequency"]
+            self._distance = facility_pulse.coords["distance"]
             pulse_params = _make_pulses(
                 neutrons=self._neutrons,
-                p_time=facility_params.birth_time,
-                p_wav=facility_params.wavelength,
-                sampling=sampling,
+                p=facility_pulse,
                 frequency=self._frequency,
                 pulses=self._pulses,
                 wmin=wmin,
@@ -264,6 +266,13 @@ class Source:
         return self._frequency
 
     @property
+    def distance(self) -> sc.Variable:
+        """
+        The position of the source along the beamline.
+        """
+        return self._distance
+
+    @property
     def pulses(self) -> int:
         """
         The number of pulses.
@@ -284,6 +293,7 @@ class Source:
         wavelengths: sc.Variable,
         frequency: sc.Variable | None = None,
         pulses: int = 1,
+        distance: sc.Variable | None = None,
     ):
         """
         Create source pulses from a list of neutrons.
@@ -301,9 +311,19 @@ class Source:
             Frequency of the pulse.
         pulses:
             Number of pulses.
+        distance:
+            Position of the source along the beamline.
         """
         source = cls(facility=None, neutrons=len(birth_times), pulses=pulses)
         source._frequency = _default_frequency(frequency, pulses)
+        source._distance = (
+            distance if distance is not None else sc.scalar(0.0, unit="m")
+        )
+
+        if np.any(wavelengths.values <= 0):
+            warnings.warn(
+                "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
+            )
 
         birth_times = (sc.arange("pulse", pulses) / source._frequency).to(
             unit=TIME_UNIT, copy=False
@@ -329,13 +349,14 @@ class Source:
     @classmethod
     def from_distribution(
         cls,
-        p_time: sc.DataArray,
-        p_wav: sc.DataArray,
+        p: sc.DataArray | None = None,
+        p_time: sc.DataArray | None = None,
+        p_wav: sc.DataArray | None = None,
         neutrons: int = 1_000_000,
         pulses: int = 1,
         frequency: sc.Variable | None = None,
-        sampling: int = 1000,
         seed: int | None = None,
+        distance: sc.Variable | None = None,
     ):
         """
         Create source pulses from time a wavelength probability distributions.
@@ -348,31 +369,38 @@ class Source:
 
         Parameters
         ----------
+        p:
+            2D probability distribution for a single pulse.
+
+            .. versionadded:: 25.12.0
         p_time:
-            Time probability distribution.
+            Time probability distribution (1D) for a single pulse.
         p_wav:
-            Wavelength probability distribution.
+            Wavelength probability distribution (1D) for a single pulse.
         neutrons:
             Number of neutrons in the pulse.
         pulses:
             Number of pulses.
         frequency:
             Frequency of the pulse.
-        sampling:
-            Number of points used to interpolate the probability distributions.
         seed:
             Seed for the random number generator.
+        distance:
+            Position of the source along the beamline.
         """
 
         source = cls(facility=None, neutrons=neutrons, pulses=pulses)
+        source._distance = (
+            distance if distance is not None else sc.scalar(0.0, unit="m")
+        )
         source._frequency = _default_frequency(frequency, pulses)
         pulse_params = _make_pulses(
             neutrons=neutrons,
+            p=p,
             p_time=p_time,
             p_wav=p_wav,
             frequency=source._frequency,
             pulses=pulses,
-            sampling=sampling,
             seed=seed,
         )
         source._data = sc.DataArray(
@@ -417,13 +445,15 @@ class Source:
             neutrons=self.neutrons,
             frequency=self.frequency,
             pulses=self.pulses,
+            distance=self.distance,
         )
 
     def __repr__(self) -> str:
         return (
             f"Source:\n"
             f"  pulses={self.pulses}, neutrons per pulse={self.neutrons}\n"
-            f"  frequency={self.frequency:c}\n  facility='{self.facility}'"
+            f"  frequency={self.frequency:c}\n  facility='{self.facility}'\n"
+            f"  distance={self.distance:c}"
         )
 
     def as_json(self) -> dict:
@@ -450,3 +480,4 @@ class SourceParameters:
     neutrons: int
     frequency: sc.Variable
     pulses: int
+    distance: sc.Variable
