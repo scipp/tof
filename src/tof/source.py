@@ -149,7 +149,7 @@ def _make_pulses(
     ).to(unit=TIME_UNIT, copy=False)
 
     wavelengths = np.concatenate(wavs)
-    if np.any(wavelengths < 0):
+    if np.any(wavelengths <= 0):
         warnings.warn(
             "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
         )
