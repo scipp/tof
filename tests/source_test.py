@@ -341,7 +341,9 @@ def test_source_from_distrbution_all_zero_probability_raises():
 
     with pytest.raises(
         ValueError,
-        match='Wavelength distribution must have at least one positive probability value.',
+        match=(
+            'Wavelength distribution must have at least one positive probability value'
+        ),
     ):
         tof.Source.from_distribution(neutrons=10, p_time=p_time, p_wav=p_wav)
 
