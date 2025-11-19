@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -76,6 +77,12 @@ def _make_pulses(
     else:
         p = p.copy(deep=False)
 
+    if p.sizes[t_dim] < 2 or p.sizes[w_dim] < 2:
+        raise ValueError(
+            f"Distribution must have at least 2 points in each dimension. "
+            f"Got {p.sizes[t_dim]} in {t_dim}, {p.sizes[w_dim]} in {w_dim}"
+        )
+
     p.coords[t_dim] = p.coords[t_dim].to(dtype=float, unit=TIME_UNIT)
     p.coords[w_dim] = p.coords[w_dim].to(dtype=float, unit=WAV_UNIT)
 
@@ -109,7 +116,14 @@ def _make_pulses(
     ntot = pulses * neutrons
     rng = np.random.default_rng(seed)
     p_flat = p.flatten(to='x')
-    p_flat /= p_flat.data.sum()
+
+    prob_sum = p_flat.data.sum()
+    if prob_sum.value <= 0:
+        raise ValueError(
+            "Distribution must have at least one positive probability value. "
+            f"Sum of probabilities is {prob_sum.value}"
+        )
+    p_flat /= prob_sum
     while n < ntot:
         size = ntot - n
         inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
@@ -134,11 +148,14 @@ def _make_pulses(
         sc.arange("pulse", pulses) / frequency
     ).to(unit=TIME_UNIT, copy=False)
 
-    wavelength = sc.array(
-        dims=[dim],
-        values=np.concatenate(wavs),
-        unit=WAV_UNIT,
-    ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons})
+    wavelengths = np.concatenate(wavs)
+    if np.any(wavelengths < 0):
+        warnings.warn(
+            "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
+        )
+    wavelength = sc.array(dims=[dim], values=wavelengths, unit=WAV_UNIT).fold(
+        dim=dim, sizes={"pulse": pulses, dim: neutrons}
+    )
     speed = wavelength_to_speed(wavelength)
     return {
         "birth_time": birth_time,

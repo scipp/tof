@@ -273,6 +273,9 @@ class Model:
             key=lambda c: c.distance.value,
         )
 
+        if len(components) == 0:
+            raise ValueError("Cannot run model: no components have been defined.")
+
         if components[0].distance < self.source.distance:
             raise ValueError(
                 "At least one component is located before the source "
