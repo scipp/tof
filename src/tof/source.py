@@ -459,6 +459,8 @@ class Source:
     def as_json(self) -> dict:
         """
         Return the source as a JSON-serializable dictionary.
+
+        .. versionadded:: 25.11.0
         """
         return {
             'facility': self.facility,

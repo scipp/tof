@@ -39,6 +39,8 @@ class Detector:
     def as_json(self) -> dict:
         """
         Return the detector as a JSON-serializable dictionary.
+
+        .. versionadded:: 25.11.0
         """
         return {
             'type': 'detector',

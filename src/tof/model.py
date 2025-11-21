@@ -145,6 +145,8 @@ class Model:
 
         Currently, only sources from facilities are supported when loading from JSON.
 
+        .. versionadded:: 25.10.1
+
         Parameters
         ----------
         filename:
@@ -173,6 +175,8 @@ class Model:
         """
         Return the model as a JSON-serializable dictionary.
         If the source is not from a facility, it is not included in the output.
+
+        .. versionadded:: 25.11.0
         """
         instrument_dict = {}
         if self.source is not None:
@@ -195,6 +199,8 @@ class Model:
         """
         Save the model to a JSON file.
         If the source is not from a facility, it is not included in the output.
+
+        .. versionadded:: 25.11.0
 
         Parameters
         ----------

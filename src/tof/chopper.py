@@ -195,6 +195,8 @@ class Chopper:
     def as_json(self) -> dict:
         """
         Return the chopper as a JSON-serializable dictionary.
+
+        .. versionadded:: 25.11.0
         """
         out = {
             key: var_to_dict(value)
