@@ -115,8 +115,10 @@ def _make_pulses(
     # prohibitively slow.
     # See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more
     # information.
-    dt = 0.5 * (tmax - tmin).value / (p.sizes[t_dim] - 1)
-    dw = 0.5 * (wmax - wmin).value / (p.sizes[w_dim] - 1)
+    tsel = (p.coords[t_dim] >= tmin) & (p.coords[t_dim] <= tmax)
+    wsel = (p.coords[w_dim] >= wmin) & (p.coords[w_dim] <= wmax)
+    dt = 0.5 * (tmax - tmin).value / (p[tsel].sizes[t_dim] - 1)
+    dw = 0.5 * (wmax - wmin).value / (p[wsel].sizes[w_dim] - 1)
 
     # Because of the added noise, some values end up being outside the specified range
     # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
