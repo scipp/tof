@@ -15,7 +15,7 @@ dnspython==2.8.0
     # via email-validator
 email-validator==2.3.0
     # via scippneutron
-fonttools==4.60.1
+fonttools==4.61.0
     # via matplotlib
 h5py==3.15.1
     # via
@@ -56,7 +56,7 @@ plopp==25.11.0
     # via scippneutron
 pluggy==1.6.0
     # via pytest
-pydantic==2.12.4
+pydantic==2.12.5
     # via scippneutron
 pydantic-core==2.41.5
     # via pydantic
@@ -64,7 +64,7 @@ pygments==2.19.2
     # via pytest
 pyparsing==3.2.5
     # via matplotlib
-pytest==9.0.1
+pytest==9.0.2
     # via -r basetest.in
 python-dateutil==2.9.0.post0
     # via
@@ -74,7 +74,7 @@ scipp==25.11.0
     # via
     #   scippneutron
     #   scippnexus
-scippneutron==25.7.0
+scippneutron==25.11.2
     # via -r basetest.in
 scippnexus==25.11.0
     # via scippneutron
