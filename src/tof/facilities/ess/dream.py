@@ -4,6 +4,8 @@
 Pre-configured chopper and detector parameters for Dream.
 """
 
+import copy
+
 from ...chopper import Chopper
 from ...detector import Detector
 from ...model import make_beamline
@@ -73,6 +75,19 @@ dream_high_flux = {
 }
 
 
+dream_high_resolution = copy.deepcopy(dream_high_flux)
+dream_high_resolution["PSC1"]["frequency"]["value"] = 15 * 14.0
+dream_high_resolution["PSC1"]["phase"]["value"] = 25 - 180
+dream_high_resolution["PSC2"]["frequency"]["value"] = 14 * 14.0
+dream_high_resolution["PSC2"]["phase"]["value"] = 100.5
+dream_high_resolution["OC"]["frequency"]["value"] = 14.0
+dream_high_resolution["OC"]["phase"]["value"] = 297.0 - 180.0 - 90.0
+dream_high_resolution["BC"]["frequency"]["value"] = 112.0
+dream_high_resolution["BC"]["phase"]["value"] = 200.0 - 180.0
+dream_high_resolution["T0"]["frequency"]["value"] = 28.0
+dream_high_resolution["T0"]["phase"]["value"] = 270.0 - 180.0
+
+
 def dream(
     high_flux=False, high_resolution=False
 ) -> dict[str, list[Chopper] | list[Detector]]:
@@ -81,6 +96,5 @@ def dream(
     if high_flux:
         return make_beamline(dream_high_flux)
     if high_resolution:
-        # TODO: Add high-resolution configuration
-        raise NotImplementedError("High-resolution configuration not yet implemented.")
+        return make_beamline(dream_high_resolution)
     raise ValueError("Either high_flux or high_resolution must be True.")

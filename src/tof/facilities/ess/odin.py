@@ -157,10 +157,10 @@ odin_non_pulse_skipping = {
 
 
 odin_pulse_skipping = copy.deepcopy(odin_non_pulse_skipping)
-odin_pulse_skipping["BP_1"]["frequency"] = {"value": 7.0, "unit": "Hz"}
-odin_pulse_skipping["BP_1"]["phase"] = {"value": 31.080, "unit": "deg"}
-odin_pulse_skipping["BP_2"]["frequency"] = {"value": 7.0, "unit": "Hz"}
-odin_pulse_skipping["BP_2"]["phase"] = {"value": 44.224, "unit": "deg"}
+odin_pulse_skipping["BP_1"]["frequency"]["value"] = 7.0
+odin_pulse_skipping["BP_1"]["phase"]["value"] = 31.080
+odin_pulse_skipping["BP_2"]["frequency"]["value"] = 7.0
+odin_pulse_skipping["BP_2"]["phase"]["value"] = 44.224
 
 
 def odin(
