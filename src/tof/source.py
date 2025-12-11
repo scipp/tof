@@ -189,7 +189,12 @@ class Source:
     Parameters
     ----------
     facility:
-        Name of a pre-defined pulse shape from a neutron facility.
+        Name of a pre-defined pulse shape from a neutron facility. Currently, the
+        following facilities are supported:
+        - 'ess': the standard ESS source profile, applicable for all ESS instruments
+        - 'ess-odin': a source specific to the ESS Odin instrument, sampled at the
+            location where cold and thermal neutrons are combined (~2.35m away from the
+            surface of the moderator)
     neutrons:
         Number of neutrons per pulse.
     pulses:
