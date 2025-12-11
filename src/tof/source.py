@@ -191,10 +191,9 @@ class Source:
     facility:
         Name of a pre-defined pulse shape from a neutron facility. Currently, the
         following facilities are supported:
+
         - 'ess': the standard ESS source profile, applicable for all ESS instruments
-        - 'ess-odin': a source specific to the ESS Odin instrument, sampled at the
-            location where cold and thermal neutrons are combined (~2.35m away from the
-            surface of the moderator)
+        - 'ess-odin': a source specific to the ESS Odin instrument, sampled at the location where cold and thermal neutrons are combined (~2.35m away from the surface of the moderator)
     neutrons:
         Number of neutrons per pulse.
     pulses:
@@ -205,7 +204,7 @@ class Source:
         Maximum neutron wavelength.
     seed:
         Seed for the random number generator.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
