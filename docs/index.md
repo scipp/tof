@@ -64,7 +64,7 @@ components
 multiple-pulses
 wfm
 dashboard
-ess/index
+ess-instruments
 api-reference/index
 developer/index
 about/index
