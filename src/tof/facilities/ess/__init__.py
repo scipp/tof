@@ -2,6 +2,7 @@
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 
 from .dream import dream
+from .magic import magic
 from .odin import odin
 
 sources = {
@@ -13,4 +14,4 @@ sources = {
 }
 
 
-__all__ = ["dream", "odin", "sources"]
+__all__ = ["dream", "magic", "odin", "sources"]
