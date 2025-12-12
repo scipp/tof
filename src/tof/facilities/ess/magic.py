@@ -39,7 +39,8 @@ def magic(
         psc_opening_angle = psc_slit_b
         i_slit = 1
         raise UserWarning(
-            f"PSC opening angle exceeds maximum value. Set to maximum ({psc_slit_b} deg.)."
+            "PSC opening angle exceeds maximum value. "
+            f"Set to maximum ({psc_slit_b} deg.)."
         )
 
     sc_phase = (
