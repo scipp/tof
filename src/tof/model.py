@@ -304,16 +304,16 @@ class Model:
             container = result_detectors if isinstance(c, Detector) else result_choppers
             container[c.name] = c.as_dict()
             container[c.name]['data'] = self.source.data.copy(deep=False)
-            t = birth_time + ((c.distance - self.source.distance) / speed).to(
+            tof = ((c.distance - self.source.distance) / speed).to(
                 unit=birth_time.unit, copy=False
             )
+            t = birth_time + tof
             container[c.name]['data'].coords['toa'] = t
             container[c.name]['data'].coords['eto'] = t % (
                 1 / self.source.frequency
             ).to(unit=t.unit, copy=False)
             container[c.name]['data'].coords['distance'] = c.distance
-            # TODO: remove 'tof' coordinate once deprecation period is over
-            container[c.name]['data'].coords['tof'] = t
+            container[c.name]['data'].coords['tof'] = tof
             if isinstance(c, Detector):
                 container[c.name]['data'].masks['blocked_by_others'] = ~initial_mask
                 continue
