@@ -89,6 +89,13 @@ class ComponentReading:
         return _make_reading_field(self.data, dim="toa")
 
     @property
+    def tof(self) -> ReadingField:
+        """
+        Time of flight of the neutrons from source to the component.
+        """
+        return _make_reading_field(self.data, dim="tof")
+
+    @property
     def eto(self) -> ReadingField:
         """
         Event time offset of the neutrons at the component (= toa modulo pulse period).
