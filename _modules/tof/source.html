@@ -1,0 +1,1140 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tof.source &#8212; Tof</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=2c196f3a"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tof/source';</script>
+    <script src="../../_static/anaconda-icon.js?v=461bdc62"></script>
+    <link rel="icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.svg" class="logo__image only-light" alt="Tof - Home"/>
+    <script>document.write(`<img src="../../_static/logo-dark.svg" class="logo__image only-dark" alt="Tof - Home"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../demo.html">
+    Demo
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../sources.html">
+    Sources
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../components.html">
+    Components
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../multiple-pulses.html">
+    Multiple pulses
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../wfm.html">
+    WFM
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../dashboard.html">
+    Dashboard
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../ess-instruments.html">
+    ESS instruments
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../api-reference/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../developer/index.html">
+    Development
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../about/index.html">
+    About
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/scipp/tof" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/tof/" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://anaconda.org/conda-forge/tof" title="Conda" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-anaconda fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Conda</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/scipp" title="Scipp" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../_static/scipp.ico" class="icon-link-image" alt="Scipp"/></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../demo.html">
+    Demo
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../sources.html">
+    Sources
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../components.html">
+    Components
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../multiple-pulses.html">
+    Multiple pulses
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../wfm.html">
+    WFM
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../dashboard.html">
+    Dashboard
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../ess-instruments.html">
+    ESS instruments
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api-reference/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../developer/index.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/index.html">
+    About
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/scipp/tof" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/tof/" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://anaconda.org/conda-forge/tof" title="Conda" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-anaconda fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Conda</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/scipp" title="Scipp" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><img src="../../_static/scipp.ico" class="icon-link-image" alt="Scipp"/></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">tof.source</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tof.source</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: BSD-3-Clause</span>
+<span class="c1"># Copyright (c) 2025 Scipp contributors (https://github.com/scipp)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">plopp</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipp</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sc</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">wavelength_to_speed</span>
+
+<span class="n">TIME_UNIT</span> <span class="o">=</span> <span class="s2">&quot;us&quot;</span>
+<span class="n">WAV_UNIT</span> <span class="o">=</span> <span class="s2">&quot;angstrom&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_frequency</span><span class="p">(</span><span class="n">frequency</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">pulses</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">frequency</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">pulses</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;If pulses is greater than one, a frequency must be supplied.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">frequency</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">sc</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;Hz&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">frequency</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_pulses</span><span class="p">(</span>
+    <span class="n">neutrons</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">frequency</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span><span class="p">,</span>
+    <span class="n">pulses</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">p</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">p_time</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">p_wav</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">wmin</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">wmax</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create pulses from time a wavelength probability distributions.</span>
+<span class="sd">    The distributions should be supplied as DataArrays where the coordinates</span>
+<span class="sd">    are the values of the distribution, and the values are the probability.</span>
+<span class="sd">    Note that the time and wavelength distributions are independent. A neutron with</span>
+<span class="sd">    a randomly selected birth time from ``p_time`` can adopt any wavelength in</span>
+<span class="sd">    ``p_wav`` (in other words, the two distributions are simply broadcast into a</span>
+<span class="sd">    square 2D parameter space).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    neutrons:</span>
+<span class="sd">        Number of neutrons per pulse.</span>
+<span class="sd">    frequency:</span>
+<span class="sd">        Pulse frequency.</span>
+<span class="sd">    pulses:</span>
+<span class="sd">        Number of pulses.</span>
+<span class="sd">    seed:</span>
+<span class="sd">        Seed for the random number generator.</span>
+<span class="sd">    p:</span>
+<span class="sd">        2D probability distribution for a single pulse.</span>
+<span class="sd">    p_time:</span>
+<span class="sd">        Time probability distribution for a single pulse.</span>
+<span class="sd">    p_wav:</span>
+<span class="sd">        Wavelength probability distribution for a single pulse.</span>
+<span class="sd">    wmin:</span>
+<span class="sd">        Minimum neutron wavelength.</span>
+<span class="sd">    wmax:</span>
+<span class="sd">        Maximum neutron wavelength.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">t_dim</span> <span class="o">=</span> <span class="s2">&quot;birth_time&quot;</span>
+    <span class="n">w_dim</span> <span class="o">=</span> <span class="s2">&quot;wavelength&quot;</span>
+
+    <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="p">(</span><span class="n">p_time</span><span class="p">,</span> <span class="n">p_wav</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Either p (2D) or both p_time (1D) and p_wav (1D) must be supplied.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">p_wav_sum</span> <span class="o">=</span> <span class="n">p_wav</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">p_time_sum</span> <span class="o">=</span> <span class="n">p_time</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">p_wav_sum</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Wavelength distribution must have at least one positive &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;probability value. Sum of probabilities is </span><span class="si">{</span><span class="n">p_wav_sum</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">p_time_sum</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Time distribution must have at least one positive &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;probability value. Sum of probabilities is </span><span class="si">{</span><span class="n">p_time_sum</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">p_wav</span> <span class="o">/</span> <span class="n">p_wav_sum</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">p_time</span> <span class="o">/</span> <span class="n">p_time_sum</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">p</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Distribution must have at least 2 points in each dimension. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Got </span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">t_dim</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">w_dim</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">TIME_UNIT</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">WAV_UNIT</span><span class="p">)</span>
+
+    <span class="n">tmin</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="n">tmax</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">wmin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">wmin</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">wmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">wmax</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+    <span class="c1"># In the following, random.choice only allows to select from the values listed</span>
+    <span class="c1"># in the coordinate of the probability distribution arrays. This leads to data</span>
+    <span class="c1"># grouped into spikes and empty in between because the sampling resolution used</span>
+    <span class="c1"># in the linear interpolation above is usually kept low for performance.</span>
+    <span class="c1"># To make the distribution more uniform, we add some random noise to the chosen</span>
+    <span class="c1"># values, which effectively fills in the gaps between the spikes.</span>
+    <span class="c1"># Scipy has some methods to sample from a continuous distribution, but they are</span>
+    <span class="c1"># prohibitively slow.</span>
+    <span class="c1"># See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more</span>
+    <span class="c1"># information.</span>
+    <span class="n">tsel</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">tmin</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">tmax</span><span class="p">)</span>
+    <span class="n">wsel</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">wmin</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">wmax</span><span class="p">)</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">tmax</span> <span class="o">-</span> <span class="n">tmin</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">tsel</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">dw</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">wmax</span> <span class="o">-</span> <span class="n">wmin</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">wsel</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Because of the added noise, some values end up being outside the specified range</span>
+    <span class="c1"># for the birth times and wavelengths. Using naive clipping leads to pile-up on the</span>
+    <span class="c1"># edges of the range. To avoid this, we remove the outliers and resample until we</span>
+    <span class="c1"># have the desired number of neutrons.</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">wavs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ntot</span> <span class="o">=</span> <span class="n">pulses</span> <span class="o">*</span> <span class="n">neutrons</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">p_flat</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">to</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+
+    <span class="n">p_sum</span> <span class="o">=</span> <span class="n">p_flat</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">p_sum</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Distribution must have at least one positive probability value. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Sum of probabilities is </span><span class="si">{</span><span class="n">p_sum</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">p_flat</span> <span class="o">/=</span> <span class="n">p_sum</span>
+    <span class="k">while</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="n">ntot</span><span class="p">:</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">ntot</span> <span class="o">-</span> <span class="n">n</span>
+        <span class="n">inds</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">p_flat</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p_flat</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">p_flat</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">t_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">p_flat</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">w_dim</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">dw</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="n">tmin</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">t</span> <span class="o">&lt;=</span> <span class="n">tmax</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">w</span> <span class="o">&gt;=</span> <span class="n">wmin</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">w</span> <span class="o">&lt;=</span> <span class="n">wmax</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+        <span class="n">wavs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+        <span class="n">n</span> <span class="o">+=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="n">dim</span> <span class="o">=</span> <span class="s2">&quot;event&quot;</span>
+    <span class="n">birth_time</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="n">dim</span><span class="p">],</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
+        <span class="n">unit</span><span class="o">=</span><span class="n">TIME_UNIT</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">sizes</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pulse&quot;</span><span class="p">:</span> <span class="n">pulses</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="n">neutrons</span><span class="p">})</span> <span class="o">+</span> <span class="p">(</span>
+        <span class="n">sc</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="s2">&quot;pulse&quot;</span><span class="p">,</span> <span class="n">pulses</span><span class="p">)</span> <span class="o">/</span> <span class="n">frequency</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">TIME_UNIT</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">wavelengths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">wavs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">wavelengths</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Some neutron wavelengths are negative.&quot;</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
+        <span class="p">)</span>
+    <span class="n">wavelength</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="n">dim</span><span class="p">],</span> <span class="n">values</span><span class="o">=</span><span class="n">wavelengths</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">WAV_UNIT</span><span class="p">)</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span>
+        <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">sizes</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;pulse&quot;</span><span class="p">:</span> <span class="n">pulses</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="n">neutrons</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">speed</span> <span class="o">=</span> <span class="n">wavelength_to_speed</span><span class="p">(</span><span class="n">wavelength</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;birth_time&quot;</span><span class="p">:</span> <span class="n">birth_time</span><span class="p">,</span>
+        <span class="s2">&quot;wavelength&quot;</span><span class="p">:</span> <span class="n">wavelength</span><span class="p">,</span>
+        <span class="s2">&quot;speed&quot;</span><span class="p">:</span> <span class="n">speed</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="Source">
+<a class="viewcode-back" href="../../generated/classes/tof.Source.html#tof.Source">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Source</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class that represents a source of neutrons.</span>
+<span class="sd">    It is defined by the number of neutrons, a wavelength range, and a time range.</span>
+<span class="sd">    The default way of creating a pulse is to supply the name of a facility</span>
+<span class="sd">    (e.g. ``&#39;ess&#39;``) and the number of neutrons. This will create a pulse with the</span>
+<span class="sd">    default time and wavelength ranges for that facility.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    facility:</span>
+<span class="sd">        Name of a pre-defined pulse shape from a neutron facility. Currently, the</span>
+<span class="sd">        following facilities are supported:</span>
+
+<span class="sd">        - &#39;ess&#39;: the standard ESS source profile, applicable for all ESS instruments</span>
+<span class="sd">        - &#39;ess-odin&#39;: a source specific to the ESS Odin instrument, sampled at the location where cold and thermal neutrons are combined (~2.35m away from the surface of the moderator)</span>
+<span class="sd">    neutrons:</span>
+<span class="sd">        Number of neutrons per pulse.</span>
+<span class="sd">    pulses:</span>
+<span class="sd">        Number of pulses.</span>
+<span class="sd">    wmin:</span>
+<span class="sd">        Minimum neutron wavelength.</span>
+<span class="sd">    wmax:</span>
+<span class="sd">        Maximum neutron wavelength.</span>
+<span class="sd">    seed:</span>
+<span class="sd">        Seed for the random number generator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
+
+<div class="viewcode-block" id="Source.__init__">
+<a class="viewcode-back" href="../../generated/classes/tof.Source.html#tof.Source.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">facility</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">neutrons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
+        <span class="n">pulses</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">wmin</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">wmax</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_facility</span> <span class="o">=</span> <span class="n">facility</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">facility</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_neutrons</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">neutrons</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pulses</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pulses</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_facility</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">.facilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_source_path</span>
+
+            <span class="n">file_path</span> <span class="o">=</span> <span class="n">get_source_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_facility</span><span class="p">)</span>
+            <span class="n">facility_pulse</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load_hdf5</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frequency</span> <span class="o">=</span> <span class="n">facility_pulse</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span> <span class="o">=</span> <span class="n">facility_pulse</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;distance&quot;</span><span class="p">]</span>
+            <span class="n">pulse_params</span> <span class="o">=</span> <span class="n">_make_pulses</span><span class="p">(</span>
+                <span class="n">neutrons</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_neutrons</span><span class="p">,</span>
+                <span class="n">p</span><span class="o">=</span><span class="n">facility_pulse</span><span class="p">,</span>
+                <span class="n">frequency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_frequency</span><span class="p">,</span>
+                <span class="n">pulses</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_pulses</span><span class="p">,</span>
+                <span class="n">wmin</span><span class="o">=</span><span class="n">wmin</span><span class="p">,</span>
+                <span class="n">wmax</span><span class="o">=</span><span class="n">wmax</span><span class="p">,</span>
+                <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">sc</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">sizes</span><span class="o">=</span><span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;counts&quot;</span><span class="p">),</span>
+                <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;birth_time&quot;</span><span class="p">:</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;wavelength&quot;</span><span class="p">:</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;wavelength&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;speed&quot;</span><span class="p">:</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;speed&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+                        <span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="kc">None</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">sizes</span><span class="o">=</span><span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">facility</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The name of the facility used to create the source.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_facility</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">neutrons</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The number of neutrons per pulse.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_neutrons</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">frequency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The frequency of the pulse.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frequency</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The position of the source along the beamline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pulses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The number of pulses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pulses</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The data array containing the neutrons in the pulse.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+<div class="viewcode-block" id="Source.from_neutrons">
+<a class="viewcode-back" href="../../generated/classes/tof.Source.html#tof.Source.from_neutrons">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_neutrons</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">birth_times</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span><span class="p">,</span>
+        <span class="n">wavelengths</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">pulses</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">distance</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create source pulses from a list of neutrons.</span>
+<span class="sd">        Both ``birth times`` and ``wavelengths`` should be one-dimensional and have the</span>
+<span class="sd">        same length. They represent the neutrons inside one pulse. If ``pulses`` is</span>
+<span class="sd">        greater than one, the neutrons will be repeated ``pulses`` times.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        birth_times:</span>
+<span class="sd">            Birth times of neutrons in the pulse.</span>
+<span class="sd">        wavelengths:</span>
+<span class="sd">            Wavelengths of neutrons in the pulse.</span>
+<span class="sd">        frequency:</span>
+<span class="sd">            Frequency of the pulse.</span>
+<span class="sd">        pulses:</span>
+<span class="sd">            Number of pulses.</span>
+<span class="sd">        distance:</span>
+<span class="sd">            Position of the source along the beamline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">facility</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">neutrons</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">birth_times</span><span class="p">),</span> <span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">)</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">_frequency</span> <span class="o">=</span> <span class="n">_default_frequency</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="n">pulses</span><span class="p">)</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">_distance</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">distance</span> <span class="k">if</span> <span class="n">distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sc</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">wavelengths</span><span class="o">.</span><span class="n">values</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;Some neutron wavelengths are negative.&quot;</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span>
+            <span class="p">)</span>
+
+        <span class="n">birth_times</span> <span class="o">=</span> <span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="s2">&quot;pulse&quot;</span><span class="p">,</span> <span class="n">pulses</span><span class="p">)</span> <span class="o">/</span> <span class="n">source</span><span class="o">.</span><span class="n">_frequency</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
+            <span class="n">unit</span><span class="o">=</span><span class="n">TIME_UNIT</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span> <span class="o">+</span> <span class="n">birth_times</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">TIME_UNIT</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">wavelengths</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">broadcast</span><span class="p">(</span>
+            <span class="n">wavelengths</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">WAV_UNIT</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">sizes</span><span class="o">=</span><span class="n">birth_times</span><span class="o">.</span><span class="n">sizes</span>
+        <span class="p">)</span>
+
+        <span class="n">source</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">sc</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">sizes</span><span class="o">=</span><span class="n">birth_times</span><span class="o">.</span><span class="n">sizes</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;counts&quot;</span><span class="p">),</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;birth_time&quot;</span><span class="p">:</span> <span class="n">birth_times</span><span class="p">,</span>
+                <span class="s2">&quot;wavelength&quot;</span><span class="p">:</span> <span class="n">wavelengths</span><span class="p">,</span>
+                <span class="s2">&quot;speed&quot;</span><span class="p">:</span> <span class="n">wavelength_to_speed</span><span class="p">(</span><span class="n">wavelengths</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m/s&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">birth_times</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span>
+                    <span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">sizes</span><span class="o">=</span><span class="n">birth_times</span><span class="o">.</span><span class="n">sizes</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">source</span></div>
+
+
+<div class="viewcode-block" id="Source.from_distribution">
+<a class="viewcode-back" href="../../generated/classes/tof.Source.html#tof.Source.from_distribution">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_distribution</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">p</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">p_time</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">p_wav</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">neutrons</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">,</span>
+        <span class="n">pulses</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">distance</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create source pulses from time a wavelength probability distributions.</span>
+<span class="sd">        The distributions should be supplied as DataArrays where the coordinates</span>
+<span class="sd">        are the values of the distribution, and the values are the probability.</span>
+<span class="sd">        Note that the time and wavelength distributions are independent. A neutron with</span>
+<span class="sd">        a randomly selected birth time from ``p_time`` can adopt any wavelength in</span>
+<span class="sd">        ``p_wav`` (in other words, the two distributions are simply broadcast into a</span>
+<span class="sd">        square 2D parameter space).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        p:</span>
+<span class="sd">            2D probability distribution for a single pulse.</span>
+
+<span class="sd">            .. versionadded:: 25.12.0</span>
+<span class="sd">        p_time:</span>
+<span class="sd">            Time probability distribution (1D) for a single pulse.</span>
+<span class="sd">        p_wav:</span>
+<span class="sd">            Wavelength probability distribution (1D) for a single pulse.</span>
+<span class="sd">        neutrons:</span>
+<span class="sd">            Number of neutrons in the pulse.</span>
+<span class="sd">        pulses:</span>
+<span class="sd">            Number of pulses.</span>
+<span class="sd">        frequency:</span>
+<span class="sd">            Frequency of the pulse.</span>
+<span class="sd">        seed:</span>
+<span class="sd">            Seed for the random number generator.</span>
+<span class="sd">        distance:</span>
+<span class="sd">            Position of the source along the beamline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">source</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">facility</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">neutrons</span><span class="o">=</span><span class="n">neutrons</span><span class="p">,</span> <span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">)</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">_distance</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">distance</span> <span class="k">if</span> <span class="n">distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sc</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">_frequency</span> <span class="o">=</span> <span class="n">_default_frequency</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="n">pulses</span><span class="p">)</span>
+        <span class="n">pulse_params</span> <span class="o">=</span> <span class="n">_make_pulses</span><span class="p">(</span>
+            <span class="n">neutrons</span><span class="o">=</span><span class="n">neutrons</span><span class="p">,</span>
+            <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span>
+            <span class="n">p_time</span><span class="o">=</span><span class="n">p_time</span><span class="p">,</span>
+            <span class="n">p_wav</span><span class="o">=</span><span class="n">p_wav</span><span class="p">,</span>
+            <span class="n">frequency</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">_frequency</span><span class="p">,</span>
+            <span class="n">pulses</span><span class="o">=</span><span class="n">pulses</span><span class="p">,</span>
+            <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">source</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">sc</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">sizes</span><span class="o">=</span><span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;counts&quot;</span><span class="p">),</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;birth_time&quot;</span><span class="p">:</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;wavelength&quot;</span><span class="p">:</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;wavelength&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;speed&quot;</span><span class="p">:</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;speed&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+                    <span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="kc">None</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">fold</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">sizes</span><span class="o">=</span><span class="n">pulse_params</span><span class="p">[</span><span class="s2">&quot;birth_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sizes</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">source</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="s2">&quot;pulse&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Source.plot">
+<a class="viewcode-back" href="../../generated/classes/tof.Source.html#tof.Source.plot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Plot the pulses of the source.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        bins:</span>
+<span class="sd">            Number of bins to use for histogramming the neutrons.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="o">-</span> <span class="p">{</span><span class="s2">&quot;pulse&quot;</span><span class="p">})</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">collapsed</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">collapse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">f1</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">da</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">birth_time</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">collapsed</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="p">)</span>
+        <span class="n">f2</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">da</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">wavelength</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">collapsed</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">f1</span> <span class="o">+</span> <span class="n">f2</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">as_readonly</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">SourceParameters</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">facility</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">facility</span><span class="p">,</span>
+            <span class="n">neutrons</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">neutrons</span><span class="p">,</span>
+            <span class="n">frequency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span>
+            <span class="n">pulses</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">,</span>
+            <span class="n">distance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Source:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  pulses=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="si">}</span><span class="s2">, neutrons per pulse=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">neutrons</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  frequency=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="si">:</span><span class="s2">c</span><span class="si">}</span><span class="se">\n</span><span class="s2">  facility=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">facility</span><span class="si">}</span><span class="s2">&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  distance=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="si">:</span><span class="s2">c</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Source.as_json">
+<a class="viewcode-back" href="../../generated/classes/tof.Source.html#tof.Source.as_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the source as a JSON-serializable dictionary.</span>
+
+<span class="sd">        .. versionadded:: 25.11.0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;facility&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">facility</span><span class="p">,</span>
+            <span class="s1">&#39;neutrons&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">neutrons</span><span class="p">),</span>
+            <span class="s1">&#39;pulses&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulses</span><span class="p">,</span>
+            <span class="s1">&#39;seed&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;source&#39;</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SourceParameters">
+<a class="viewcode-back" href="../../generated/classes/tof.SourceParameters.html#tof.SourceParameters">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SourceParameters</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read-only container for the parameters of a source.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">data</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span>
+    <span class="n">facility</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">neutrons</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">frequency</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span>
+    <span class="n">pulses</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">distance</span><span class="p">:</span> <span class="n">sc</span><span class="o">.</span><span class="n">Variable</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025 Scipp contributors.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+Current Tof version: 26.1.1 (<a href="https://github.com/scipp/tof/releases">older versions</a>).</div>
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
