@@ -344,3 +344,12 @@ class Result:
         )
         out.coords["Ltotal"] = out.coords.pop("distance")
         return out
+
+    @property
+    def data(self) -> sc.DataGroup:
+        return sc.DataGroup(
+            {
+                key: value.data
+                for key, value in chain(self.choppers.items(), self.detectors.items())
+            }
+        )
