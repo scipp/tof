@@ -347,9 +347,15 @@ class Result:
 
     @property
     def data(self) -> sc.DataGroup:
-        return sc.DataGroup(
-            {
-                key: value.data
-                for key, value in chain(self.choppers.items(), self.detectors.items())
-            }
+        """
+        Get the data for the source, choppers, and detectors, as a DataGroup.
+        The components are sorted by distance.
+        """
+        out = {"source": self.source.data}
+        components = sorted(
+            chain(self.choppers.values(), self.detectors.values()),
+            key=lambda c: c.distance.value,
         )
+        for comp in components:
+            out[comp.name] = comp.data
+        return sc.DataGroup(out)

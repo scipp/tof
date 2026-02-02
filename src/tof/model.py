@@ -16,30 +16,6 @@ from .source import Source
 ComponentType = Chopper | Detector
 
 
-def _input_to_dict(
-    obj: None | list[ComponentType] | tuple[ComponentType, ...] | ComponentType,
-    kind: type,
-):
-    if isinstance(obj, list | tuple):
-        out = {}
-        for item in obj:
-            new = _input_to_dict(item, kind=kind)
-            for key in new.keys():
-                if key in out:
-                    raise ValueError(f"More than one component named '{key}' found.")
-            out.update(new)
-        return out
-    elif isinstance(obj, kind):
-        return {obj.name: obj}
-    elif obj is None:
-        return {}
-    else:
-        raise TypeError(
-            "Invalid input type. Must be a Chopper or a Detector, "
-            "or a list/tuple of Choppers or Detectors."
-        )
-
-
 def _array_or_none(container: dict, key: str) -> sc.Variable | None:
     return (
         sc.array(
@@ -134,9 +110,11 @@ class Model:
         choppers: Chopper | list[Chopper] | tuple[Chopper, ...] | None = None,
         detectors: Detector | list[Detector] | tuple[Detector, ...] | None = None,
     ):
-        self.choppers = _input_to_dict(choppers, kind=Chopper)
-        self.detectors = _input_to_dict(detectors, kind=Detector)
+        self.choppers = {}
+        self.detectors = {}
         self.source = source
+        for c in chain(choppers or (), detectors or ()):
+            self.add(c)
 
     @classmethod
     def from_json(cls, filename: str) -> Model:
@@ -212,17 +190,20 @@ class Model:
         with open(filename, 'w') as f:
             json.dump(self.as_json(), f, indent=2)
 
-    def add(self, component):
+    def add(self, component: Chopper | Detector):
         """
         Add a component to the instrument.
         Component names must be unique across choppers and detectors.
+        The name "source" is reserved for the source, and can thus not be used for other
+        components.
 
         Parameters
         ----------
         component:
             A chopper or detector.
         """
-        if component.name in chain(self.choppers, self.detectors):
+        # Note that the name "source" is reserved for the source.
+        if component.name in chain(self.choppers, self.detectors, ("source",)):
             raise KeyError(
                 f"Component with name {component.name} already exists. "
                 "If you wish to replace/update an existing component, use "
