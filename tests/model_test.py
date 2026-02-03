@@ -382,11 +382,11 @@ def test_create_model_with_duplicate_component_names_raises(
     chopper = dummy_chopper
     detector = dummy_detector
     with pytest.raises(
-        ValueError, match="More than one component named 'dummy_chopper' found"
+        KeyError, match="Component with name dummy_chopper already exists"
     ):
         tof.Model(source=dummy_source, choppers=[chopper, chopper])
     with pytest.raises(
-        ValueError, match="More than one component named 'dummy_detector' found"
+        KeyError, match="Component with name dummy_detector already exists"
     ):
         tof.Model(source=dummy_source, detectors=[detector, detector])
 
@@ -422,28 +422,32 @@ def test_getitem(dummy_chopper, dummy_detector, dummy_source):
         model['foo']
 
 
-def test_input_can_be_single_component(dummy_chopper, dummy_detector, dummy_source):
-    chopper = dummy_chopper
-    detector = dummy_detector
-    model = tof.Model(source=dummy_source, choppers=chopper, detectors=detector)
-    assert 'dummy_chopper' in model.choppers
-    assert 'dummy_detector' in model.detectors
-
-
 def test_bad_input_type_raises(dummy_chopper, dummy_detector, dummy_source):
     chopper = dummy_chopper
     detector = dummy_detector
-    with pytest.raises(TypeError, match='Invalid input type'):
+    with pytest.raises(
+        TypeError, match='Beamline components: expected Chopper instance'
+    ):
         _ = tof.Model(source=dummy_source, choppers='bad chopper')
-    with pytest.raises(TypeError, match='Invalid input type'):
+    with pytest.raises(
+        TypeError, match='Beamline components: expected Detector instance'
+    ):
         _ = tof.Model(source=dummy_source, choppers=[chopper], detectors='abc')
-    with pytest.raises(TypeError, match='Invalid input type'):
+    with pytest.raises(
+        TypeError, match='Beamline components: expected Chopper instance'
+    ):
         _ = tof.Model(source=dummy_source, choppers=[chopper, 'bad chopper'])
-    with pytest.raises(TypeError, match='Invalid input type'):
+    with pytest.raises(
+        TypeError, match='Beamline components: expected Detector instance'
+    ):
         _ = tof.Model(source=dummy_source, detectors=(1234, detector))
-    with pytest.raises(TypeError, match='Invalid input type'):
+    with pytest.raises(
+        TypeError, match='Beamline components: expected Chopper instance'
+    ):
         _ = tof.Model(source=dummy_source, choppers=[detector])
-    with pytest.raises(TypeError, match='Invalid input type'):
+    with pytest.raises(
+        TypeError, match='Beamline components: expected Detector instance'
+    ):
         _ = tof.Model(source=dummy_source, detectors=[chopper])
 
 

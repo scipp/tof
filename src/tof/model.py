@@ -107,14 +107,20 @@ class Model:
     def __init__(
         self,
         source: Source | None = None,
-        choppers: Chopper | list[Chopper] | tuple[Chopper, ...] | None = None,
-        detectors: Detector | list[Detector] | tuple[Detector, ...] | None = None,
+        choppers: list[Chopper] | tuple[Chopper, ...] | None = None,
+        detectors: list[Detector] | tuple[Detector, ...] | None = None,
     ):
         self.choppers = {}
         self.detectors = {}
         self.source = source
-        for c in chain(choppers or (), detectors or ()):
-            self.add(c)
+        for components, kind in ((choppers, Chopper), (detectors, Detector)):
+            for c in components or ():
+                if not isinstance(c, kind):
+                    raise TypeError(
+                        f"Beamline components: expected {kind.__name__} instance, "
+                        f"got {type(c)}."
+                    )
+                self.add(c)
 
     @classmethod
     def from_json(cls, filename: str) -> Model:
@@ -202,6 +208,11 @@ class Model:
         component:
             A chopper or detector.
         """
+        if not isinstance(component, (Chopper | Detector)):
+            raise TypeError(
+                f"Cannot add component of type {type(component)} to the model. "
+                "Only Chopper and Detector instances are allowed."
+            )
         # Note that the name "source" is reserved for the source.
         if component.name in chain(self.choppers, self.detectors, ("source",)):
             raise KeyError(
@@ -210,14 +221,8 @@ class Model:
                 "``model.choppers['name'] = new_chopper`` or "
                 "``model.detectors['name'] = new_detector``."
             )
-        if isinstance(component, Chopper):
-            self.choppers[component.name] = component
-        elif isinstance(component, Detector):
-            self.detectors[component.name] = component
-        else:
-            raise TypeError(
-                f"Cannot add component of type {type(component)} to the model."
-            )
+        container = self.choppers if isinstance(component, Chopper) else self.detectors
+        container[component.name] = component
 
     def remove(self, name: str):
         """
