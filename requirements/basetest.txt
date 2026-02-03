@@ -70,7 +70,7 @@ python-dateutil==2.9.0.post0
     # via
     #   matplotlib
     #   scippneutron
-scipp==26.1.0
+scipp==26.2.0
     # via
     #   scippneutron
     #   scippnexus
