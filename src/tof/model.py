@@ -113,6 +113,30 @@ class Model:
         self.choppers = {}
         self.detectors = {}
         self.source = source
+        choppers = ((choppers,) if isinstance(choppers, Chopper) else choppers) or ()
+        detectors = (
+            (detectors,) if isinstance(detectors, Detector) else detectors
+        ) or ()
+        # Type Checks
+        invalid_type_choppers = [
+            chopper for chopper in choppers if not isinstance(chopper, Chopper)
+        ]
+        invalid_type_detectors = [
+            detector for detector in detectors if not isinstance(detector, Detector)
+        ]
+        if any(invalid_type_choppers):
+            raise TypeError(
+                "Invalid input type. Cannot add component of type ",
+                {type(comp) for comp in invalid_type_detectors},
+                "to the model as a chopper.",
+            )
+
+        if any(invalid_type_detectors):
+            raise TypeError(
+                "Invalid input type. Cannot add component of type ",
+                {type(comp) for comp in invalid_type_detectors},
+                "to the model as a detector.",
+            )
         for c in chain(choppers or (), detectors or ()):
             self.add(c)
 
@@ -203,7 +227,9 @@ class Model:
             A chopper or detector.
         """
         # Note that the name "source" is reserved for the source.
-        if component.name in chain(self.choppers, self.detectors, ("source",)):
+        if isinstance(component, Chopper | Detector) and component.name in chain(
+            self.choppers, self.detectors, ("source",)
+        ):
             raise KeyError(
                 f"Component with name {component.name} already exists. "
                 "If you wish to replace/update an existing component, use "
@@ -216,7 +242,8 @@ class Model:
             self.detectors[component.name] = component
         else:
             raise TypeError(
-                f"Cannot add component of type {type(component)} to the model."
+                "Invalid input type. Cannot add component of type ",
+                f"{type(component)} to the model.",
             )
 
     def remove(self, name: str):
