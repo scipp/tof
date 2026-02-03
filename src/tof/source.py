@@ -290,7 +290,14 @@ class Source:
         """
         The data array containing the neutrons in the pulse.
         """
-        return self._data
+        return self._data.assign_coords(
+            {
+                "distance": self._distance,
+                "eto": self._data.coords["birth_time"]
+                % (1.0 / self._frequency).to(unit=TIME_UNIT, copy=False),
+                "toa": self._data.coords["birth_time"],
+            }
+        )
 
     @classmethod
     def from_neutrons(
