@@ -382,11 +382,11 @@ def test_create_model_with_duplicate_component_names_raises(
     chopper = dummy_chopper
     detector = dummy_detector
     with pytest.raises(
-        ValueError, match="More than one component named 'dummy_chopper' found"
+        KeyError, match="Component with name dummy_chopper already exists."
     ):
         tof.Model(source=dummy_source, choppers=[chopper, chopper])
     with pytest.raises(
-        ValueError, match="More than one component named 'dummy_detector' found"
+        KeyError, match="Component with name dummy_detector already exists."
     ):
         tof.Model(source=dummy_source, detectors=[detector, detector])
 
