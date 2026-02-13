@@ -13,7 +13,7 @@ m_over_h = const.m_n / const.h
 two_pi = sc.constants.pi * (2.0 * sc.units.rad)
 
 
-def speed_to_wavelength(x: sc.Variable, unit: str = 'angstrom') -> sc.Variable:
+def speed_to_wavelength(x: sc.Variable, unit: str = "angstrom") -> sc.Variable:
     """
     Convert neutron speeds to wavelengths.
 
@@ -27,7 +27,7 @@ def speed_to_wavelength(x: sc.Variable, unit: str = 'angstrom') -> sc.Variable:
     return (1.0 / (m_over_h * x)).to(unit=unit)
 
 
-def wavelength_to_speed(x: sc.Variable, unit: str = 'm/s') -> sc.Variable:
+def wavelength_to_speed(x: sc.Variable, unit: str = "m/s") -> sc.Variable:
     """
     Convert neutron wavelengths to speeds.
 
@@ -41,7 +41,7 @@ def wavelength_to_speed(x: sc.Variable, unit: str = 'm/s') -> sc.Variable:
     return (1.0 / (m_over_h * x)).to(unit=unit)
 
 
-def speed_to_energy(x: sc.Variable, unit='meV') -> sc.Variable:
+def speed_to_energy(x: sc.Variable, unit="meV") -> sc.Variable:
     """
     Convert neutron speeds to energies.
 
@@ -52,10 +52,10 @@ def speed_to_energy(x: sc.Variable, unit='meV') -> sc.Variable:
     unit:
         The unit of the output energies.
     """
-    return (const.m_n * x * x).to(unit=unit)
+    return (const.m_n * x * x / 2).to(unit=unit)
 
 
-def energy_to_speed(x: sc.Variable, unit='m/s') -> sc.Variable:
+def energy_to_speed(x: sc.Variable, unit="m/s") -> sc.Variable:
     """
     Convert neutron energies to speeds.
 
@@ -66,7 +66,7 @@ def energy_to_speed(x: sc.Variable, unit='m/s') -> sc.Variable:
     unit:
         The unit of the output speeds.
     """
-    return sc.sqrt(x / const.m_n).to(unit=unit)
+    return sc.sqrt(2 * x / const.m_n).to(unit=unit)
 
 
 def one_mask(
@@ -97,8 +97,8 @@ def var_to_dict(var: sc.Variable) -> dict:
         The variable to convert.
     """
     return {
-        'value': var.values.tolist() if var.ndim > 0 else float(var.value),
-        'unit': str(var.unit),
+        "value": var.values.tolist() if var.ndim > 0 else float(var.value),
+        "unit": str(var.unit),
     }
 
 
