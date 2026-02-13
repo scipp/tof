@@ -52,7 +52,7 @@ def speed_to_energy(x: sc.Variable, unit="meV") -> sc.Variable:
     unit:
         The unit of the output energies.
     """
-    return (const.m_n * x * x / 2).to(unit=unit)
+    return ((0.5 * const.m_n) * x * x).to(unit=unit)
 
 
 def energy_to_speed(x: sc.Variable, unit="m/s") -> sc.Variable:
