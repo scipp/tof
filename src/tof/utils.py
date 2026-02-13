@@ -66,7 +66,7 @@ def energy_to_speed(x: sc.Variable, unit="m/s") -> sc.Variable:
     unit:
         The unit of the output speeds.
     """
-    return sc.sqrt(2 * x / const.m_n).to(unit=unit)
+    return sc.sqrt(x / (0.5 * const.m_n)).to(unit=unit)
 
 
 def one_mask(
