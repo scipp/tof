@@ -6,11 +6,12 @@ from dataclasses import dataclass, replace
 
 import scipp as sc
 
+from .component import Component
 from .reading import ComponentReading
 from .utils import var_to_dict
 
 
-class Detector:
+class Detector(Component):
     """
     A detector component does not block any neutrons, it sees all neutrons passing
     through it.
@@ -26,15 +27,33 @@ class Detector:
     def __init__(self, distance: sc.Variable, name: str):
         self.distance = distance.to(dtype=float, copy=False)
         self.name = name
+        self.kind = "detector"
 
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Detector):
+            return NotImplemented
+        return self.name == other.name and sc.identical(self.distance, other.distance)
 
     def as_dict(self) -> dict:
         """
         Return the detector as a dictionary.
         """
         return {'distance': self.distance, 'name': self.name}
+
+    @classmethod
+    def from_json(cls, name: str, params: dict) -> Detector:
+        """
+        Create a detector from a JSON-serializable dictionary.
+        """
+        return cls(
+            distance=sc.scalar(
+                params["distance"]["value"], unit=params["distance"]["unit"]
+            ),
+            name=name,
+        )
 
     def as_json(self) -> dict:
         """
@@ -48,10 +67,21 @@ class Detector:
             'name': self.name,
         }
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Detector):
-            return NotImplemented
-        return self.name == other.name and sc.identical(self.distance, other.distance)
+    def apply(self, neutrons: sc.DataArray) -> sc.DataArray:
+        """
+        Apply the detector to the given neutrons.
+
+        Parameters
+        ----------
+        neutrons:
+            The neutrons to which the detector will be applied.
+
+        Returns
+        -------
+        The modified neutrons.
+        """
+        # A detector does not modify the neutrons, it simply records them.
+        return neutrons
 
 
 @dataclass(frozen=True)

@@ -27,6 +27,16 @@ Clockwise = Direction.CLOCKWISE
 AntiClockwise = Direction.ANTICLOCKWISE
 
 
+def _array_or_none(container: dict, key: str) -> sc.Variable | None:
+    return (
+        sc.array(
+            dims=["cutout"], values=container[key]["value"], unit=container[key]["unit"]
+        )
+        if key in container
+        else None
+    )
+
+
 class Chopper:
     """
     A chopper is a rotating device with cutouts that blocks the beam at certain times.
@@ -178,6 +188,18 @@ class Chopper:
             f"direction={self.direction.name}, cutouts={len(self.open)})"
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Chopper):
+            return NotImplemented
+        if self.name != other.name:
+            return False
+        if self.direction != other.direction:
+            return False
+        return all(
+            sc.identical(getattr(self, field), getattr(other, field))
+            for field in ('frequency', 'distance', 'phase', 'open', 'close')
+        )
+
     def as_dict(self) -> dict:
         """
         Return the chopper as a dictionary.
@@ -191,6 +213,31 @@ class Chopper:
             'name': self.name,
             'direction': self.direction,
         }
+
+    @classmethod
+    def from_json(cls, name: str, params: dict) -> Chopper:
+        direction = params["direction"].lower()
+        if direction == "clockwise":
+            _dir = Clockwise
+        elif any(x in direction for x in ("anti", "counter")):
+            _dir = AntiClockwise
+        else:
+            raise ValueError(
+                f"Chopper direction must be 'clockwise' or 'anti-clockwise', got "
+                f"'{params['direction']}' for component {name}."
+            )
+        return cls(
+            frequency=params["frequency"]["value"]
+            * sc.Unit(params["frequency"]["unit"]),
+            direction=_dir,
+            open=_array_or_none(params, "open"),
+            close=_array_or_none(params, "close"),
+            centers=_array_or_none(params, "centers"),
+            widths=_array_or_none(params, "widths"),
+            phase=params["phase"]["value"] * sc.Unit(params["phase"]["unit"]),
+            distance=params["distance"]["value"] * sc.Unit(params["distance"]["unit"]),
+            name=name,
+        )
 
     def as_json(self) -> dict:
         """
@@ -211,18 +258,6 @@ class Chopper:
             }
         )
         return out
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Chopper):
-            return NotImplemented
-        if self.name != other.name:
-            return False
-        if self.direction != other.direction:
-            return False
-        return all(
-            sc.identical(getattr(self, field), getattr(other, field))
-            for field in ('frequency', 'distance', 'phase', 'open', 'close')
-        )
 
     @classmethod
     def from_diskchopper(
@@ -273,6 +308,27 @@ class Chopper:
             name=name,
         )
 
+    def to_diskchopper(self) -> DiskChopper:
+        """
+        Export the chopper as a scippneutron DiskChopper.
+        """
+        from scippneutron.chopper import DiskChopper
+
+        frequency = (
+            self.frequency if self.direction == AntiClockwise else -self.frequency
+        )
+        phase = self.phase if self.direction == AntiClockwise else -self.phase
+        return DiskChopper(
+            frequency=frequency,
+            beam_position=sc.scalar(0.0, unit='deg'),
+            slit_begin=self.open,
+            slit_end=self.close,
+            phase=phase,
+            axle_position=sc.vector(
+                value=[0.0, 0.0, self.distance.value], unit=self.distance.unit
+            ),
+        )
+
     @classmethod
     def from_nexus(cls, nexus_chopper, name: str | None = None) -> Chopper:
         """
@@ -321,26 +377,21 @@ class Chopper:
             name=name,
         )
 
-    def to_diskchopper(self) -> DiskChopper:
+    def apply(self, neutrons: sc.DataArray) -> sc.DataArray:
         """
-        Export the chopper as a scippneutron DiskChopper.
+        Apply the chopper's properties to the given data array.
         """
-        from scippneutron.chopper import DiskChopper
+        # Apply the chopper's open/close times to the data
+        m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
+        to, tc = c.open_close_times(time_limit=time_limit)
+        results[c.name].update({'open_times': to, 'close_times': tc})
+        for i in range(len(to)):
+            m |= (t > to[i]) & (t < tc[i])
+        combined = initial_mask & m
+        data_at_comp.masks['blocked_by_others'] = ~initial_mask
+        data_at_comp.masks['blocked_by_me'] = ~m & initial_mask
 
-        frequency = (
-            self.frequency if self.direction == AntiClockwise else -self.frequency
-        )
-        phase = self.phase if self.direction == AntiClockwise else -self.phase
-        return DiskChopper(
-            frequency=frequency,
-            beam_position=sc.scalar(0.0, unit='deg'),
-            slit_begin=self.open,
-            slit_end=self.close,
-            phase=phase,
-            axle_position=sc.vector(
-                value=[0.0, 0.0, self.distance.value], unit=self.distance.unit
-            ),
-        )
+        return data
 
 
 @dataclass(frozen=True)
