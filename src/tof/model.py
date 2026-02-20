@@ -274,9 +274,10 @@ class Model:
                 "itself. Please check the distances of the components."
             )
 
-        birth_time = self.source.data.coords['birth_time']
-        speed = self.source.data.coords['speed']
-        initial_mask = sc.ones(sizes=birth_time.sizes, unit=None, dtype=bool)
+        # birth_time = self.source.data.coords['birth_time']
+        # speed = self.source.data.coords['speed']
+        neutrons = self.source.data
+        initial_mask = sc.ones(sizes=neutrons.sizes, unit=None, dtype=bool)
 
         result_choppers = {}
         result_detectors = {}
