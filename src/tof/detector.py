@@ -11,6 +11,36 @@ from .reading import ComponentReading
 from .utils import var_to_dict
 
 
+@dataclass(frozen=True)
+class DetectorReading(ComponentReading):
+    """
+    Read-only container for the neutrons that reach the detector.
+    """
+
+    distance: sc.Variable
+    name: str
+    data: sc.DataArray
+
+    def _repr_stats(self) -> str:
+        return f"visible={int(self.data.sum().value)}"
+
+    def __repr__(self) -> str:
+        return f"""DetectorReading: '{self.name}'
+  distance: {self.distance:c}
+  neutrons: {self._repr_stats()}
+"""
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __getitem__(
+        self, val: int | slice | tuple[str, int | slice]
+    ) -> DetectorReading:
+        if isinstance(val, int):
+            val = ('pulse', val)
+        return replace(self, data=self.data[val])
+
+
 class Detector(Component):
     """
     A detector component does not block any neutrons, it sees all neutrons passing
@@ -67,48 +97,21 @@ class Detector(Component):
             'name': self.name,
         }
 
-    def apply(self, neutrons: sc.DataArray) -> sc.DataArray:
+    def make_reading(self, neutrons: sc.DataGroup) -> DetectorReading:
+        return DetectorReading(distance=self.distance, name=self.name, data=neutrons)
+
+    def apply(self, neutrons: sc.DataGroup, time_limit: sc.Variable) -> sc.DataGroup:
         """
         Apply the detector to the given neutrons.
+        A detector does not modify the neutrons, it simply records them without
+        blocking any.
 
         Parameters
         ----------
         neutrons:
             The neutrons to which the detector will be applied.
-
-        Returns
-        -------
-        The modified neutrons.
+        time_limit:
+            The time limit for the neutrons to be considered as reaching the detector.
         """
-        # A detector does not modify the neutrons, it simply records them.
-        return neutrons
-
-
-@dataclass(frozen=True)
-class DetectorReading(ComponentReading):
-    """
-    Read-only container for the neutrons that reach the detector.
-    """
-
-    distance: sc.Variable
-    name: str
-    data: sc.DataArray
-
-    def _repr_stats(self) -> str:
-        return f"visible={int(self.data.sum().value)}"
-
-    def __repr__(self) -> str:
-        return f"""DetectorReading: '{self.name}'
-  distance: {self.distance:c}
-  neutrons: {self._repr_stats()}
-"""
-
-    def __str__(self) -> str:
-        return self.__repr__()
-
-    def __getitem__(
-        self, val: int | slice | tuple[str, int | slice]
-    ) -> DetectorReading:
-        if isinstance(val, int):
-            val = ('pulse', val)
-        return replace(self, data=self.data[val])
+        # neutrons.pop("blocked_by_me", None)
+        return neutrons, self.make_reading(neutrons)

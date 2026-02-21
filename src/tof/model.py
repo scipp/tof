@@ -307,44 +307,51 @@ class Model:
 
         # birth_time = self.source.data.coords['birth_time']
         # speed = self.source.data.coords['speed']
-        neutrons = self.source.data.copy(deep=False)
-        neutrons.masks['blocked_by_others'] = sc.zeros(
-            sizes=neutrons.sizes, unit=None, dtype=bool
-        )
-        neutrons.coords.update(
-            distance=self.source.distance, toa=self.coords['birth_time']
+        neutrons = sc.DataGroup(self.source.data.coords)
+        neutrons.update(
+            blocked_by_others=sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool),
+            distance=self.source.distance,
+            toa=neutrons['birth_time'],
         )
 
-        time_unit = neutrons.coords['birth_time'].unit
+        time_unit = neutrons['birth_time'].unit
 
-        results = {}
+        readings = {}
         # result_choppers = {}
         # result_detectors = {}
         time_limit = (
-            neutrons.coords['birth_time']
-            + (
-                (components[-1].distance - self.source.distance)
-                / neutrons.coords['speed']
-            ).to(unit=time_unit)
+            neutrons['birth_time']
+            + ((components[-1].distance - self.source.distance) / neutrons['speed']).to(
+                unit=time_unit
+            )
         ).max()
         for comp in components:
             # results = result_detectors if isinstance(c, Detector) else result_choppers
-            results[comp.name] = comp.as_dict()
-            data_at_comp = neutrons.copy(deep=False)
+            # results[comp.name] = comp.as_dict()
+            neutrons = neutrons.copy(deep=False)
             # tof = ((c.distance - self.source.distance) / neutrons.coords['speed']).to(
             #     unit=time_unit, copy=False
             # )
             # t = birth_time + tof
-            toa = neutrons.coords['toa'] + (
-                (comp.distance - neutrons.coords['distance']) / neutrons.coords['speed']
+            toa = neutrons['toa'] + (
+                (comp.distance - neutrons['distance']) / neutrons['speed']
             ).to(unit=time_unit, copy=False)
-            data_at_comp.coords['toa'] = toa
-            data_at_comp.coords['eto'] = toa % (1 / self.source.frequency).to(
+            neutrons['toa'] = toa
+            neutrons['eto'] = toa % (1 / self.source.frequency).to(
                 unit=time_unit, copy=False
             )
-            data_at_comp.coords['distance'] = comp.distance
+            neutrons['distance'] = comp.distance
 
-            data_at_comp = comp.apply(data_at_comp)
+            if "blocked_by_me" in neutrons:
+                # Because we use shallow copies, we do not want to do an in-place |=
+                # operation here
+                neutrons['blocked_by_others'] = neutrons[
+                    'blocked_by_others'
+                ] | neutrons.pop('blocked_by_me')
+
+            neutrons, reading = comp.apply(neutrons=neutrons, time_limit=time_limit)
+
+            readings[comp.name] = reading
 
             # # data_at_comp.coords['tof'] = tof
             # if isinstance(c, Detector):
@@ -358,12 +365,10 @@ class Model:
             # combined = initial_mask & m
             # data_at_comp.masks['blocked_by_others'] = ~initial_mask
             # data_at_comp.masks['blocked_by_me'] = ~m & initial_mask
-            initial_mask = combined
-            neutrons = data_at_comp
+            # initial_mask = combined
+            # neutrons = data_at_comp
 
-        return Result(
-            source=self.source, choppers=result_choppers, detectors=result_detectors
-        )
+        return Result(source=self.source, readings=readings)
 
     def __repr__(self) -> str:
         out = f"Model:\n  Source: {self.source}\n  Choppers:\n"

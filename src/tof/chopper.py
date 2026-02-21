@@ -37,6 +37,46 @@ def _array_or_none(container: dict, key: str) -> sc.Variable | None:
     )
 
 
+@dataclass(frozen=True)
+class ChopperReading(ComponentReading):
+    """
+    Read-only container for the neutrons that reach the chopper.
+    """
+
+    distance: sc.Variable
+    name: str
+    frequency: sc.Variable
+    open: sc.Variable
+    close: sc.Variable
+    phase: sc.Variable
+    open_times: sc.Variable
+    close_times: sc.Variable
+    data: sc.DataArray
+
+    def _repr_stats(self) -> str:
+        return (
+            f"visible={int(self.data.sum().value)}, "
+            f"blocked={int(self.data.masks['blocked_by_me'].sum().value)}"
+        )
+
+    def __repr__(self) -> str:
+        return f"""ChopperReading: '{self.name}'
+  distance: {self.distance:c}
+  frequency: {self.frequency:c}
+  phase: {self.phase:c}
+  cutouts: {len(self.open)}
+  neutrons: {self._repr_stats()}
+"""
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __getitem__(self, val: int | slice | tuple[str, int | slice]) -> ChopperReading:
+        if isinstance(val, int):
+            val = ('pulse', val)
+        return replace(self, data=self.data[val])
+
+
 class Chopper:
     """
     A chopper is a rotating device with cutouts that blocks the beam at certain times.
@@ -377,58 +417,41 @@ class Chopper:
             name=name,
         )
 
-    def apply(self, neutrons: sc.DataArray) -> sc.DataArray:
+    def make_reading(
+        self, neutrons: sc.DataGroup, time_limit: sc.Variable
+    ) -> ChopperReading:
         """
-        Apply the chopper's properties to the given data array.
+        Create a ChopperReading from the given neutrons that have been processed by this
+        chopper.
         """
-        # Apply the chopper's open/close times to the data
-        m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
-        to, tc = c.open_close_times(time_limit=time_limit)
-        results[c.name].update({'open_times': to, 'close_times': tc})
-        for i in range(len(to)):
-            m |= (t > to[i]) & (t < tc[i])
-        combined = initial_mask & m
-        data_at_comp.masks['blocked_by_others'] = ~initial_mask
-        data_at_comp.masks['blocked_by_me'] = ~m & initial_mask
-
-        return data
-
-
-@dataclass(frozen=True)
-class ChopperReading(ComponentReading):
-    """
-    Read-only container for the neutrons that reach the chopper.
-    """
-
-    distance: sc.Variable
-    name: str
-    frequency: sc.Variable
-    open: sc.Variable
-    close: sc.Variable
-    phase: sc.Variable
-    open_times: sc.Variable
-    close_times: sc.Variable
-    data: sc.DataArray
-
-    def _repr_stats(self) -> str:
-        return (
-            f"visible={int(self.data.sum().value)}, "
-            f"blocked={int(self.data.masks['blocked_by_me'].sum().value)}"
+        to, tc = self.open_close_times(time_limit=time_limit)
+        return ChopperReading(
+            distance=self.distance,
+            name=self.name,
+            frequency=self.frequency,
+            phase=self.phase,
+            open=self.open,
+            close=self.close,
+            open_times=to,
+            close_times=tc,
+            data=neutrons,
         )
 
-    def __repr__(self) -> str:
-        return f"""ChopperReading: '{self.name}'
-  distance: {self.distance:c}
-  frequency: {self.frequency:c}
-  phase: {self.phase:c}
-  cutouts: {len(self.open)}
-  neutrons: {self._repr_stats()}
-"""
+    def apply(
+        self, neutrons: sc.DataGroup, time_limit: sc.Variable
+    ) -> tuple[sc.DataGroup, ChopperReading]:
+        """
+        Apply the effect of the chopper to the given neutrons.
+        """
+        # Apply the chopper's open/close times to the data
+        m = sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool)
+        to, tc = self.open_close_times(time_limit=time_limit)
+        # neutrons.update({'open_times': to, 'close_times': tc})
+        for i in range(len(to)):
+            m |= (neutrons['toa'] > to[i]) & (neutrons['toa'] < tc[i])
+        # combined = initial_mask & m
+        # data_at_comp.masks['blocked_by_others'] = ~initial_mask
+        neutrons['blocked_by_me'] = (~m) & (~neutrons['blocked_by_others'])
 
-    def __str__(self) -> str:
-        return self.__repr__()
-
-    def __getitem__(self, val: int | slice | tuple[str, int | slice]) -> ChopperReading:
-        if isinstance(val, int):
-            val = ('pulse', val)
-        return replace(self, data=self.data[val])
+        reading = self.make_reading(neutrons, time_limit=time_limit)
+        return neutrons, reading

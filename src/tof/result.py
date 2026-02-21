@@ -51,41 +51,39 @@ class Result:
     ----------
     source:
         The source of neutrons.
-    choppers:
-        The choppers in the model.
-    detectors:
-        The detectors in the model.
+    results:
+        The state of neutrons at each component in the model.
     """
 
     def __init__(
         self,
         source: Source,
-        choppers: dict[str, Chopper],
-        detectors: dict[str, Detector],
+        readings: dict[str, dict],
     ):
         self._source = source.as_readonly()
-        self._choppers = {}
-        for name, chopper in choppers.items():
-            self._choppers[name] = ChopperReading(
-                distance=chopper["distance"],
-                name=chopper["name"],
-                frequency=chopper["frequency"],
-                open=chopper["open"],
-                close=chopper["close"],
-                phase=chopper["phase"],
-                open_times=chopper["open_times"],
-                close_times=chopper["close_times"],
-                data=chopper["data"],
-            )
+        self._components = MappingProxyType(readings)
+        # self._choppers = {}
+        # for name, chopper in choppers.items():
+        #     self._choppers[name] = ChopperReading(
+        #         distance=chopper["distance"],
+        #         name=chopper["name"],
+        #         frequency=chopper["frequency"],
+        #         open=chopper["open"],
+        #         close=chopper["close"],
+        #         phase=chopper["phase"],
+        #         open_times=chopper["open_times"],
+        #         close_times=chopper["close_times"],
+        #         data=chopper["data"],
+        #     )
 
-        self._detectors = {}
-        for name, det in detectors.items():
-            self._detectors[name] = DetectorReading(
-                distance=det["distance"], name=det["name"], data=det["data"]
-            )
+        # self._detectors = {}
+        # for name, det in detectors.items():
+        #     self._detectors[name] = DetectorReading(
+        #         distance=det["distance"], name=det["name"], data=det["data"]
+        #     )
 
-        self._choppers = MappingProxyType(self._choppers)
-        self._detectors = MappingProxyType(self._detectors)
+        # self._choppers = MappingProxyType(self._choppers)
+        # self._detectors = MappingProxyType(self._detectors)
 
     @property
     def choppers(self) -> MappingProxyType[str, ChopperReading]:
