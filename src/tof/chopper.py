@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING
 
 import scipp as sc
 
-from .reading import ComponentReading
+# from .reading import ComponentReading
+from .component import Component, ComponentReading
 from .utils import two_pi, var_to_dict
 
 if TYPE_CHECKING:
@@ -77,7 +78,7 @@ class ChopperReading(ComponentReading):
         return replace(self, data=self.data[val])
 
 
-class Chopper:
+class Chopper(Component):
     """
     A chopper is a rotating device with cutouts that blocks the beam at certain times.
 
