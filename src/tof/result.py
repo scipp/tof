@@ -12,6 +12,7 @@ import scipp as sc
 from matplotlib.collections import LineCollection
 
 from .chopper import Chopper, ChopperReading
+from .component import ComponentReading
 from .detector import Detector, DetectorReading
 from .source import Source, SourceParameters
 from .utils import Plot, one_mask
@@ -88,12 +89,24 @@ class Result:
     @property
     def choppers(self) -> MappingProxyType[str, ChopperReading]:
         """The choppers in the model."""
-        return self._choppers
+        return MappingProxyType(
+            {
+                key: comp
+                for key, comp in self._components.items()
+                if comp.kind == "chopper"
+            }
+        )
 
     @property
     def detectors(self) -> MappingProxyType[str, DetectorReading]:
         """The detectors in the model."""
-        return self._detectors
+        return MappingProxyType(
+            {
+                key: comp
+                for key, comp in self._components.items()
+                if comp.kind == "detector"
+            }
+        )
 
     @property
     def source(self) -> SourceParameters:
@@ -101,12 +114,12 @@ class Result:
         return self._source
 
     def __iter__(self):
-        return chain(self._choppers, self._detectors)
+        return iter(self._components)
 
-    def __getitem__(self, name: str) -> ChopperReading | DetectorReading:
-        if name not in self:
-            raise KeyError(f"No component with name {name} was found.")
-        return self._choppers[name] if name in self._choppers else self._detectors[name]
+    def __getitem__(self, name: str) -> ComponentReading:
+        # if name not in self:
+        #     raise KeyError(f"No component with name {name} was found.")
+        return self._components[name]
 
     def plot(
         self,
@@ -156,10 +169,7 @@ class Result:
             fig, ax = plt.subplots(figsize=figsize)
         else:
             fig = ax.get_figure()
-        components = sorted(
-            chain(self.choppers.values(), self.detectors.values()),
-            key=lambda c: c.distance,
-        )
+        components = sorted(self._components.values(), key=lambda c: c.distance)
         furthest_component = components[-1]
         source_dist = self.source.distance.value
         repeats = [1] + [2] * len(components)
@@ -248,35 +258,40 @@ class Result:
             toa_max = furthest_component.toa.max().value
         else:
             toa_max = furthest_component.toa.data.coords["toa"].max().value
+
+        for comp in self._components.values():
+            comp.plot(ax=ax, tmax=toa_max)
+
+        # dx = 0.05 * toa_max
+        # # Plot choppers
+        # for ch in self._choppers.values():
+        #     x0 = ch.open_times.values
+        #     x1 = ch.close_times.values
+        #     x = np.empty(3 * x0.size, dtype=x0.dtype)
+        #     x[0::3] = x0
+        #     x[1::3] = 0.5 * (x0 + x1)
+        #     x[2::3] = x1
+        #     x = np.concatenate(
+        #         ([[0]] if x[0] > 0 else [x[0:1]])
+        #         + [x]
+        #         + ([[toa_max + dx]] if x[-1] < toa_max else [])
+        #     )
+        #     y = np.full_like(x, ch.distance.value)
+        #     y[2::3] = None
+        #     inds = np.argsort(x)
+        #     ax.plot(x[inds], y[inds], color="k")
+        #     ax.text(
+        #         toa_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
+        #     )
+
+        # # Plot detectors
+        # for det in self._detectors.values():
+        #     ax.plot([0, toa_max], [det.distance.value] * 2, color="gray", lw=3)
+        #     ax.text(
+        #         0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
+        #     )
+
         dx = 0.05 * toa_max
-        # Plot choppers
-        for ch in self._choppers.values():
-            x0 = ch.open_times.values
-            x1 = ch.close_times.values
-            x = np.empty(3 * x0.size, dtype=x0.dtype)
-            x[0::3] = x0
-            x[1::3] = 0.5 * (x0 + x1)
-            x[2::3] = x1
-            x = np.concatenate(
-                ([[0]] if x[0] > 0 else [x[0:1]])
-                + [x]
-                + ([[toa_max + dx]] if x[-1] < toa_max else [])
-            )
-            y = np.full_like(x, ch.distance.value)
-            y[2::3] = None
-            inds = np.argsort(x)
-            ax.plot(x[inds], y[inds], color="k")
-            ax.text(
-                toa_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
-            )
-
-        # Plot detectors
-        for det in self._detectors.values():
-            ax.plot([0, toa_max], [det.distance.value] * 2, color="gray", lw=3)
-            ax.text(
-                0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
-            )
-
         ax.set(xlabel="Time [μs]", ylabel="Distance [m]")
         ax.set_xlim(0 - dx, toa_max + dx)
         if figsize is None:
@@ -288,13 +303,24 @@ class Result:
     def __repr__(self) -> str:
         out = (
             f"Result:\n  Source: {self.source.pulses} pulses, "
-            f"{self.source.neutrons} neutrons per pulse.\n  Choppers:\n"
+            f"{self.source.neutrons} neutrons per pulse.\n"
         )
-        for name, ch in self._choppers.items():
-            out += f"    {name}: {ch._repr_stats()}\n"
-        out += "  Detectors:\n"
-        for name, det in self._detectors.items():
-            out += f"    {name}: {det._repr_stats()}\n"
+        groups = {}
+        for comp in self._components.values():
+            if comp.kind not in groups:
+                groups[comp.kind] = []
+            groups[comp.kind].append(comp)
+
+        for group, comps in groups.items():
+            out += f"  {group.capitalize()}s:\n"
+            for comp in sorted(comps, key=lambda c: c.distance):
+                out += f"    {comp.name}: {comp._repr_stats()}\n"
+
+        # for name, ch in self._choppers.items():
+        #     out += f"    {name}: {ch._repr_stats()}\n"
+        # out += "  Detectors:\n"
+        # for name, det in self._detectors.items():
+        #     out += f"    {name}: {det._repr_stats()}\n"
         return out
 
     def __str__(self) -> str:

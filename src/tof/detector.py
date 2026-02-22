@@ -22,6 +22,10 @@ class DetectorReading(ComponentReading):
     name: str
     data: sc.DataArray
 
+    @property
+    def kind(self) -> str:
+        return "detector"
+
     def _repr_stats(self) -> str:
         return f"visible={int(self.data.sum().value)}"
 
@@ -40,6 +44,10 @@ class DetectorReading(ComponentReading):
         if isinstance(val, int):
             val = ('pulse', val)
         return replace(self, data=self.data[val])
+
+    def plot(self, ax, tmax) -> None:
+        ax.plot([0, tmax], [self.distance.value] * 2, color="gray", lw=3)
+        ax.text(0, self.distance.value, self.name, ha="left", va="bottom", color="gray")
 
 
 class Detector(Component):
@@ -98,10 +106,12 @@ class Detector(Component):
             'name': self.name,
         }
 
-    def make_reading(self, neutrons: sc.DataGroup) -> DetectorReading:
+    def make_reading(self, neutrons: sc.DataArray) -> DetectorReading:
         return DetectorReading(distance=self.distance, name=self.name, data=neutrons)
 
-    def apply(self, neutrons: sc.DataGroup, time_limit: sc.Variable) -> sc.DataGroup:
+    def apply(
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> tuple[sc.DataArray, DetectorReading]:
         """
         Apply the detector to the given neutrons.
         A detector does not modify the neutrons, it simply records them without

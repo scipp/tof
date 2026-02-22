@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from typing import TYPE_CHECKING
 
+import numpy as np
 import scipp as sc
 
 # from .reading import ComponentReading
@@ -54,6 +55,10 @@ class ChopperReading(ComponentReading):
     close_times: sc.Variable
     data: sc.DataArray
 
+    @property
+    def kind(self) -> str:
+        return "chopper"
+
     def _repr_stats(self) -> str:
         return (
             f"visible={int(self.data.sum().value)}, "
@@ -76,6 +81,27 @@ class ChopperReading(ComponentReading):
         if isinstance(val, int):
             val = ('pulse', val)
         return replace(self, data=self.data[val])
+
+    def plot(self, ax, tmax) -> None:
+        dx = 0.05 * tmax
+        x0 = self.open_times.values
+        x1 = self.close_times.values
+        x = np.empty(3 * x0.size, dtype=x0.dtype)
+        x[0::3] = x0
+        x[1::3] = 0.5 * (x0 + x1)
+        x[2::3] = x1
+        x = np.concatenate(
+            ([[0]] if x[0] > 0 else [x[0:1]])
+            + [x]
+            + ([[tmax + dx]] if x[-1] < tmax else [])
+        )
+        y = np.full_like(x, self.distance.value)
+        y[2::3] = None
+        inds = np.argsort(x)
+        ax.plot(x[inds], y[inds], color="k")
+        ax.text(
+            tmax, self.distance.value, self.name, ha="right", va="bottom", color="k"
+        )
 
 
 class Chopper(Component):
@@ -157,6 +183,7 @@ class Chopper(Component):
         self.distance = distance.to(dtype=float, copy=False)
         self.phase = phase.to(dtype=float, copy=False)
         self.name = name
+        self.kind = "chopper"
         super().__init__()
 
     @property
@@ -419,7 +446,7 @@ class Chopper(Component):
         )
 
     def make_reading(
-        self, neutrons: sc.DataGroup, time_limit: sc.Variable
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
     ) -> ChopperReading:
         """
         Create a ChopperReading from the given neutrons that have been processed by this
@@ -439,8 +466,8 @@ class Chopper(Component):
         )
 
     def apply(
-        self, neutrons: sc.DataGroup, time_limit: sc.Variable
-    ) -> tuple[sc.DataGroup, ChopperReading]:
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> tuple[sc.DataArray, ChopperReading]:
         """
         Apply the effect of the chopper to the given neutrons.
         """
@@ -449,10 +476,10 @@ class Chopper(Component):
         to, tc = self.open_close_times(time_limit=time_limit)
         # neutrons.update({'open_times': to, 'close_times': tc})
         for i in range(len(to)):
-            m |= (neutrons['toa'] > to[i]) & (neutrons['toa'] < tc[i])
+            m |= (neutrons.coords['toa'] > to[i]) & (neutrons.coords['toa'] < tc[i])
         # combined = initial_mask & m
         # data_at_comp.masks['blocked_by_others'] = ~initial_mask
-        neutrons['blocked_by_me'] = (~m) & (~neutrons['blocked_by_others'])
+        neutrons.masks['blocked_by_me'] = (~m) & (~neutrons.masks['blocked_by_others'])
 
         reading = self.make_reading(neutrons, time_limit=time_limit)
         return neutrons, reading

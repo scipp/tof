@@ -140,7 +140,9 @@ class Component:
     kind: str
 
     @abstractmethod
-    def apply(self, neutrons: sc.DataArray) -> sc.DataArray:
+    def apply(
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> tuple[sc.DataArray, ComponentReading]:
         """
         Apply the component to the given neutrons.
 

@@ -128,6 +128,7 @@ class Model:
         # self.choppers = {}
         # self.detectors = {}
         self.source = source
+        self.components = {}
         # for components, kind in ((choppers, Chopper), (detectors, Detector)):
         for comp in chain((choppers or ()), (detectors or ()), (components or ())):
             self.add(comp)
@@ -307,23 +308,26 @@ class Model:
 
         # birth_time = self.source.data.coords['birth_time']
         # speed = self.source.data.coords['speed']
-        neutrons = sc.DataGroup(self.source.data.coords)
-        neutrons.update(
-            blocked_by_others=sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool),
-            distance=self.source.distance,
-            toa=neutrons['birth_time'],
+        # neutrons = sc.DataGroup(self.source.data.coords)
+        neutrons = self.source.data.copy(deep=False)
+        neutrons.masks["blocked_by_others"] = sc.zeros(
+            sizes=neutrons.sizes, unit=None, dtype=bool
+        )
+        neutrons.coords.update(
+            distance=self.source.distance, toa=neutrons.coords['birth_time']
         )
 
-        time_unit = neutrons['birth_time'].unit
+        time_unit = neutrons.coords['birth_time'].unit
 
         readings = {}
         # result_choppers = {}
         # result_detectors = {}
         time_limit = (
-            neutrons['birth_time']
-            + ((components[-1].distance - self.source.distance) / neutrons['speed']).to(
-                unit=time_unit
-            )
+            neutrons.coords['birth_time']
+            + (
+                (components[-1].distance - self.source.distance)
+                / neutrons.coords['speed']
+            ).to(unit=time_unit)
         ).max()
         for comp in components:
             # results = result_detectors if isinstance(c, Detector) else result_choppers
@@ -333,21 +337,21 @@ class Model:
             #     unit=time_unit, copy=False
             # )
             # t = birth_time + tof
-            toa = neutrons['toa'] + (
-                (comp.distance - neutrons['distance']) / neutrons['speed']
+            toa = neutrons.coords['toa'] + (
+                (comp.distance - neutrons.coords['distance']) / neutrons.coords['speed']
             ).to(unit=time_unit, copy=False)
-            neutrons['toa'] = toa
-            neutrons['eto'] = toa % (1 / self.source.frequency).to(
+            neutrons.coords['toa'] = toa
+            neutrons.coords['eto'] = toa % (1 / self.source.frequency).to(
                 unit=time_unit, copy=False
             )
-            neutrons['distance'] = comp.distance
+            neutrons.coords['distance'] = comp.distance
 
-            if "blocked_by_me" in neutrons:
+            if "blocked_by_me" in neutrons.masks:
                 # Because we use shallow copies, we do not want to do an in-place |=
                 # operation here
-                neutrons['blocked_by_others'] = neutrons[
+                neutrons.masks['blocked_by_others'] = neutrons.masks[
                     'blocked_by_others'
-                ] | neutrons.pop('blocked_by_me')
+                ] | neutrons.masks.pop('blocked_by_me')
 
             neutrons, reading = comp.apply(neutrons=neutrons, time_limit=time_limit)
 
@@ -371,12 +375,24 @@ class Model:
         return Result(source=self.source, readings=readings)
 
     def __repr__(self) -> str:
-        out = f"Model:\n  Source: {self.source}\n  Choppers:\n"
-        for name, ch in self.choppers.items():
-            out += f"    {name}: {ch}\n"
-        out += "  Detectors:\n"
-        for name, det in self.detectors.items():
-            out += f"    {name}: {det}\n"
+        # out = f"Model:\n  Source: {self.source}\n  Choppers:\n"
+        # for name, ch in self.choppers.items():
+        #     out += f"    {name}: {ch}\n"
+        # out += "  Detectors:\n"
+        # for name, det in self.detectors.items():
+        #     out += f"    {name}: {det}\n"
+        # return out
+        out = f"Model:\n  Source: {self.source}\n"
+        groups = {}
+        for comp in self.components.values():
+            if comp.kind not in groups:
+                groups[comp.kind] = []
+            groups[comp.kind].append(comp)
+
+        for group, comps in groups.items():
+            out += f"  {group.capitalize()}s:\n"
+            for comp in sorted(comps, key=lambda c: c.distance):
+                out += f"    {comp.name}: {comp}\n"
         return out
 
     def __str__(self) -> str:
