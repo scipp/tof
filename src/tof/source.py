@@ -8,6 +8,7 @@ import numpy as np
 import plopp as pp
 import scipp as sc
 
+from .component import ComponentReading
 from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
@@ -452,8 +453,10 @@ class Source:
         return f1 + f2
 
     def as_readonly(self):
-        return SourceParameters(
-            data=self.data,
+        return SourceReading(
+            data=self.data.assign_masks(
+                blocked_by_others=sc.zeros_like(self.data.data, dtype=bool, unit=None)
+            ),
             facility=self.facility,
             neutrons=self.neutrons,
             frequency=self.frequency,
@@ -485,7 +488,7 @@ class Source:
 
 
 @dataclass(frozen=True)
-class SourceParameters:
+class SourceReading(ComponentReading):
     """
     Read-only container for the parameters of a source.
     """
@@ -496,3 +499,14 @@ class SourceParameters:
     frequency: sc.Variable
     pulses: int
     distance: sc.Variable
+
+    @property
+    def kind(self) -> str:
+        return "source"
+
+    def plot_on_time_distance_diagram(self, ax, pulse) -> None:
+        birth_time = self.data.coords["birth_time"]["pulse", pulse]
+        tmin = birth_time.min().value
+        dist = self.distance.value
+        ax.plot([tmin, birth_time.max().value], [dist] * 2, color="gray", lw=3)
+        ax.text(tmin, dist, "Pulse", ha="left", va="top", color="gray")

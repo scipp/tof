@@ -14,8 +14,22 @@ from matplotlib.collections import LineCollection
 from .chopper import Chopper, ChopperReading
 from .component import ComponentReading
 from .detector import Detector, DetectorReading
-from .source import Source, SourceParameters
+from .source import SourceReading
 from .utils import Plot, one_mask
+
+
+def _get_rays(
+    components: list[ComponentReading], pulse: int, inds: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    x = np.stack(
+        [comp.data["pulse", pulse].coords["toa"].values[inds] for comp in components],
+        axis=1,
+    )
+    y = np.stack(
+        [np.full_like(x[:, 0], comp.distance.value) for comp in components],
+        axis=1,
+    )
+    return x, y
 
 
 def _add_rays(
@@ -56,12 +70,8 @@ class Result:
         The state of neutrons at each component in the model.
     """
 
-    def __init__(
-        self,
-        source: Source,
-        readings: dict[str, dict],
-    ):
-        self._source = source.as_readonly()
+    def __init__(self, source: SourceReading, readings: dict[str, dict]):
+        self._source = source
         self._components = MappingProxyType(readings)
         # self._choppers = {}
         # for name, chopper in choppers.items():
@@ -109,7 +119,7 @@ class Result:
         )
 
     @property
-    def source(self) -> SourceParameters:
+    def source(self) -> SourceReading:
         """The source of neutrons."""
         return self._source
 
@@ -169,10 +179,11 @@ class Result:
             fig, ax = plt.subplots(figsize=figsize)
         else:
             fig = ax.get_figure()
-        components = sorted(self._components.values(), key=lambda c: c.distance)
+
+        components = sorted(
+            chain((self.source,), self._components.values()), key=lambda c: c.distance
+        )
         furthest_component = components[-1]
-        source_dist = self.source.distance.value
-        repeats = [1] + [2] * len(components)
 
         wavelengths = sc.DataArray(
             data=furthest_component.data.coords["wavelength"],
@@ -183,9 +194,9 @@ class Result:
         rng = np.random.default_rng(seed)
 
         for i in range(self._source.data.sizes["pulse"]):
-            source_data = self.source.data["pulse", i]
             component_data = furthest_component.data["pulse", i]
-            ids = np.arange(self.source.neutrons)
+            ids = component_data.coords["id"].values
+
             # Plot visible rays
             blocked = one_mask(component_data.masks).values
             nblocked = int(blocked.sum())
@@ -195,17 +206,12 @@ class Result:
                     size=min(self.source.neutrons - nblocked, visible_rays),
                     replace=False,
                 )
-
-                xstart = source_data.coords["birth_time"].values[inds]
-                xend = component_data.coords["toa"].values[inds]
-                ystart = np.full_like(xstart, source_dist)
-                yend = np.full_like(ystart, furthest_component.distance.value)
-
+                x, y = _get_rays(components, pulse=i, inds=inds)
                 _add_rays(
                     ax=ax,
-                    x=np.stack((xstart, xend), axis=1),
-                    y=np.stack((ystart, yend), axis=1),
-                    color=source_data.coords["wavelength"].values[inds],
+                    x=x,
+                    y=y,
+                    color=component_data.coords["wavelength"].values[inds],
                     cbar=cbar and (i == 0),
                     cmap=cmap,
                     vmin=wmin.value if vmin is None else vmin,
@@ -217,79 +223,28 @@ class Result:
             inds = rng.choice(
                 ids[blocked], size=min(blocked_rays, nblocked), replace=False
             )
-            x = np.repeat(
-                np.stack(
-                    [source_data.coords["birth_time"].values[inds]]
-                    + [
-                        c.data.coords["toa"]["pulse", i].values[inds]
-                        for c in components
-                    ],
-                    axis=1,
-                ),
-                repeats,
+            x, y = _get_rays(components, pulse=i, inds=inds)
+            blocked_by_others = np.stack(
+                [
+                    comp.data["pulse", i].masks["blocked_by_others"].values[inds]
+                    for comp in components
+                ],
                 axis=1,
             )
-            y = np.repeat(
-                np.stack(
-                    [np.full_like(x[:, 0], source_dist)]
-                    + [np.full_like(x[:, 0], c.distance.value) for c in components],
-                    axis=1,
-                ),
-                repeats,
-                axis=1,
-            )
-            for j, c in enumerate(components):
-                comp_data = c.data["pulse", i]
-                m_others = comp_data.masks["blocked_by_others"].values[inds]
-                x[:, 2 * j + 1][m_others] = np.nan
-                y[:, 2 * j + 1][m_others] = np.nan
-                if "blocked_by_me" in comp_data.masks:
-                    m_me = comp_data.masks["blocked_by_me"].values[inds]
-                    x[:, 2 * j + 2][m_me] = np.nan
-                    y[:, 2 * j + 2][m_me] = np.nan
+            x[blocked_by_others] = np.nan
+            y[blocked_by_others] = np.nan
             _add_rays(ax=ax, x=x, y=y, color="lightgray", zorder=-1)
 
             # Plot pulse
-            time_coord = source_data.coords["birth_time"].values
-            tmin = time_coord.min()
-            ax.plot([tmin, time_coord.max()], [source_dist] * 2, color="gray", lw=3)
-            ax.text(tmin, source_dist, "Pulse", ha="left", va="top", color="gray")
+            self.source.plot_on_time_distance_diagram(ax, pulse=i)
         if furthest_component.toa.data.sum().value > 0:
             toa_max = furthest_component.toa.max().value
         else:
             toa_max = furthest_component.toa.data.coords["toa"].max().value
 
+        # Plot components
         for comp in self._components.values():
-            comp.plot(ax=ax, tmax=toa_max)
-
-        # dx = 0.05 * toa_max
-        # # Plot choppers
-        # for ch in self._choppers.values():
-        #     x0 = ch.open_times.values
-        #     x1 = ch.close_times.values
-        #     x = np.empty(3 * x0.size, dtype=x0.dtype)
-        #     x[0::3] = x0
-        #     x[1::3] = 0.5 * (x0 + x1)
-        #     x[2::3] = x1
-        #     x = np.concatenate(
-        #         ([[0]] if x[0] > 0 else [x[0:1]])
-        #         + [x]
-        #         + ([[toa_max + dx]] if x[-1] < toa_max else [])
-        #     )
-        #     y = np.full_like(x, ch.distance.value)
-        #     y[2::3] = None
-        #     inds = np.argsort(x)
-        #     ax.plot(x[inds], y[inds], color="k")
-        #     ax.text(
-        #         toa_max, ch.distance.value, ch.name, ha="right", va="bottom", color="k"
-        #     )
-
-        # # Plot detectors
-        # for det in self._detectors.values():
-        #     ax.plot([0, toa_max], [det.distance.value] * 2, color="gray", lw=3)
-        #     ax.text(
-        #         0, det.distance.value, det.name, ha="left", va="bottom", color="gray"
-        #     )
+            comp.plot_on_time_distance_diagram(ax=ax, tmax=toa_max)
 
         dx = 0.05 * toa_max
         ax.set(xlabel="Time [μs]", ylabel="Distance [m]")
@@ -316,11 +271,6 @@ class Result:
             for comp in sorted(comps, key=lambda c: c.distance):
                 out += f"    {comp.name}: {comp._repr_stats()}\n"
 
-        # for name, ch in self._choppers.items():
-        #     out += f"    {name}: {ch._repr_stats()}\n"
-        # out += "  Detectors:\n"
-        # for name, det in self._detectors.items():
-        #     out += f"    {name}: {det._repr_stats()}\n"
         return out
 
     def __str__(self) -> str:

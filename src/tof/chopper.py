@@ -82,7 +82,7 @@ class ChopperReading(ComponentReading):
             val = ('pulse', val)
         return replace(self, data=self.data[val])
 
-    def plot(self, ax, tmax) -> None:
+    def plot_on_time_distance_diagram(self, ax, tmax) -> None:
         dx = 0.05 * tmax
         x0 = self.open_times.values
         x1 = self.close_times.values
@@ -445,7 +445,7 @@ class Chopper(Component):
             name=name,
         )
 
-    def make_reading(
+    def as_readonly(
         self, neutrons: sc.DataArray, time_limit: sc.Variable
     ) -> ChopperReading:
         """
@@ -481,5 +481,4 @@ class Chopper(Component):
         # data_at_comp.masks['blocked_by_others'] = ~initial_mask
         neutrons.masks['blocked_by_me'] = (~m) & (~neutrons.masks['blocked_by_others'])
 
-        reading = self.make_reading(neutrons, time_limit=time_limit)
-        return neutrons, reading
+        return neutrons, self.as_readonly(neutrons, time_limit=time_limit)

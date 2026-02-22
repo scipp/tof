@@ -372,7 +372,7 @@ class Model:
             # initial_mask = combined
             # neutrons = data_at_comp
 
-        return Result(source=self.source, readings=readings)
+        return Result(source=self.source.as_readonly(), readings=readings)
 
     def __repr__(self) -> str:
         # out = f"Model:\n  Source: {self.source}\n  Choppers:\n"

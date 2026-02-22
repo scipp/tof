@@ -67,11 +67,7 @@ class ReadingField:
 
 def _make_reading_field(da: sc.DataArray, dim: str) -> ReadingField:
     return ReadingField(
-        data=sc.DataArray(
-            data=da.data,
-            coords={dim: da.coords[dim]},
-            masks=da.masks,
-        ),
+        data=sc.DataArray(data=da.data, coords={dim: da.coords[dim]}, masks=da.masks),
         dim=dim,
     )
 

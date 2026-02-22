@@ -45,7 +45,7 @@ class DetectorReading(ComponentReading):
             val = ('pulse', val)
         return replace(self, data=self.data[val])
 
-    def plot(self, ax, tmax) -> None:
+    def plot_on_time_distance_diagram(self, ax, tmax) -> None:
         ax.plot([0, tmax], [self.distance.value] * 2, color="gray", lw=3)
         ax.text(0, self.distance.value, self.name, ha="left", va="bottom", color="gray")
 
@@ -106,7 +106,7 @@ class Detector(Component):
             'name': self.name,
         }
 
-    def make_reading(self, neutrons: sc.DataArray) -> DetectorReading:
+    def as_readonly(self, neutrons: sc.DataArray) -> DetectorReading:
         return DetectorReading(distance=self.distance, name=self.name, data=neutrons)
 
     def apply(
@@ -125,4 +125,4 @@ class Detector(Component):
             The time limit for the neutrons to be considered as reaching the detector.
         """
         # neutrons.pop("blocked_by_me", None)
-        return neutrons, self.make_reading(neutrons)
+        return neutrons, self.as_readonly(neutrons)
