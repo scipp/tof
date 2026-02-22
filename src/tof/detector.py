@@ -7,8 +7,6 @@ from dataclasses import dataclass, replace
 import scipp as sc
 
 from .component import Component, ComponentReading
-
-# from .reading import ComponentReading
 from .utils import var_to_dict
 
 

@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import scipp as sc
 
-# from .reading import ComponentReading
 from .component import Component, ComponentReading
 from .utils import two_pi, var_to_dict
 
