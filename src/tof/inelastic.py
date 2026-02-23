@@ -74,7 +74,8 @@ class InelasticSample(Component):
         self.name = name
         if delta_e.ndim != 1:
             raise ValueError("delta_e must be a 1D array.")
-        self.probabilities = delta_e.data / delta_e.sum().value
+        self.probabilities = delta_e.values
+        self.probabilities = self.probabilities / self.probabilities.sum()
         dim = delta_e.dim
         self.energies = delta_e.coords[dim]
         # TODO: check for bin edges
@@ -114,6 +115,7 @@ class InelasticSample(Component):
             delta_e=sc.scalar(
                 params["delta_e"]["value"], unit=params["delta_e"]["unit"]
             ),
+            seed=params.get("seed"),
         )
 
     def as_json(self) -> dict:
@@ -149,13 +151,18 @@ class InelasticSample(Component):
         """
         # neutrons.pop("blocked_by_me", None)
         # return neutrons, self.as_readonly(neutrons)
-        n = neutrons.sizes["pulse"]
-        inds = self._rng.choice(len(self.delta_e), size=n, p=self.probabilities.values)
-        de = self.energies.values[inds] + self._rng.normal(
-            scale=self._noise_scale, size=n
+        w_initial = sc.reciprocal(neutrons.coords["wavelength"] ** 2)
+
+        n = neutrons.shape
+        inds = self._rng.choice(len(self.energies), size=n, p=self.probabilities)
+        de = sc.array(
+            dims=w_initial.dims,
+            values=self.energies.values[inds]
+            + self._rng.normal(scale=self._noise_scale, size=n),
+            unit=self.energies.unit,
         )
         # Convert energy change to wavelength change
-        w_initial = sc.reciprocal(neutrons.coords["wavelength"] ** 2)
+        # w_initial = sc.reciprocal(neutrons.coords["wavelength"] ** 2)
         w_final = sc.reciprocal(
             sc.sqrt(
                 ((2 * sc.constants.m_n / (sc.constants.h**2)) * de).to(
