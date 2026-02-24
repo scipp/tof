@@ -24,15 +24,19 @@ def _get_rays(
     x = []
     y = []
     c = []
-    xstart = components[0].data["pulse", pulse].coords["toa"].values[inds]
+    data = components[0].data["pulse", pulse]
+    # TODO optimize: should not index multiple times
+    xstart = data.coords["toa"].values[inds]
     ystart = np.full_like(xstart, components[0].distance.value)
+    color = data.coords["wavelength"].values[inds]
     for comp in components[1:]:
         xend = comp.data["pulse", pulse].coords["toa"].values[inds]
         yend = np.full_like(xend, comp.distance.value)
         x.append([xstart, xend])
         y.append([ystart, yend])
-        c.append(comp.data["pulse", pulse].coords["wavelength"].values[inds])
+        c.append(color)
         xstart, ystart = xend, yend
+        color = comp.data["pulse", pulse].coords["wavelength"].values[inds]
 
         # comp_data = compo.data["pulse", pulse]
         # x.append(comp_data.coords["toa"].values[inds])
@@ -61,7 +65,7 @@ def _add_rays(
     cax: plt.Axes | None = None,
     zorder: int = 1,
 ):
-    print(x.shape, y.shape)
+    # print(x.shape, y.shape)
     # print(np.stack((x, y), axis=2).shape)
     x, y = (np.array(a).transpose((0, 2, 1)).reshape((-1, 2)) for a in (x, y))
     coll = LineCollection(np.stack((x, y), axis=2), zorder=zorder)
