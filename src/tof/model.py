@@ -4,29 +4,17 @@
 from __future__ import annotations
 
 import warnings
-from collections import defaultdict
 from itertools import chain
 
 import scipp as sc
 
-# from tof.component import Component
-from .chopper import AntiClockwise, Chopper, Clockwise
+from .chopper import Chopper
 from .component import Component
 from .detector import Detector
 from .result import Result
 from .source import Source
 
 ComponentType = Chopper | Detector
-
-
-# def _array_or_none(results: dict, key: str) -> sc.Variable | None:
-#     return (
-#         sc.array(
-#             dims=["cutout"], values=results[key]["value"], unit=results[key]["unit"]
-#         )
-#         if key in results
-#         else None
-#     )
 
 
 def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]:
@@ -46,7 +34,6 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
         classes for details.
     """
     components = []
-    # detectors = []
     mapping = {"chopper": Chopper, "detector": Detector}
     for name, comp in instrument.items():
         if comp["type"] == "source":
@@ -56,48 +43,6 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
                 f"Unknown component type: {comp['type']} for component {name}. "
             )
         components.append(mapping[comp["type"]].from_json(name=name, params=comp))
-        # component_class = comp_mapping[comp["type"]]
-        # if comp["type"] == "chopper":
-        #     direction = comp["direction"].lower()
-        #     if direction == "clockwise":
-        #         _dir = Clockwise
-        #     elif any(x in direction for x in ("anti", "counter")):
-        #         _dir = AntiClockwise
-        #     else:
-        #         raise ValueError(
-        #             f"Chopper direction must be 'clockwise' or 'anti-clockwise', got "
-        #             f"'{comp['direction']}' for component {name}."
-        #         )
-        #     choppers.append(
-        #         Chopper(
-        #             frequency=comp["frequency"]["value"]
-        #             * sc.Unit(comp["frequency"]["unit"]),
-        #             direction=_dir,
-        #             open=_array_or_none(comp, "open"),
-        #             close=_array_or_none(comp, "close"),
-        #             centers=_array_or_none(comp, "centers"),
-        #             widths=_array_or_none(comp, "widths"),
-        #             phase=comp["phase"]["value"] * sc.Unit(comp["phase"]["unit"]),
-        #             distance=comp["distance"]["value"]
-        #             * sc.Unit(comp["distance"]["unit"]),
-        #             name=name,
-        #         )
-        #     )
-        # elif comp["type"] == "detector":
-        #     detectors.append(
-        #         Detector(
-        #             distance=comp["distance"]["value"]
-        #             * sc.Unit(comp["distance"]["unit"]),
-        #             name=name,
-        #         )
-        #     )
-        # elif comp["type"] == "source":
-        #     continue
-        # else:
-        #     raise ValueError(
-        #         f"Unknown component type: {comp['type']} for component {name}. "
-        #         "Supported types are 'chopper', 'detector', and 'source'."
-        #     )
     return components
 
 
@@ -127,39 +72,10 @@ class Model:
         choppers: list[Chopper] | tuple[Chopper, ...] | None = None,
         detectors: list[Detector] | tuple[Detector, ...] | None = None,
     ):
-        # self.choppers = {}
-        # self.detectors = {}
         self.source = source
         self.components = {}
-        # for components, kind in ((choppers, Chopper), (detectors, Detector)):
         for comp in chain((choppers or ()), (detectors or ()), (components or ())):
             self.add(comp)
-
-    # @property
-    # def choppers(self) -> dict[str, Chopper]:
-    #     """
-    #     Return a dictionary of all choppers in the model.
-    #     This is meant for retro-compatibility with older versions of the code, and will
-    #     be removed in a future version.
-    #     """
-    #     return {
-    #         name: comp
-    #         for name, comp in self.components.items()
-    #         if comp.kind == "chopper"
-    #     }
-
-    # @property
-    # def detectors(self) -> dict[str, Detector]:
-    #     """
-    #     Return a dictionary of all detectors in the model.
-    #     This is meant for retro-compatibility with older versions of the code, and will
-    #     be removed in a future version.
-    #     """
-    #     return {
-    #         name: comp
-    #         for name, comp in self.components.items()
-    #         if comp.kind == "detector"
-    #     }
 
     @classmethod
     def from_json(cls, filename: str) -> Model:
@@ -245,11 +161,6 @@ class Model:
         component:
             A chopper or detector.
         """
-        # if not isinstance(component, (Chopper | Detector)):
-        #     raise TypeError(
-        #         f"Cannot add component of type {type(component)} to the model. "
-        #         "Only Chopper and Detector instances are allowed."
-        #     )
         # Note that the name "source" is reserved for the source.
         if component.name in (*self.components, "source"):
             raise KeyError(
@@ -257,7 +168,6 @@ class Model:
                 "If you wish to replace/update an existing component, use "
                 "``model.components['name'] = new_component``."
             )
-        # results = self.choppers if isinstance(component, Chopper) else self.detectors
         self.components[component.name] = component
 
     def remove(self, name: str):
@@ -270,23 +180,6 @@ class Model:
             The name of the component to remove.
         """
         del self.components[name]
-        # if name in self.choppers:
-        #     del self.choppers[name]
-        # elif name in self.detectors:
-        #     del self.detectors[name]
-        # else:
-        #     raise KeyError(f"No component with name {name} was found.")
-
-    # def __iter__(self):
-    #     return chain(self.choppers, self.detectors)
-
-    # def __getitem__(self, name) -> Chopper | Detector:
-    #     if name not in self:
-    #         raise KeyError(f"No component with name {name} was found.")
-    #     return self.choppers[name] if name in self.choppers else self.detectors[name]
-
-    # def __delitem__(self, name) -> None:
-    #     self.remove(name)
 
     def run(self) -> Result:
         """
@@ -308,9 +201,6 @@ class Model:
                 "itself. Please check the distances of the components."
             )
 
-        # birth_time = self.source.data.coords['birth_time']
-        # speed = self.source.data.coords['speed']
-        # neutrons = sc.DataGroup(self.source.data.coords)
         neutrons = self.source.data.copy(deep=False)
         neutrons.masks["blocked_by_others"] = sc.zeros(
             sizes=neutrons.sizes, unit=None, dtype=bool
@@ -322,8 +212,6 @@ class Model:
         time_unit = neutrons.coords['birth_time'].unit
 
         readings = {}
-        # result_choppers = {}
-        # result_detectors = {}
         time_limit = (
             neutrons.coords['birth_time']
             + (
@@ -332,13 +220,7 @@ class Model:
             ).to(unit=time_unit)
         ).max()
         for comp in components:
-            # results = result_detectors if isinstance(c, Detector) else result_choppers
-            # results[comp.name] = comp.as_dict()
             neutrons = neutrons.copy(deep=False)
-            # tof = ((c.distance - self.source.distance) / neutrons.coords['speed']).to(
-            #     unit=time_unit, copy=False
-            # )
-            # t = birth_time + tof
             toa = neutrons.coords['toa'] + (
                 (comp.distance - neutrons.coords['distance']) / neutrons.coords['speed']
             ).to(unit=time_unit, copy=False)
@@ -356,34 +238,11 @@ class Model:
                 ] | neutrons.masks.pop('blocked_by_me')
 
             neutrons, reading = comp.apply(neutrons=neutrons, time_limit=time_limit)
-
             readings[comp.name] = reading
-
-            # # data_at_comp.coords['tof'] = tof
-            # if isinstance(c, Detector):
-            #     data_at_comp.masks['blocked_by_others'] = ~initial_mask
-            #     continue
-            # m = sc.zeros(sizes=t.sizes, unit=None, dtype=bool)
-            # to, tc = c.open_close_times(time_limit=time_limit)
-            # results[c.name].update({'open_times': to, 'close_times': tc})
-            # for i in range(len(to)):
-            #     m |= (t > to[i]) & (t < tc[i])
-            # combined = initial_mask & m
-            # data_at_comp.masks['blocked_by_others'] = ~initial_mask
-            # data_at_comp.masks['blocked_by_me'] = ~m & initial_mask
-            # initial_mask = combined
-            # neutrons = data_at_comp
 
         return Result(source=self.source.as_readonly(), readings=readings)
 
     def __repr__(self) -> str:
-        # out = f"Model:\n  Source: {self.source}\n  Choppers:\n"
-        # for name, ch in self.choppers.items():
-        #     out += f"    {name}: {ch}\n"
-        # out += "  Detectors:\n"
-        # for name, det in self.detectors.items():
-        #     out += f"    {name}: {det}\n"
-        # return out
         out = f"Model:\n  Source: {self.source}\n"
         groups = {}
         for comp in self.components.values():

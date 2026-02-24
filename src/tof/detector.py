@@ -122,5 +122,4 @@ class Detector(Component):
         time_limit:
             The time limit for the neutrons to be considered as reaching the detector.
         """
-        # neutrons.pop("blocked_by_me", None)
         return neutrons, self.as_readonly(neutrons)

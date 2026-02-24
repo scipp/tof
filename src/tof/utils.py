@@ -69,6 +69,34 @@ def energy_to_speed(x: sc.Variable, unit="m/s") -> sc.Variable:
     return sc.sqrt(x / (0.5 * const.m_n)).to(unit=unit)
 
 
+def wavelength_to_energy(x: sc.Variable, unit="meV") -> sc.Variable:
+    """
+    Convert neutron wavelengths to energies.
+
+    Parameters
+    ----------
+    x:
+        Input wavelengths.
+    unit:
+        The unit of the output energies.
+    """
+    return speed_to_energy(wavelength_to_speed(x)).to(unit=unit)
+
+
+def energy_to_wavelength(x: sc.Variable, unit="angstrom") -> sc.Variable:
+    """
+    Convert neutron energies to wavelengths.
+
+    Parameters
+    ----------
+    x:
+        Input energies.
+    unit:
+        The unit of the output wavelengths.
+    """
+    return speed_to_wavelength(energy_to_speed(x)).to(unit=unit)
+
+
 def one_mask(
     masks: MappingProxyType[str, sc.Variable], unit: str | None = None
 ) -> sc.Variable:

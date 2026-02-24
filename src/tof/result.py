@@ -11,9 +11,9 @@ import numpy as np
 import scipp as sc
 from matplotlib.collections import LineCollection
 
-from .chopper import Chopper, ChopperReading
+from .chopper import ChopperReading
 from .component import ComponentReading
-from .detector import Detector, DetectorReading
+from .detector import DetectorReading
 from .source import SourceReading
 from .utils import Plot, one_mask
 
@@ -38,18 +38,6 @@ def _get_rays(
         xstart, ystart = xend, yend
         color = comp.data["pulse", pulse].coords["wavelength"].values[inds]
 
-        # comp_data = compo.data["pulse", pulse]
-        # x.append(comp_data.coords["toa"].values[inds])
-        # y.append(np.full_like(x[-1], comp.distance.value))
-        # c.append(comp_data.coords["wavelength"].values[inds])
-    # x = np.stack(
-    #     [comp.data["pulse", pulse].coords["toa"].values[inds] for comp in components],
-    #     axis=1,
-    # )
-    # y = np.stack(
-    #     [np.full_like(x[:, 0], comp.distance.value) for comp in components],
-    #     axis=1,
-    # )
     return np.array(x), np.array(y), np.array(c)
 
 
@@ -65,8 +53,6 @@ def _add_rays(
     cax: plt.Axes | None = None,
     zorder: int = 1,
 ):
-    # print(x.shape, y.shape)
-    # print(np.stack((x, y), axis=2).shape)
     x, y = (np.array(a).transpose((0, 2, 1)).reshape((-1, 2)) for a in (x, y))
     coll = LineCollection(np.stack((x, y), axis=2), zorder=zorder)
     if isinstance(color, str):
@@ -97,28 +83,6 @@ class Result:
     def __init__(self, source: SourceReading, readings: dict[str, dict]):
         self._source = source
         self._components = MappingProxyType(readings)
-        # self._choppers = {}
-        # for name, chopper in choppers.items():
-        #     self._choppers[name] = ChopperReading(
-        #         distance=chopper["distance"],
-        #         name=chopper["name"],
-        #         frequency=chopper["frequency"],
-        #         open=chopper["open"],
-        #         close=chopper["close"],
-        #         phase=chopper["phase"],
-        #         open_times=chopper["open_times"],
-        #         close_times=chopper["close_times"],
-        #         data=chopper["data"],
-        #     )
-
-        # self._detectors = {}
-        # for name, det in detectors.items():
-        #     self._detectors[name] = DetectorReading(
-        #         distance=det["distance"], name=det["name"], data=det["data"]
-        #     )
-
-        # self._choppers = MappingProxyType(self._choppers)
-        # self._detectors = MappingProxyType(self._detectors)
 
     @property
     def choppers(self) -> MappingProxyType[str, ChopperReading]:
@@ -151,8 +115,6 @@ class Result:
         return iter(self._components)
 
     def __getitem__(self, name: str) -> ComponentReading:
-        # if name not in self:
-        #     raise KeyError(f"No component with name {name} was found.")
         return self._components[name]
 
     def plot(
@@ -232,7 +194,6 @@ class Result:
                     replace=False,
                 )
                 x, y, c = _get_rays(components, pulse=i, inds=inds)
-                print(x.shape, y.shape, c.shape)
                 _add_rays(
                     ax=ax,
                     x=x,

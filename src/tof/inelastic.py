@@ -9,7 +9,12 @@ import plopp as pp
 import scipp as sc
 
 from .component import Component, ComponentReading
-from .utils import var_to_dict, wavelength_to_speed
+from .utils import (
+    energy_to_wavelength,
+    var_to_dict,
+    wavelength_to_energy,
+    wavelength_to_speed,
+)
 
 
 @dataclass(frozen=True)
@@ -47,9 +52,6 @@ class InelasticSampleReading(ComponentReading):
 
     def plot_on_time_distance_diagram(self, ax, tmax) -> None:
         ax.plot([0, tmax], [self.distance.value] * 2, color="tab:brown", lw=4)
-        # ax.plot(
-        #     [0, tmax], [self.distance.value] * 2, color="tab:cyan", lw=3, ls='dashed'
-        # )
         ax.text(
             0, self.distance.value, self.name, ha="left", va="bottom", color="tab:brown"
         )
@@ -66,6 +68,13 @@ class InelasticSample(Component):
         The distance from the source to the inelastic sample.
     name:
         The name of the inelastic sample.
+    delta_e:
+        The change in energy of the neutrons when they pass through the inelastic
+        sample. The values of the array represent the probability of a neutron to have
+        its energy changed by the corresponding amount in the coordinates. The
+        coordinate values should be in energy units, and the array should be 1D.
+    seed:
+        The seed for the random number generator used to apply the energy change.
     """
 
     def __init__(
@@ -95,11 +104,6 @@ class InelasticSample(Component):
 
     def plot(self, **kwargs) -> pp.FigureLike:
         return pp.xyplot(self.energies, self.probabilities, **kwargs)
-
-    # def __eq__(self, other: object) -> bool:
-    #     if not isinstance(other, Detector):
-    #         return NotImplemented
-    #     return self.name == other.name and sc.identical(self.distance, other.distance)
 
     def as_dict(self) -> dict:
         """
@@ -154,9 +158,7 @@ class InelasticSample(Component):
             The time limit for the neutrons to be considered as reaching the inelastic
             sample.
         """
-        # neutrons.pop("blocked_by_me", None)
-        # return neutrons, self.as_readonly(neutrons)
-        w_initial = sc.reciprocal(neutrons.coords["wavelength"] ** 2)
+        w_initial = neutrons.coords["wavelength"]
 
         n = neutrons.shape
         inds = self._rng.choice(len(self.energies), size=n, p=self.probabilities)
@@ -167,14 +169,8 @@ class InelasticSample(Component):
             unit=self.energies.unit,
         )
         # Convert energy change to wavelength change
-        # w_initial = sc.reciprocal(neutrons.coords["wavelength"] ** 2)
-        w_final = sc.reciprocal(
-            sc.sqrt(
-                ((2 * sc.constants.m_n / (sc.constants.h**2)) * de).to(
-                    unit=w_initial.unit
-                )
-                + w_initial
-            )
+        w_final = energy_to_wavelength(
+            wavelength_to_energy(w_initial, unit=de.unit) + de, unit=w_initial.unit
         )
         neutrons = neutrons.assign_coords(
             wavelength=w_final, speed=wavelength_to_speed(w_final)

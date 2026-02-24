@@ -473,11 +473,8 @@ class Chopper(Component):
         # Apply the chopper's open/close times to the data
         m = sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool)
         to, tc = self.open_close_times(time_limit=time_limit)
-        # neutrons.update({'open_times': to, 'close_times': tc})
         for i in range(len(to)):
             m |= (neutrons.coords['toa'] > to[i]) & (neutrons.coords['toa'] < tc[i])
-        # combined = initial_mask & m
-        # data_at_comp.masks['blocked_by_others'] = ~initial_mask
         neutrons.masks['blocked_by_me'] = (~m) & (~neutrons.masks['blocked_by_others'])
 
         return neutrons, self.as_readonly(neutrons, time_limit=time_limit)
