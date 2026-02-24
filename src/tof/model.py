@@ -49,6 +49,8 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
     # detectors = []
     mapping = {"chopper": Chopper, "detector": Detector}
     for name, comp in instrument.items():
+        if comp["type"] == "source":
+            continue
         if comp["type"] not in mapping:
             raise ValueError(
                 f"Unknown component type: {comp['type']} for component {name}. "

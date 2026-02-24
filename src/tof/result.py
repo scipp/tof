@@ -167,6 +167,7 @@ class Result:
         seed: int | None = None,
         vmin: float | None = None,
         vmax: float | None = None,
+        title: str | None = None,
     ) -> Plot:
         """
         Plot the time-distance diagram for the instrument, including the rays of
@@ -278,6 +279,8 @@ class Result:
             inches = fig.get_size_inches()
             fig.set_size_inches((min(inches[0] * self.source.pulses, 12.0), inches[1]))
         fig.tight_layout()
+        if title is not None:
+            ax.set_title(title)
         return Plot(fig=fig, ax=ax)
 
     def __repr__(self) -> str:

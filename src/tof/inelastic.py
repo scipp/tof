@@ -46,8 +46,13 @@ class InelasticSampleReading(ComponentReading):
         return replace(self, data=self.data[val])
 
     def plot_on_time_distance_diagram(self, ax, tmax) -> None:
-        ax.plot([0, tmax], [self.distance.value] * 2, color="gray", lw=3)
-        ax.text(0, self.distance.value, self.name, ha="left", va="bottom", color="gray")
+        ax.plot([0, tmax], [self.distance.value] * 2, color="tab:brown", lw=4)
+        # ax.plot(
+        #     [0, tmax], [self.distance.value] * 2, color="tab:cyan", lw=3, ls='dashed'
+        # )
+        ax.text(
+            0, self.distance.value, self.name, ha="left", va="bottom", color="tab:brown"
+        )
 
 
 class InelasticSample(Component):

@@ -25,6 +25,18 @@ def _default_frequency(frequency: sc.Variable | None, pulses: int) -> sc.Variabl
     return frequency
 
 
+def _bin_edges_to_midpoints(
+    da: sc.DataArray, dims: list[str] | tuple[str]
+) -> sc.DataArray:
+    return da.assign_coords(
+        {
+            dim: sc.midpoints(da.coords[dim], dim)
+            for dim in dims
+            if da.coords.is_edges(dim)
+        }
+    )
+
+
 def _make_pulses(
     neutrons: int,
     frequency: sc.Variable,
@@ -408,6 +420,14 @@ class Source:
             distance if distance is not None else sc.scalar(0.0, unit="m")
         )
         source._frequency = _default_frequency(frequency, pulses)
+
+        if p is not None:
+            p = _bin_edges_to_midpoints(p, dims=["birth_time", "wavelength"])
+        if p_time is not None:
+            p_time = _bin_edges_to_midpoints(p_time, dims=["birth_time"])
+        if p_wav is not None:
+            p_wav = _bin_edges_to_midpoints(p_wav, dims=["wavelength"])
+
         pulse_params = _make_pulses(
             neutrons=neutrons,
             p=p,
