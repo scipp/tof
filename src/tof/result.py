@@ -25,7 +25,6 @@ def _get_rays(
     y = []
     c = []
     data = components[0].data["pulse", pulse]
-    # TODO optimize: should not index multiple times
     xstart = data.coords["toa"].values[inds]
     ystart = np.full_like(xstart, components[0].distance.value)
     color = data.coords["wavelength"].values[inds]
@@ -38,7 +37,11 @@ def _get_rays(
         xstart, ystart = xend, yend
         color = comp.data["pulse", pulse].coords["wavelength"].values[inds]
 
-    return np.array(x), np.array(y), np.array(c)
+    return (
+        np.array(x).transpose((0, 2, 1)),
+        np.array(y).transpose((0, 2, 1)),
+        np.array(c),
+    )
 
 
 def _add_rays(
@@ -53,7 +56,7 @@ def _add_rays(
     cax: plt.Axes | None = None,
     zorder: int = 1,
 ):
-    x, y = (np.array(a).transpose((0, 2, 1)).reshape((-1, 2)) for a in (x, y))
+    x, y = (a.reshape((-1, 2)) for a in (x, y))
     coll = LineCollection(np.stack((x, y), axis=2), zorder=zorder)
     if isinstance(color, str):
         coll.set_color(color)
@@ -206,21 +209,24 @@ class Result:
                     cax=cax,
                 )
 
-            # # Plot blocked rays
-            # inds = rng.choice(
-            #     ids[blocked], size=min(blocked_rays, nblocked), replace=False
-            # )
-            # x, y = _get_rays(components, pulse=i, inds=inds)
-            # blocked_by_others = np.stack(
-            #     [
-            #         comp.data["pulse", i].masks["blocked_by_others"].values[inds]
-            #         for comp in components
-            #     ],
-            #     axis=1,
-            # )
-            # x[blocked_by_others] = np.nan
-            # y[blocked_by_others] = np.nan
-            # _add_rays(ax=ax, x=x, y=y, color="lightgray", zorder=-1)
+            # Plot blocked rays
+            inds = rng.choice(
+                ids[blocked], size=min(blocked_rays, nblocked), replace=False
+            )
+            x, y, _ = _get_rays(components, pulse=i, inds=inds)
+            blocked_by_others = np.stack(
+                [
+                    comp.data["pulse", i].masks["blocked_by_others"].values[inds]
+                    for comp in components[1:]
+                ],
+                axis=1,
+            ).T
+            line_selection = np.broadcast_to(
+                blocked_by_others.reshape((*blocked_by_others.shape, 1)), x.shape
+            )
+            x[line_selection] = np.nan
+            y[line_selection] = np.nan
+            _add_rays(ax=ax, x=x, y=y, color="lightgray", zorder=-1)
 
             # Plot pulse
             self.source.plot_on_time_distance_diagram(ax, pulse=i)
