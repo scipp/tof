@@ -343,7 +343,7 @@ def test_plot_reading_pulse_skipping_does_not_raise():
         distance=10 * meter,
         name='skip',
     )
-    model.choppers['skip'] = skip
+    model.components['skip'] = skip
     res = model.run()
     res.choppers['chopper'].toa.plot()
     res.choppers['chopper'].wavelength.plot()
@@ -361,7 +361,7 @@ def test_plot_reading_nothing_to_plot_raises():
         distance=10 * meter,
         name='skip',
     )
-    model.choppers['skip'] = skip
+    model.components['skip'] = skip
     res = model.run()
     with pytest.raises(RuntimeError, match="Nothing to plot."):
         res.detectors['detector'].toa.plot()

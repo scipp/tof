@@ -1,0 +1,182 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2026 Scipp contributors (https://github.com/scipp)
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+
+import numpy as np
+import plopp as pp
+import scipp as sc
+
+from .component import Component, ComponentReading
+from .utils import (
+    energy_to_wavelength,
+    var_from_dict,
+    var_to_dict,
+    wavelength_to_energy,
+    wavelength_to_speed,
+)
+
+
+@dataclass(frozen=True)
+class InelasticSampleReading(ComponentReading):
+    """
+    Read-only container for the neutrons that reach the inelastic sample.
+    """
+
+    distance: sc.Variable
+    name: str
+    data: sc.DataArray
+
+    @property
+    def kind(self) -> str:
+        return "inelastic_sample"
+
+    def _repr_stats(self) -> str:
+        return f"visible={int(self.data.sum().value)}"
+
+    def __repr__(self) -> str:
+        return f"""InelasticSampleReading: '{self.name}'
+  distance: {self.distance:c}
+  neutrons: {self._repr_stats()}
+"""
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __getitem__(
+        self, val: int | slice | tuple[str, int | slice]
+    ) -> InelasticSampleReading:
+        if isinstance(val, int):
+            val = ('pulse', val)
+        return replace(self, data=self.data[val])
+
+    def plot_on_time_distance_diagram(self, ax, tmax) -> None:
+        ax.plot([0, tmax], [self.distance.value] * 2, color="tab:brown", lw=4)
+        ax.text(
+            0, self.distance.value, self.name, ha="left", va="bottom", color="tab:brown"
+        )
+
+
+class InelasticSample(Component):
+    """
+    An inelastic sample component changes the energy of the neutrons that pass through
+    it, but does not block any.
+
+    Parameters
+    ----------
+    distance:
+        The distance from the source to the inelastic sample.
+    name:
+        The name of the inelastic sample.
+    delta_e:
+        The change in energy of the neutrons when they pass through the inelastic
+        sample. The values of the array represent the probability of a neutron to have
+        its energy changed by the corresponding amount in the coordinates. The
+        coordinate values should be in energy units, and the array should be 1D.
+    seed:
+        The seed for the random number generator used to apply the energy change.
+    """
+
+    def __init__(
+        self,
+        distance: sc.Variable,
+        name: str,
+        delta_e: sc.DataArray,
+        seed: int | None = None,
+    ):
+        self.distance = distance.to(dtype=float, copy=False)
+        self.name = name
+        if delta_e.ndim != 1:
+            raise ValueError("delta_e must be a 1D array.")
+        self.probabilities = delta_e.data / delta_e.data.sum()
+        dim = delta_e.dim
+        self.energies = delta_e.coords[dim]
+        # TODO: check for bin edges
+        self._noise_scale = (
+            0.5
+            * (self.energies.max() - self.energies.min()).value
+            / (max(len(delta_e), 2) - 1)
+        )
+        self.kind = "inelastic_sample"
+        self.seed = seed
+        self._rng = np.random.default_rng(self.seed)
+
+    def __repr__(self) -> str:
+        return f"InelasticSample(name={self.name}, distance={self.distance:c})"
+
+    def plot(self, **kwargs) -> pp.FigureLike:
+        return pp.xyplot(self.energies, self.probabilities, **kwargs)
+
+    def as_dict(self) -> dict:
+        """
+        Return the inelastic sample as a dictionary.
+        """
+        return {'distance': self.distance, 'name': self.name, 'delta_e': self.delta_e}
+
+    @classmethod
+    def from_json(cls, name: str, params: dict) -> InelasticSample:
+        """
+        Create an inelastic sample from a JSON-serializable dictionary.
+        """
+        return cls(
+            distance=var_from_dict(params["distance"]),
+            name=name,
+            delta_e=sc.DataArray(
+                data=var_from_dict(params['probabilities'], dim='e'),
+                coords={'e': var_from_dict(params['energies'], dim='e')},
+            ),
+            seed=params.get("seed"),
+        )
+
+    def as_json(self) -> dict:
+        """
+        Return the inelastic sample as a JSON-serializable dictionary.
+        .. versionadded:: 26.03.0
+        """
+        return {
+            'type': 'inelastic_sample',
+            'distance': var_to_dict(self.distance),
+            'name': self.name,
+            'energies': var_to_dict(self.energies),
+            'probabilities': var_to_dict(self.probabilities),
+            'seed': self.seed,
+        }
+
+    def as_readonly(self, neutrons: sc.DataArray) -> InelasticSampleReading:
+        return InelasticSampleReading(
+            distance=self.distance, name=self.name, data=neutrons
+        )
+
+    def apply(
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> tuple[sc.DataArray, InelasticSampleReading]:
+        """
+        Apply the change in energy to the given neutrons.
+
+        Parameters
+        ----------
+        neutrons:
+            The neutrons to which the inelastic sample will be applied.
+        time_limit:
+            The time limit for the neutrons to be considered as reaching the inelastic
+            sample.
+        """
+        w_initial = neutrons.coords["wavelength"]
+
+        n = neutrons.shape
+        inds = self._rng.choice(len(self.energies), size=n, p=self.probabilities.values)
+        de = sc.array(
+            dims=w_initial.dims,
+            values=self.energies.values[inds]
+            + self._rng.normal(scale=self._noise_scale, size=n),
+            unit=self.energies.unit,
+        )
+        # Convert energy change to wavelength change
+        w_final = energy_to_wavelength(
+            wavelength_to_energy(w_initial, unit=de.unit) + de, unit=w_initial.unit
+        )
+        neutrons = neutrons.assign_coords(
+            wavelength=w_final, speed=wavelength_to_speed(w_final)
+        )
+        return neutrons, self.as_readonly(neutrons)

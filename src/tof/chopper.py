@@ -6,10 +6,11 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from typing import TYPE_CHECKING
 
+import numpy as np
 import scipp as sc
 
-from .reading import ComponentReading
-from .utils import two_pi, var_to_dict
+from .component import Component, ComponentReading
+from .utils import two_pi, var_from_dict, var_to_dict
 
 if TYPE_CHECKING:
     try:
@@ -27,7 +28,76 @@ Clockwise = Direction.CLOCKWISE
 AntiClockwise = Direction.ANTICLOCKWISE
 
 
-class Chopper:
+def _array_or_none(container: dict, key: str) -> sc.Variable | None:
+    return var_from_dict(container[key], dim="cutout") if key in container else None
+
+
+@dataclass(frozen=True)
+class ChopperReading(ComponentReading):
+    """
+    Read-only container for the neutrons that reach the chopper.
+    """
+
+    distance: sc.Variable
+    name: str
+    frequency: sc.Variable
+    open: sc.Variable
+    close: sc.Variable
+    phase: sc.Variable
+    open_times: sc.Variable
+    close_times: sc.Variable
+    data: sc.DataArray
+
+    @property
+    def kind(self) -> str:
+        return "chopper"
+
+    def _repr_stats(self) -> str:
+        return (
+            f"visible={int(self.data.sum().value)}, "
+            f"blocked={int(self.data.masks['blocked_by_me'].sum().value)}"
+        )
+
+    def __repr__(self) -> str:
+        return f"""ChopperReading: '{self.name}'
+  distance: {self.distance:c}
+  frequency: {self.frequency:c}
+  phase: {self.phase:c}
+  cutouts: {len(self.open)}
+  neutrons: {self._repr_stats()}
+"""
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __getitem__(self, val: int | slice | tuple[str, int | slice]) -> ChopperReading:
+        if isinstance(val, int):
+            val = ('pulse', val)
+        return replace(self, data=self.data[val])
+
+    def plot_on_time_distance_diagram(self, ax, tmax) -> None:
+        dx = 0.05 * tmax
+        x0 = self.open_times.values
+        x1 = self.close_times.values
+        x = np.empty(3 * x0.size, dtype=x0.dtype)
+        x[0::3] = x0
+        x[1::3] = 0.5 * (x0 + x1)
+        x[2::3] = x1
+        x = np.concatenate(
+            ([[0]] if x[0] > 0 else [x[0:1]])
+            + [x]
+            + ([[tmax + dx]] if x[-1] < tmax else [])
+        )
+        y = np.full_like(x, self.distance.value)
+        y[2::3] = None
+        inds = np.argsort(x)
+        ax.plot(x[inds], y[inds], color="k")
+        ax.text(
+            tmax, self.distance.value, self.name, ha="right", va="bottom", color="k"
+        )
+
+
+class Chopper(Component):
     """
     A chopper is a rotating device with cutouts that blocks the beam at certain times.
 
@@ -106,6 +176,7 @@ class Chopper:
         self.distance = distance.to(dtype=float, copy=False)
         self.phase = phase.to(dtype=float, copy=False)
         self.name = name
+        self.kind = "chopper"
         super().__init__()
 
     @property
@@ -178,6 +249,18 @@ class Chopper:
             f"direction={self.direction.name}, cutouts={len(self.open)})"
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Chopper):
+            return NotImplemented
+        if self.name != other.name:
+            return False
+        if self.direction != other.direction:
+            return False
+        return all(
+            sc.identical(getattr(self, field), getattr(other, field))
+            for field in ('frequency', 'distance', 'phase', 'open', 'close')
+        )
+
     def as_dict(self) -> dict:
         """
         Return the chopper as a dictionary.
@@ -191,6 +274,30 @@ class Chopper:
             'name': self.name,
             'direction': self.direction,
         }
+
+    @classmethod
+    def from_json(cls, name: str, params: dict) -> Chopper:
+        direction = params["direction"].lower()
+        if direction == "clockwise":
+            _dir = Clockwise
+        elif any(x in direction for x in ("anti", "counter")):
+            _dir = AntiClockwise
+        else:
+            raise ValueError(
+                f"Chopper direction must be 'clockwise' or 'anti-clockwise', got "
+                f"'{params['direction']}' for component {name}."
+            )
+        return cls(
+            frequency=var_from_dict(params["frequency"]),
+            direction=_dir,
+            open=_array_or_none(params, "open"),
+            close=_array_or_none(params, "close"),
+            centers=_array_or_none(params, "centers"),
+            widths=_array_or_none(params, "widths"),
+            phase=var_from_dict(params["phase"]),
+            distance=var_from_dict(params["distance"]),
+            name=name,
+        )
 
     def as_json(self) -> dict:
         """
@@ -211,18 +318,6 @@ class Chopper:
             }
         )
         return out
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Chopper):
-            return NotImplemented
-        if self.name != other.name:
-            return False
-        if self.direction != other.direction:
-            return False
-        return all(
-            sc.identical(getattr(self, field), getattr(other, field))
-            for field in ('frequency', 'distance', 'phase', 'open', 'close')
-        )
 
     @classmethod
     def from_diskchopper(
@@ -273,6 +368,27 @@ class Chopper:
             name=name,
         )
 
+    def to_diskchopper(self) -> DiskChopper:
+        """
+        Export the chopper as a scippneutron DiskChopper.
+        """
+        from scippneutron.chopper import DiskChopper
+
+        frequency = (
+            self.frequency if self.direction == AntiClockwise else -self.frequency
+        )
+        phase = self.phase if self.direction == AntiClockwise else -self.phase
+        return DiskChopper(
+            frequency=frequency,
+            beam_position=sc.scalar(0.0, unit='deg'),
+            slit_begin=self.open,
+            slit_end=self.close,
+            phase=phase,
+            axle_position=sc.vector(
+                value=[0.0, 0.0, self.distance.value], unit=self.distance.unit
+            ),
+        )
+
     @classmethod
     def from_nexus(cls, nexus_chopper, name: str | None = None) -> Chopper:
         """
@@ -321,63 +437,37 @@ class Chopper:
             name=name,
         )
 
-    def to_diskchopper(self) -> DiskChopper:
+    def as_readonly(
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> ChopperReading:
         """
-        Export the chopper as a scippneutron DiskChopper.
+        Create a ChopperReading from the given neutrons that have been processed by this
+        chopper.
         """
-        from scippneutron.chopper import DiskChopper
-
-        frequency = (
-            self.frequency if self.direction == AntiClockwise else -self.frequency
-        )
-        phase = self.phase if self.direction == AntiClockwise else -self.phase
-        return DiskChopper(
-            frequency=frequency,
-            beam_position=sc.scalar(0.0, unit='deg'),
-            slit_begin=self.open,
-            slit_end=self.close,
-            phase=phase,
-            axle_position=sc.vector(
-                value=[0.0, 0.0, self.distance.value], unit=self.distance.unit
-            ),
+        to, tc = self.open_close_times(time_limit=time_limit)
+        return ChopperReading(
+            distance=self.distance,
+            name=self.name,
+            frequency=self.frequency,
+            phase=self.phase,
+            open=self.open,
+            close=self.close,
+            open_times=to,
+            close_times=tc,
+            data=neutrons,
         )
 
+    def apply(
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> tuple[sc.DataArray, ChopperReading]:
+        """
+        Apply the effect of the chopper to the given neutrons.
+        """
+        # Apply the chopper's open/close times to the data
+        m = sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool)
+        to, tc = self.open_close_times(time_limit=time_limit)
+        for i in range(len(to)):
+            m |= (neutrons.coords['toa'] > to[i]) & (neutrons.coords['toa'] < tc[i])
+        neutrons.masks['blocked_by_me'] = (~m) & (~neutrons.masks['blocked_by_others'])
 
-@dataclass(frozen=True)
-class ChopperReading(ComponentReading):
-    """
-    Read-only container for the neutrons that reach the chopper.
-    """
-
-    distance: sc.Variable
-    name: str
-    frequency: sc.Variable
-    open: sc.Variable
-    close: sc.Variable
-    phase: sc.Variable
-    open_times: sc.Variable
-    close_times: sc.Variable
-    data: sc.DataArray
-
-    def _repr_stats(self) -> str:
-        return (
-            f"visible={int(self.data.sum().value)}, "
-            f"blocked={int(self.data.masks['blocked_by_me'].sum().value)}"
-        )
-
-    def __repr__(self) -> str:
-        return f"""ChopperReading: '{self.name}'
-  distance: {self.distance:c}
-  frequency: {self.frequency:c}
-  phase: {self.phase:c}
-  cutouts: {len(self.open)}
-  neutrons: {self._repr_stats()}
-"""
-
-    def __str__(self) -> str:
-        return self.__repr__()
-
-    def __getitem__(self, val: int | slice | tuple[str, int | slice]) -> ChopperReading:
-        if isinstance(val, int):
-            val = ('pulse', val)
-        return replace(self, data=self.data[val])
+        return neutrons, self.as_readonly(neutrons, time_limit=time_limit)

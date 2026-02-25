@@ -6,6 +6,7 @@ from functools import reduce
 from types import MappingProxyType
 
 import matplotlib.pyplot as plt
+import numpy as np
 import scipp as sc
 import scipp.constants as const
 
@@ -69,6 +70,34 @@ def energy_to_speed(x: sc.Variable, unit="m/s") -> sc.Variable:
     return sc.sqrt(x / (0.5 * const.m_n)).to(unit=unit)
 
 
+def wavelength_to_energy(x: sc.Variable, unit="meV") -> sc.Variable:
+    """
+    Convert neutron wavelengths to energies.
+
+    Parameters
+    ----------
+    x:
+        Input wavelengths.
+    unit:
+        The unit of the output energies.
+    """
+    return speed_to_energy(wavelength_to_speed(x)).to(unit=unit)
+
+
+def energy_to_wavelength(x: sc.Variable, unit="angstrom") -> sc.Variable:
+    """
+    Convert neutron energies to wavelengths.
+
+    Parameters
+    ----------
+    x:
+        Input energies.
+    unit:
+        The unit of the output wavelengths.
+    """
+    return speed_to_wavelength(energy_to_speed(x)).to(unit=unit)
+
+
 def one_mask(
     masks: MappingProxyType[str, sc.Variable], unit: str | None = None
 ) -> sc.Variable:
@@ -100,6 +129,44 @@ def var_to_dict(var: sc.Variable) -> dict:
         "value": var.values.tolist() if var.ndim > 0 else float(var.value),
         "unit": str(var.unit),
     }
+
+
+def var_from_dict(data: dict, dim: str | None = None) -> sc.Variable:
+    """
+    Convert a dictionary with 'value' and 'unit' keys to a scipp Variable.
+
+    Parameters
+    ----------
+    data:
+        The dictionary to convert.
+    dim:
+        The dimension of the output variable (non-scalar data only).
+    """
+    values = np.asarray(data["value"])
+    unit = data['unit']
+    if values.shape:
+        if dim is None:
+            raise ValueError("Missing dimension to construct variable from json.")
+        return sc.array(dims=[dim], values=values, unit=unit)
+    return sc.scalar(values, unit=unit)
+
+
+def extract_component_group(
+    components: dict | MappingProxyType, kind: str
+) -> MappingProxyType:
+    """
+    Extract a group of components of a given kind from a dictionary of components.
+
+    Parameters
+    ----------
+    components:
+        The components to extract from.
+    kind:
+        The kind of components to extract.
+    """
+    return MappingProxyType(
+        {name: comp for name, comp in components.items() if kind in comp.kind}
+    )
 
 
 @dataclass

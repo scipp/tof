@@ -6,52 +6,8 @@ from dataclasses import dataclass, replace
 
 import scipp as sc
 
-from .reading import ComponentReading
-from .utils import var_to_dict
-
-
-class Detector:
-    """
-    A detector component does not block any neutrons, it sees all neutrons passing
-    through it.
-
-    Parameters
-    ----------
-    distance:
-        The distance from the source to the detector.
-    name:
-        The name of the detector.
-    """
-
-    def __init__(self, distance: sc.Variable, name: str):
-        self.distance = distance.to(dtype=float, copy=False)
-        self.name = name
-
-    def __repr__(self) -> str:
-        return f"Detector(name={self.name}, distance={self.distance:c})"
-
-    def as_dict(self) -> dict:
-        """
-        Return the detector as a dictionary.
-        """
-        return {'distance': self.distance, 'name': self.name}
-
-    def as_json(self) -> dict:
-        """
-        Return the detector as a JSON-serializable dictionary.
-
-        .. versionadded:: 25.11.0
-        """
-        return {
-            'type': 'detector',
-            'distance': var_to_dict(self.distance),
-            'name': self.name,
-        }
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Detector):
-            return NotImplemented
-        return self.name == other.name and sc.identical(self.distance, other.distance)
+from .component import Component, ComponentReading
+from .utils import var_from_dict, var_to_dict
 
 
 @dataclass(frozen=True)
@@ -63,6 +19,10 @@ class DetectorReading(ComponentReading):
     distance: sc.Variable
     name: str
     data: sc.DataArray
+
+    @property
+    def kind(self) -> str:
+        return "detector"
 
     def _repr_stats(self) -> str:
         return f"visible={int(self.data.sum().value)}"
@@ -82,3 +42,82 @@ class DetectorReading(ComponentReading):
         if isinstance(val, int):
             val = ('pulse', val)
         return replace(self, data=self.data[val])
+
+    def plot_on_time_distance_diagram(self, ax, tmax) -> None:
+        ax.plot([0, tmax], [self.distance.value] * 2, color="gray", lw=3)
+        ax.text(0, self.distance.value, self.name, ha="left", va="bottom", color="gray")
+
+
+class Detector(Component):
+    """
+    A detector component does not block any neutrons, it sees all neutrons passing
+    through it.
+
+    Parameters
+    ----------
+    distance:
+        The distance from the source to the detector.
+    name:
+        The name of the detector.
+    """
+
+    def __init__(self, distance: sc.Variable, name: str):
+        self.distance = distance.to(dtype=float, copy=False)
+        self.name = name
+        self.kind = "detector"
+
+    def __repr__(self) -> str:
+        return f"Detector(name={self.name}, distance={self.distance:c})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Detector):
+            return NotImplemented
+        return self.name == other.name and sc.identical(self.distance, other.distance)
+
+    def as_dict(self) -> dict:
+        """
+        Return the detector as a dictionary.
+        """
+        return {'distance': self.distance, 'name': self.name}
+
+    @classmethod
+    def from_json(cls, name: str, params: dict) -> Detector:
+        """
+        Create a detector from a JSON-serializable dictionary.
+        """
+        return cls(
+            distance=var_from_dict(params["distance"]),
+            name=name,
+        )
+
+    def as_json(self) -> dict:
+        """
+        Return the detector as a JSON-serializable dictionary.
+
+        .. versionadded:: 25.11.0
+        """
+        return {
+            'type': 'detector',
+            'distance': var_to_dict(self.distance),
+            'name': self.name,
+        }
+
+    def as_readonly(self, neutrons: sc.DataArray) -> DetectorReading:
+        return DetectorReading(distance=self.distance, name=self.name, data=neutrons)
+
+    def apply(
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> tuple[sc.DataArray, DetectorReading]:
+        """
+        Apply the detector to the given neutrons.
+        A detector does not modify the neutrons, it simply records them without
+        blocking any.
+
+        Parameters
+        ----------
+        neutrons:
+            The neutrons to which the detector will be applied.
+        time_limit:
+            The time limit for the neutrons to be considered as reaching the detector.
+        """
+        return neutrons, self.as_readonly(neutrons)

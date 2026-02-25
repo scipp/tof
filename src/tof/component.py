@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
+# Copyright (c) 2026 Scipp contributors (https://github.com/scipp)
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from dataclasses import dataclass
 
 import plopp as pp
@@ -66,11 +67,7 @@ class ReadingField:
 
 def _make_reading_field(da: sc.DataArray, dim: str) -> ReadingField:
     return ReadingField(
-        data=sc.DataArray(
-            data=da.data,
-            coords={dim: da.coords[dim]},
-            masks=da.masks,
-        ),
+        data=sc.DataArray(data=da.data, coords={dim: da.coords[dim]}, masks=da.masks),
         dim=dim,
     )
 
@@ -133,3 +130,25 @@ class ComponentReading:
             Number of bins to use for histogramming the neutrons.
         """
         return self.toa.plot(bins=bins) + self.wavelength.plot(bins=bins)
+
+
+class Component:
+    kind: str
+
+    @abstractmethod
+    def apply(
+        self, neutrons: sc.DataArray, time_limit: sc.Variable
+    ) -> tuple[sc.DataArray, ComponentReading]:
+        """
+        Apply the component to the given neutrons.
+
+        Parameters
+        ----------
+        neutrons:
+            The neutrons to which the component will be applied.
+
+        Returns
+        -------
+        The modified neutrons.
+        """
+        raise NotImplementedError
