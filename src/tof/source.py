@@ -516,9 +516,7 @@ class Source:
                 "Currently, only sources from facilities are supported when "
                 "loading from JSON."
             )
-        source_args = params.copy()
-        del source_args["type"]
-        return cls(**source_args)
+        return cls(**{k: v for k, v in params.items() if k != "type"})
 
     def as_json(self) -> dict:
         """
