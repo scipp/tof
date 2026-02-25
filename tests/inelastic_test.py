@@ -1,12 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 
-import json
-import os
-import tempfile
-
 import numpy as np
-import pytest
 import scipp as sc
 
 import tof
@@ -14,7 +9,6 @@ import tof
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
 meter = sc.Unit('m')
-ms = sc.Unit('ms')
 
 
 def test_inelastic_sample_flat_distribution():
