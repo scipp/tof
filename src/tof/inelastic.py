@@ -94,7 +94,9 @@ class InelasticSample(Component):
         self.energies = delta_e.coords[dim]
         # TODO: check for bin edges
         self._noise_scale = (
-            0.5 * (self.energies.max() - self.energies.min()).value / (len(delta_e) - 1)
+            0.5
+            * (self.energies.max() - self.energies.min()).value
+            / (max(len(delta_e), 2) - 1)
         )
         self.kind = "inelastic_sample"
         self._rng = np.random.default_rng(seed)
@@ -136,7 +138,9 @@ class InelasticSample(Component):
             'type': 'inelastic_sample',
             'distance': var_to_dict(self.distance),
             'name': self.name,
-            'delta_e': var_to_dict(self.delta_e),
+            'energies': var_to_dict(self.energies),
+            'probabilities': var_to_dict(self.probabilities),
+            'seed': self._rng.bit_generator.state['state']['key'][0],
         }
 
     def as_readonly(self, neutrons: sc.DataArray) -> InelasticSampleReading:
