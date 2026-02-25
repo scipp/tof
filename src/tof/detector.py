@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 import scipp as sc
 
 from .component import Component, ComponentReading
-from .utils import var_to_dict
+from .utils import var_from_dict, var_to_dict
 
 
 @dataclass(frozen=True)
@@ -86,9 +86,7 @@ class Detector(Component):
         Create a detector from a JSON-serializable dictionary.
         """
         return cls(
-            distance=sc.scalar(
-                params["distance"]["value"], unit=params["distance"]["unit"]
-            ),
+            distance=var_from_dict(params["distance"]),
             name=name,
         )
 

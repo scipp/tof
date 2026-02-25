@@ -10,7 +10,7 @@ import numpy as np
 import scipp as sc
 
 from .component import Component, ComponentReading
-from .utils import two_pi, var_to_dict
+from .utils import two_pi, var_from_dict, var_to_dict
 
 if TYPE_CHECKING:
     try:
@@ -29,13 +29,7 @@ AntiClockwise = Direction.ANTICLOCKWISE
 
 
 def _array_or_none(container: dict, key: str) -> sc.Variable | None:
-    return (
-        sc.array(
-            dims=["cutout"], values=container[key]["value"], unit=container[key]["unit"]
-        )
-        if key in container
-        else None
-    )
+    return var_from_dict(container[key], dim="cutout") if key in container else None
 
 
 @dataclass(frozen=True)
@@ -294,15 +288,14 @@ class Chopper(Component):
                 f"'{params['direction']}' for component {name}."
             )
         return cls(
-            frequency=params["frequency"]["value"]
-            * sc.Unit(params["frequency"]["unit"]),
+            frequency=var_from_dict(params["frequency"]),
             direction=_dir,
             open=_array_or_none(params, "open"),
             close=_array_or_none(params, "close"),
             centers=_array_or_none(params, "centers"),
             widths=_array_or_none(params, "widths"),
-            phase=params["phase"]["value"] * sc.Unit(params["phase"]["unit"]),
-            distance=params["distance"]["value"] * sc.Unit(params["distance"]["unit"]),
+            phase=var_from_dict(params["phase"]),
+            distance=var_from_dict(params["distance"]),
             name=name,
         )
 

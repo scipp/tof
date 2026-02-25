@@ -6,6 +6,7 @@ from functools import reduce
 from types import MappingProxyType
 
 import matplotlib.pyplot as plt
+import numpy as np
 import scipp as sc
 import scipp.constants as const
 
@@ -128,6 +129,26 @@ def var_to_dict(var: sc.Variable) -> dict:
         "value": var.values.tolist() if var.ndim > 0 else float(var.value),
         "unit": str(var.unit),
     }
+
+
+def var_from_dict(data: dict, dim: str | None = None) -> sc.Variable:
+    """
+    Convert a dictionary with 'value' and 'unit' keys to a scipp Variable.
+
+    Parameters
+    ----------
+    data:
+        The dictionary to convert.
+    dim:
+        The dimension of the output variable (non-scalar data only).
+    """
+    values = np.asarray(data["value"])
+    unit = data['unit']
+    if values.shape:
+        if dim is None:
+            raise ValueError("Missing dimension to construct variable from json.")
+        return sc.array(dims=[dim], values=values, unit=unit)
+    return sc.scalar(values, unit=unit)
 
 
 def extract_component_group(

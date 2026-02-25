@@ -11,6 +11,7 @@ import scipp as sc
 from .component import Component, ComponentReading
 from .utils import (
     energy_to_wavelength,
+    var_from_dict,
     var_to_dict,
     wavelength_to_energy,
     wavelength_to_speed,
@@ -88,8 +89,7 @@ class InelasticSample(Component):
         self.name = name
         if delta_e.ndim != 1:
             raise ValueError("delta_e must be a 1D array.")
-        self.probabilities = delta_e.values
-        self.probabilities = self.probabilities / self.probabilities.sum()
+        self.probabilities = delta_e.data / delta_e.data.sum()
         dim = delta_e.dim
         self.energies = delta_e.coords[dim]
         # TODO: check for bin edges
@@ -99,7 +99,8 @@ class InelasticSample(Component):
             / (max(len(delta_e), 2) - 1)
         )
         self.kind = "inelastic_sample"
-        self._rng = np.random.default_rng(seed)
+        self.seed = seed
+        self._rng = np.random.default_rng(self.seed)
 
     def __repr__(self) -> str:
         return f"InelasticSample(name={self.name}, distance={self.distance:c})"
@@ -119,12 +120,11 @@ class InelasticSample(Component):
         Create an inelastic sample from a JSON-serializable dictionary.
         """
         return cls(
-            distance=sc.scalar(
-                params["distance"]["value"], unit=params["distance"]["unit"]
-            ),
+            distance=var_from_dict(params["distance"]),
             name=name,
-            delta_e=sc.scalar(
-                params["delta_e"]["value"], unit=params["delta_e"]["unit"]
+            delta_e=sc.DataArray(
+                data=var_from_dict(params['probabilities'], dim='e'),
+                coords={'e': var_from_dict(params['energies'], dim='e')},
             ),
             seed=params.get("seed"),
         )
@@ -140,7 +140,7 @@ class InelasticSample(Component):
             'name': self.name,
             'energies': var_to_dict(self.energies),
             'probabilities': var_to_dict(self.probabilities),
-            'seed': self._rng.bit_generator.state['state']['key'][0],
+            'seed': self.seed,
         }
 
     def as_readonly(self, neutrons: sc.DataArray) -> InelasticSampleReading:
@@ -165,7 +165,7 @@ class InelasticSample(Component):
         w_initial = neutrons.coords["wavelength"]
 
         n = neutrons.shape
-        inds = self._rng.choice(len(self.energies), size=n, p=self.probabilities)
+        inds = self._rng.choice(len(self.energies), size=n, p=self.probabilities.values)
         de = sc.array(
             dims=w_initial.dims,
             values=self.energies.values[inds]

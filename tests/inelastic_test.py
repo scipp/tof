@@ -206,25 +206,47 @@ def test_inelastic_sample_that_has_zero_delta_e():
 
 
 def test_inelastic_sample_as_json():
-    # delta_e = sc.DataArray(
-    #     data=sc.zeros(sizes={'e': 10}),
-    #     coords={'e': sc.linspace('e', -0.2, 0.2, 10, unit='meV')},
-    # )
-    # delta_e.values[[0, -1]] = 1.0
-    # sample = tof.InelasticSample(distance=28.0 * meter, name="sample", delta_e=delta_e)
+    p = np.array([0.4, 0.45, 0.7, 1.0, 0.7, 0.45, 0.4])
+    e = np.array([-0.5, -0.25, -0.1, 0.0, 0.1, 0.25, 0.5])
 
-    # json_dict = sample.as_json()
-    # assert json_dict['type'] == 'inelastic_sample'
-    # assert json_dict['name'] == 'sample'
-    # assert json_dict['distance']['value'] == 28.0
-    # assert json_dict['distance']['unit'] == 'm'
-    # assert json_dict['delta_e']['values'][0] == 1.0
-    # assert json_dict['delta_e']['values'][-1] == 1.0
-    # assert json_dict['delta_e']['unit'] == 'meV'
+    delta_e = sc.DataArray(
+        data=sc.array(dims=['e'], values=p),
+        coords={'e': sc.array(dims=['e'], values=e, unit='meV')},
+    )
+    sample = tof.InelasticSample(
+        distance=28.0 * meter, name="sample1", delta_e=delta_e, seed=66
+    )
 
-    # sample_from_json = tof.InelasticSample.from_json(
-    #     name=json_dict['name'], params=json_dict
-    # )
-    # assert sc.identical(sample.distance, sample_from_json.distance)
-    # assert sc.identical(sample.delta_e, sample_from_json.delta_e)
-    return
+    json_dict = sample.as_json()
+    assert json_dict['type'] == 'inelastic_sample'
+    assert json_dict['name'] == 'sample1'
+    assert json_dict['distance']['value'] == 28.0
+    assert json_dict['distance']['unit'] == 'm'
+    assert np.array_equal(json_dict['probabilities']['value'], p / p.sum())
+    assert json_dict['probabilities']['unit'] == 'dimensionless'
+    assert np.array_equal(json_dict['energies']['value'], e)
+    assert json_dict['energies']['unit'] == 'meV'
+    assert json_dict['seed'] == 66
+
+
+def test_inelastic_sample_from_json():
+    p = np.array([0.4, 0.7, 1.0, 0.7, 0.4])
+    e = np.array([-0.5, -0.25, 0.0, 0.25, 0.5])
+    json_dict = {
+        'type': 'inelastic_sample',
+        'distance': {'value': 28.0, 'unit': 'm'},
+        'name': 'sample1',
+        'energies': {'value': e, 'unit': 'meV'},
+        'probabilities': {'value': p, 'unit': ''},
+        'seed': 78,
+    }
+    sample = tof.InelasticSample.from_json(name=json_dict['name'], params=json_dict)
+
+    assert sample.distance.value == 28.0
+    assert sample.distance.unit == 'm'
+    assert sample.name == 'sample1'
+    assert np.array_equal(sample.energies.values, e)
+    assert sample.energies.unit == 'meV'
+    assert np.array_equal(sample.probabilities.values, p / p.sum())
+    assert sample.probabilities.unit == 'dimensionless'
+    assert sample.seed == 78
