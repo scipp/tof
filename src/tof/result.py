@@ -15,7 +15,7 @@ from .chopper import ChopperReading
 from .component import ComponentReading
 from .detector import DetectorReading
 from .source import SourceReading
-from .utils import Plot, one_mask
+from .utils import Plot, extract_component_group, one_mask
 
 
 def _get_rays(
@@ -89,25 +89,24 @@ class Result:
 
     @property
     def choppers(self) -> MappingProxyType[str, ChopperReading]:
-        """The choppers in the model."""
-        return MappingProxyType(
-            {
-                key: comp
-                for key, comp in self._components.items()
-                if comp.kind == "chopper"
-            }
-        )
+        """
+        A dictionary of the choppers in the instrument.
+        """
+        return extract_component_group(self._components, "chopper")
 
     @property
     def detectors(self) -> MappingProxyType[str, DetectorReading]:
-        """The detectors in the model."""
-        return MappingProxyType(
-            {
-                key: comp
-                for key, comp in self._components.items()
-                if comp.kind == "detector"
-            }
-        )
+        """
+        A dictionary of the detectors in the instrument.
+        """
+        return extract_component_group(self._components, "detector")
+
+    @property
+    def samples(self) -> MappingProxyType[str, ComponentReading]:
+        """
+        A dictionary of the samples in the instrument.
+        """
+        return extract_component_group(self._components, "sample")
 
     @property
     def source(self) -> SourceReading:
@@ -284,11 +283,12 @@ class Result:
         start = sc.datetime("2024-01-01T12:00:00.000000")
         period = sc.reciprocal(self.source.frequency)
 
-        keys = list(self._detectors.keys()) if key is None else [key]
+        detectors = self.detectors
+        keys = list(detectors.keys()) if key is None else [key]
 
         event_data = []
         for name in keys:
-            raw_data = self._detectors[name].data.flatten(to="event")
+            raw_data = detectors[name].data.flatten(to="event")
             events = (
                 raw_data[~raw_data.masks["blocked_by_others"]]
                 .copy()
@@ -307,7 +307,7 @@ class Result:
             "toa"
         ) % period.to(unit=dt.unit)
         out = (
-            event_data.drop_coords(["tof", "speed", "birth_time", "wavelength"])
+            event_data.drop_coords(["speed", "birth_time", "wavelength"])
             .group("distance")
             .rename_dims(distance="detector_number")
         )

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import warnings
 from itertools import chain
+from types import MappingProxyType
 
 import scipp as sc
 
@@ -13,6 +14,7 @@ from .component import Component
 from .detector import Detector
 from .result import Result
 from .source import Source
+from .utils import extract_component_group
 
 ComponentType = Chopper | Detector
 
@@ -33,17 +35,25 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
         type, see the documentation of the :class:`Chopper` and :class:`Detector`
         classes for details.
     """
-    components = []
+    beamline = {"components": []}
     mapping = {"chopper": Chopper, "detector": Detector}
     for name, comp in instrument.items():
         if comp["type"] == "source":
+            if "source" in beamline:
+                raise ValueError(
+                    "Only one source is allowed, but multiple were found in the"
+                    "instrument parameters."
+                )
+            beamline["source"] = Source.from_json(params=comp)
             continue
         if comp["type"] not in mapping:
             raise ValueError(
                 f"Unknown component type: {comp['type']} for component {name}. "
             )
-        components.append(mapping[comp["type"]].from_json(name=name, params=comp))
-    return components
+        beamline["components"].append(
+            mapping[comp["type"]].from_json(name=name, params=comp)
+        )
+    return beamline
 
 
 class Model:
@@ -73,9 +83,37 @@ class Model:
         detectors: list[Detector] | tuple[Detector, ...] | None = None,
     ):
         self.source = source
-        self.components = {}
+        self._components = {}
         for comp in chain((choppers or ()), (detectors or ()), (components or ())):
             self.add(comp)
+
+    @property
+    def components(self) -> dict[str, Component]:
+        """
+        A dictionary of the components in the instrument.
+        """
+        return self._components
+
+    @property
+    def choppers(self) -> MappingProxyType[str, Chopper]:
+        """
+        A dictionary of the choppers in the instrument.
+        """
+        return extract_component_group(self._components, "chopper")
+
+    @property
+    def detectors(self) -> MappingProxyType[str, Detector]:
+        """
+        A dictionary of the detectors in the instrument.
+        """
+        return extract_component_group(self._components, "detector")
+
+    @property
+    def samples(self) -> MappingProxyType[str, Component]:
+        """
+        A dictionary of the samples in the instrument.
+        """
+        return extract_component_group(self._components, "sample")
 
     @classmethod
     def from_json(cls, filename: str) -> Model:
@@ -95,20 +133,7 @@ class Model:
 
         with open(filename) as f:
             instrument = json.load(f)
-        beamline = make_beamline(instrument)
-        source = None
-        for item in instrument.values():
-            if item.get("type") == "source":
-                if "facility" not in item:
-                    raise ValueError(
-                        "Currently, only sources from facilities are supported when "
-                        "loading from JSON."
-                    )
-                source_args = item.copy()
-                del source_args["type"]
-                source = Source(**source_args)
-                break
-        return cls(source=source, **beamline)
+        return cls(**make_beamline(instrument))
 
     def as_json(self) -> dict:
         """
@@ -128,7 +153,7 @@ class Model:
                 )
             else:
                 instrument_dict['source'] = self.source.as_json()
-        for comp in self.components.values():
+        for comp in self._components.values():
             instrument_dict[comp.name] = comp.as_json()
         return instrument_dict
 
@@ -161,14 +186,19 @@ class Model:
         component:
             A chopper or detector.
         """
+        if not isinstance(component, Component):
+            raise TypeError(
+                "Component must be an instance of Component or derived class, "
+                f"but got {type(component)}."
+            )
         # Note that the name "source" is reserved for the source.
-        if component.name in (*self.components, "source"):
+        if component.name in (*self._components, "source"):
             raise KeyError(
                 f"Component with name {component.name} already exists. "
                 "If you wish to replace/update an existing component, use "
                 "``model.components['name'] = new_component``."
             )
-        self.components[component.name] = component
+        self._components[component.name] = component
 
     def remove(self, name: str):
         """
@@ -179,7 +209,7 @@ class Model:
         name:
             The name of the component to remove.
         """
-        del self.components[name]
+        del self._components[name]
 
     def run(self) -> Result:
         """
@@ -190,7 +220,7 @@ class Model:
                 "No source has been defined for this model. Please add a source using "
                 "`model.source = Source(...)` before running the simulation."
             )
-        components = sorted(self.components.values(), key=lambda c: c.distance.value)
+        components = sorted(self._components.values(), key=lambda c: c.distance.value)
 
         if len(components) == 0:
             raise ValueError("Cannot run model: no components have been defined.")
@@ -245,7 +275,7 @@ class Model:
     def __repr__(self) -> str:
         out = f"Model:\n  Source: {self.source}\n"
         groups = {}
-        for comp in self.components.values():
+        for comp in self._components.values():
             if comp.kind not in groups:
                 groups[comp.kind] = []
             groups[comp.kind].append(comp)

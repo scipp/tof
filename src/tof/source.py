@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
+from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
@@ -491,6 +492,17 @@ class Source:
             f"  frequency={self.frequency:c}\n  facility='{self.facility}'\n"
             f"  distance={self.distance:c}"
         )
+
+    @classmethod
+    def from_json(cls, params: dict) -> Source:
+        if params.get("facility") is None:
+            raise ValueError(
+                "Currently, only sources from facilities are supported when "
+                "loading from JSON."
+            )
+        source_args = params.copy()
+        del source_args["type"]
+        return cls(**source_args)
 
     def as_json(self) -> dict:
         """

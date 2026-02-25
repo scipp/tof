@@ -130,6 +130,24 @@ def var_to_dict(var: sc.Variable) -> dict:
     }
 
 
+def extract_component_group(
+    components: dict | MappingProxyType, kind: str
+) -> MappingProxyType:
+    """
+    Extract a group of components of a given kind from a dictionary of components.
+
+    Parameters
+    ----------
+    components:
+        The components to extract from.
+    kind:
+        The kind of components to extract.
+    """
+    return MappingProxyType(
+        {name: comp for name, comp in components.items() if kind in comp.kind}
+    )
+
+
 @dataclass
 class Plot:
     ax: plt.Axes
