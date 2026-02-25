@@ -272,42 +272,6 @@ def test_neutron_conservation(make_chopper, use_components):
     assert det.sum().value + det.masks['blocked_by_others'].sum().value == N
 
 
-# def test_neutron_time_of_flight(make_chopper):
-#     N = 10_000
-#     source = tof.Source(facility='ess', neutrons=N)
-
-#     chopper1 = make_chopper(
-#         topen=[5.0 * ms],
-#         tclose=[16.0 * ms],
-#         f=10.0 * Hz,
-#         phase=0.0 * deg,
-#         distance=10 * meter,
-#         name='chopper1',
-#     )
-#     chopper2 = make_chopper(
-#         topen=[9.0 * ms, 15.0 * ms],
-#         tclose=[15.0 * ms, 20.0 * ms],
-#         f=15.0 * Hz,
-#         phase=0.0 * deg,
-#         distance=15 * meter,
-#         name='chopper2',
-#     )
-
-#     detector = tof.Detector(distance=20 * meter, name='detector')
-#     model = tof.Model(
-#         source=source, choppers=[chopper1, chopper2], detectors=[detector]
-#     )
-#     res = model.run()
-
-#     ch1 = res.choppers['chopper1'].data
-#     ch2 = res.choppers['chopper2'].data
-#     det = res.detectors['detector'].data
-
-#     assert sc.allclose(ch1.coords['tof'], ch1.coords['toa'] - ch1.coords['birth_time'])
-#     assert sc.allclose(ch2.coords['tof'], ch2.coords['toa'] - ch2.coords['birth_time'])
-#     assert sc.allclose(det.coords['tof'], det.coords['toa'] - det.coords['birth_time'])
-
-
 def test_source_not_at_origin(make_chopper):
     N = 100_000
     source1 = tof.Source(facility='ess', neutrons=N, seed=123)
