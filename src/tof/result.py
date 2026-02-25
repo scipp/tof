@@ -181,10 +181,11 @@ class Result:
         wmin, wmax = wavelengths.min(), wavelengths.max()
 
         rng = np.random.default_rng(seed)
+        # Make ids for neutrons per pulse, instead of using their id coord
+        ids = np.arange(self.source.neutrons)
 
         for i in range(self._source.data.sizes["pulse"]):
             component_data = furthest_component.data["pulse", i]
-            ids = component_data.coords["id"].values
 
             # Plot visible rays
             blocked = one_mask(component_data.masks).values
