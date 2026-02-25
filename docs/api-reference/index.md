@@ -12,15 +12,17 @@
 
    Chopper
    ChopperReading
+   Component
    ComponentReading
    Dashboard
    Detector
    DetectorReading
+   InelasticSample
    Model
    ReadingField
    Result
    Source
-   SourceParameters
+   SourceReading
 ```
 
 ## Top-level functions
@@ -39,5 +41,6 @@
    :template: module-template.rst
    :recursive:
 
+   facilities
    utils
 ```

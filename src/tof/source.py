@@ -495,6 +495,22 @@ class Source:
 
     @classmethod
     def from_json(cls, params: dict) -> Source:
+        """
+        Create a source from a JSON-serializable dictionary.
+        Currently, only sources from facilities are supported when loading from JSON.
+
+        The dictionary should have the following format:
+
+        .. code-block:: json
+
+            {
+                "type": "source",
+                "facility": "ess",
+                "neutrons": 1000000,
+                "pulses": 1,
+                "seed": 42
+            }
+        """
         if params.get("facility") is None:
             raise ValueError(
                 "Currently, only sources from facilities are supported when "
