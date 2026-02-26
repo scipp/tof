@@ -139,9 +139,10 @@ class Chopper:
         # self.close.dim to make use of automatic broadcasting below.
         # We also start at -1 to catch early openings in case the phase or opening
         # angles are large
-        phases = sc.arange(
-            f"{self.open.dim}-{self.close.dim}", -1, nrot
-        ) * two_pi + self.phase.to(unit='rad')
+        phases = (
+            sc.arange(f"{self.open.dim}-{self.close.dim}", -1, nrot) * two_pi
+            + self.phase.to(unit='rad')
+        ) * (1 - 2 * (self.direction == AntiClockwise))
 
         open_times = self.open.to(unit='rad', copy=False)
         close_times = self.close.to(unit='rad', copy=False)
@@ -266,13 +267,37 @@ class Chopper:
             else Clockwise,
             open=disk_chopper.slit_begin - disk_chopper.beam_position,
             close=disk_chopper.slit_end - disk_chopper.beam_position,
-            phase=disk_chopper.phase
-            if disk_chopper.frequency.value > 0.0
-            else -disk_chopper.phase,
+            phase=disk_chopper.phase,
+            # if disk_chopper.frequency.value > 0.0
+            # else -disk_chopper.phase,
             distance=distance,
             name=name,
         )
 
+<<<<<<< Updated upstream
+=======
+    def to_diskchopper(self) -> DiskChopper:
+        """
+        Export the chopper as a scippneutron DiskChopper.
+        """
+        from scippneutron.chopper import DiskChopper
+
+        frequency = (
+            self.frequency if self.direction == AntiClockwise else -self.frequency
+        )
+        # phase = self.phase if self.direction == AntiClockwise else -self.phase
+        return DiskChopper(
+            frequency=frequency,
+            beam_position=sc.scalar(0.0, unit='deg'),
+            slit_begin=self.open,
+            slit_end=self.close,
+            phase=self.phase,
+            axle_position=sc.vector(
+                value=[0.0, 0.0, self.distance.value], unit=self.distance.unit
+            ),
+        )
+
+>>>>>>> Stashed changes
     @classmethod
     def from_nexus(cls, nexus_chopper, name: str | None = None) -> Chopper:
         """
@@ -314,9 +339,9 @@ class Chopper:
             else Clockwise,
             open=nexus_chopper['slit_edges'][::2] - nexus_chopper['beam_position'],
             close=nexus_chopper['slit_edges'][1::2] - nexus_chopper['beam_position'],
-            phase=nexus_chopper['phase']
-            if nexus_chopper['rotation_speed'].value > 0.0
-            else -nexus_chopper['phase'],
+            phase=nexus_chopper['phase'],
+            # if nexus_chopper['rotation_speed'].value > 0.0
+            # else -nexus_chopper['phase'],
             distance=distance,
             name=name,
         )
