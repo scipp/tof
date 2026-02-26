@@ -274,8 +274,6 @@ class Chopper:
             name=name,
         )
 
-<<<<<<< Updated upstream
-=======
     def to_diskchopper(self) -> DiskChopper:
         """
         Export the chopper as a scippneutron DiskChopper.
@@ -297,7 +295,6 @@ class Chopper:
             ),
         )
 
->>>>>>> Stashed changes
     @classmethod
     def from_nexus(cls, nexus_chopper, name: str | None = None) -> Chopper:
         """
@@ -344,27 +341,6 @@ class Chopper:
             # else -nexus_chopper['phase'],
             distance=distance,
             name=name,
-        )
-
-    def to_diskchopper(self) -> DiskChopper:
-        """
-        Export the chopper as a scippneutron DiskChopper.
-        """
-        from scippneutron.chopper import DiskChopper
-
-        frequency = (
-            self.frequency if self.direction == AntiClockwise else -self.frequency
-        )
-        phase = self.phase if self.direction == AntiClockwise else -self.phase
-        return DiskChopper(
-            frequency=frequency,
-            beam_position=sc.scalar(0.0, unit='deg'),
-            slit_begin=self.open,
-            slit_end=self.close,
-            phase=phase,
-            axle_position=sc.vector(
-                value=[0.0, 0.0, self.distance.value], unit=self.distance.unit
-            ),
         )
 
 
