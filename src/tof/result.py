@@ -183,6 +183,7 @@ class Result:
         rng = np.random.default_rng(seed)
         # Make ids for neutrons per pulse, instead of using their id coord
         ids = np.arange(self.source.neutrons)
+        rays = {"x": [], "y": [], "color": []}
 
         for i in range(self._source.data.sizes["pulse"]):
             component_data = furthest_component.data["pulse", i]
@@ -197,17 +198,9 @@ class Result:
                     replace=False,
                 )
                 x, y, c = _get_rays(components, pulse=i, inds=inds)
-                _add_rays(
-                    ax=ax,
-                    x=x,
-                    y=y,
-                    color=c,
-                    cbar=cbar and (i == 0),
-                    cmap=cmap,
-                    vmin=wmin.value if vmin is None else vmin,
-                    vmax=wmax.value if vmax is None else vmax,
-                    cax=cax,
-                )
+                rays["x"].append(x)
+                rays["y"].append(y)
+                rays["color"].append(c)
 
             # Plot blocked rays
             inds = rng.choice(
@@ -230,6 +223,22 @@ class Result:
 
             # Plot pulse
             self.source.plot_on_time_distance_diagram(ax, pulse=i)
+
+        # Add coloured rays in one go so that they share the same colorbar, thus
+        # enabling using zoom on the colorbar to select a wavelength range across all
+        # pulses.
+        _add_rays(
+            ax=ax,
+            x=np.concatenate(rays["x"], axis=0),
+            y=np.concatenate(rays["y"], axis=0),
+            color=np.concatenate(rays["color"], axis=0),
+            cbar=cbar,
+            cmap=cmap,
+            vmin=wmin.value if vmin is None else vmin,
+            vmax=wmax.value if vmax is None else vmax,
+            cax=cax,
+        )
+
         if furthest_component.toa.data.sum().value > 0:
             toa_max = furthest_component.toa.max().value
         else:
