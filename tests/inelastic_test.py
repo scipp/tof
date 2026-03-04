@@ -5,6 +5,7 @@ import numpy as np
 import scipp as sc
 
 import tof
+from tof.utils import wavelength_to_energy
 
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
@@ -206,6 +207,47 @@ def test_inelastic_sample_that_has_zero_delta_e():
         res['monitor'].data.coords['wavelength'],
         res['detector'].data.coords['wavelength'],
     )
+
+
+def test_inelastic_sample_final_energy_is_positive():
+    rng = np.random.default_rng(seed=86)
+
+    def uniform_deltae(e_i):
+        # Wide distribution which exceeds the initial energy
+        de = rng.uniform(-0.6, 0.6, size=e_i.shape)
+        return sc.array(dims=e_i.dims, values=de, unit='meV')
+
+    sample = tof.InelasticSample(
+        distance=28.0 * meter,
+        name="sample",
+        delta_e=uniform_deltae,
+    )
+
+    choppers = [
+        tof.Chopper(
+            frequency=70.0 * Hz,
+            open=sc.array(dims=['cutout'], values=[0.0], unit='deg'),
+            close=sc.array(dims=['cutout'], values=[1.0], unit='deg'),
+            phase=0.0 * deg,
+            distance=20.0 * meter,
+            name="fastchopper",
+        ),
+    ]
+
+    detectors = [
+        tof.Detector(distance=26.0 * meter, name='monitor'),
+        tof.Detector(distance=32.0 * meter, name='detector'),
+    ]
+
+    source = tof.Source(facility='ess', neutrons=500_000, seed=77)
+
+    model = tof.Model(source=source, components=choppers + detectors + [sample])
+    res = model.run()
+
+    final_energy = wavelength_to_energy(res['detector'].data.coords['wavelength'])
+
+    assert sc.all(final_energy > sc.scalar(0.0, unit='meV'))
+    assert sc.isclose(final_energy.min(), sc.scalar(1.0e-30, unit='meV'))
 
 
 def test_inelastic_sample_as_json():
