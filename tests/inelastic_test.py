@@ -12,13 +12,17 @@ meter = sc.Unit('m')
 
 
 def test_inelastic_sample_flat_distribution():
+    rng = np.random.default_rng(seed=83)
+
+    def uniform_deltae(e_i):
+        # Uniform sampling between -0.2 and 0.2 meV
+        de = rng.uniform(-0.2, 0.2, size=e_i.shape)
+        return sc.array(dims=e_i.dims, values=de, unit='meV')
+
     sample = tof.InelasticSample(
         distance=28.0 * meter,
         name="sample",
-        delta_e=sc.DataArray(
-            data=sc.ones(sizes={'e': 100}),
-            coords={'e': sc.linspace('e', -0.2, 0.2, 100, unit='meV')},
-        ),
+        delta_e=uniform_deltae,
     )
 
     choppers = [
@@ -59,13 +63,17 @@ def test_inelastic_sample_flat_distribution():
     )
 
 
-def test_inelastic_sample_doube_peaked_distribution():
-    delta_e = sc.DataArray(
-        data=sc.zeros(sizes={'e': 100}),
-        coords={'e': sc.linspace('e', -0.2, 0.2, 100, unit='meV')},
+def test_inelastic_sample_double_peaked_distribution():
+    rng = np.random.default_rng(seed=84)
+
+    def double_peak(e_i):
+        # Either -0.2 or 0.2 meV
+        de = rng.choice([-0.2, 0.2], size=e_i.shape)
+        return sc.array(dims=e_i.dims, values=de, unit='meV')
+
+    sample = tof.InelasticSample(
+        distance=28.0 * meter, name="sample", delta_e=double_peak
     )
-    delta_e.values[[0, -1]] = 1.0
-    sample = tof.InelasticSample(distance=28.0 * meter, name="sample", delta_e=delta_e)
 
     choppers = [
         tof.Chopper(
@@ -106,15 +114,16 @@ def test_inelastic_sample_doube_peaked_distribution():
 
 
 def test_inelastic_sample_normal_distribution():
-    x = sc.linspace('e', -0.2, 0.2, 100, unit='meV')
-    sig = sc.scalar(0.03, unit='meV')
-    y = 1.0 / (np.sqrt(2.0 * np.pi) * sig) * sc.exp(-((x / sig) ** 2) / 2)
-    y.unit = ""
+    rng = np.random.default_rng(seed=85)
+
+    def normal_deltae(e_i):
+        de = rng.normal(scale=0.05, size=e_i.shape)
+        return sc.array(dims=e_i.dims, values=de, unit='meV')
 
     sample = tof.InelasticSample(
         distance=28.0 * meter,
         name="sample",
-        delta_e=sc.DataArray(data=y, coords={'e': x}),
+        delta_e=normal_deltae,
     )
 
     choppers = [
@@ -156,13 +165,13 @@ def test_inelastic_sample_normal_distribution():
 
 
 def test_inelastic_sample_that_has_zero_delta_e():
+    def zero_deltae(e_i):
+        return sc.zeros(sizes=e_i.sizes, unit='meV')
+
     sample = tof.InelasticSample(
         distance=28.0 * meter,
         name="sample",
-        delta_e=sc.DataArray(
-            data=sc.array(dims=['e'], values=[1.0], unit=''),
-            coords={'e': sc.array(dims=['e'], values=[0.0], unit='meV')},
-        ),
+        delta_e=zero_deltae,
     )
 
     choppers = [
@@ -200,15 +209,8 @@ def test_inelastic_sample_that_has_zero_delta_e():
 
 
 def test_inelastic_sample_as_json():
-    p = np.array([0.4, 0.45, 0.7, 1.0, 0.7, 0.45, 0.4])
-    e = np.array([-0.5, -0.25, -0.1, 0.0, 0.1, 0.25, 0.5])
-
-    delta_e = sc.DataArray(
-        data=sc.array(dims=['e'], values=p),
-        coords={'e': sc.array(dims=['e'], values=e, unit='meV')},
-    )
     sample = tof.InelasticSample(
-        distance=28.0 * meter, name="sample1", delta_e=delta_e, seed=66
+        distance=28.0 * meter, name="sample1", delta_e=lambda x: x
     )
 
     json_dict = sample.as_json()
@@ -216,31 +218,8 @@ def test_inelastic_sample_as_json():
     assert json_dict['name'] == 'sample1'
     assert json_dict['distance']['value'] == 28.0
     assert json_dict['distance']['unit'] == 'm'
-    assert np.array_equal(json_dict['probabilities']['value'], p / p.sum())
-    assert json_dict['probabilities']['unit'] == 'dimensionless'
-    assert np.array_equal(json_dict['energies']['value'], e)
-    assert json_dict['energies']['unit'] == 'meV'
-    assert json_dict['seed'] == 66
 
 
-def test_inelastic_sample_from_json():
-    p = np.array([0.4, 0.7, 1.0, 0.7, 0.4])
-    e = np.array([-0.5, -0.25, 0.0, 0.25, 0.5])
-    json_dict = {
-        'type': 'inelastic_sample',
-        'distance': {'value': 28.0, 'unit': 'm'},
-        'name': 'sample1',
-        'energies': {'value': e, 'unit': 'meV'},
-        'probabilities': {'value': p, 'unit': ''},
-        'seed': 78,
-    }
-    sample = tof.InelasticSample.from_json(name=json_dict['name'], params=json_dict)
-
-    assert sample.distance.value == 28.0
-    assert sample.distance.unit == 'm'
-    assert sample.name == 'sample1'
-    assert np.array_equal(sample.energies.values, e)
-    assert sample.energies.unit == 'meV'
-    assert np.array_equal(sample.probabilities.values, p / p.sum())
-    assert sample.probabilities.unit == 'dimensionless'
-    assert sample.seed == 78
+# # TODO: Not implemented yet: how to save a callable to json
+# def test_inelastic_sample_from_json():
+#     pass
