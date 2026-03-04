@@ -39,6 +39,7 @@ def _add_rays(
         if cbar:
             cb = plt.colorbar(coll, ax=ax, cax=cax)
             cb.ax.yaxis.set_label_coords(-0.9, 0.5)
+            cb.ax.set_navigate(False)
             cb.set_label("Wavelength [Å]")
     ax.add_collection(coll)
 
