@@ -56,7 +56,6 @@ def _add_rays(
     cax: plt.Axes | None = None,
     zorder: int = 1,
 ):
-    x, y = (a.reshape((-1, 2)) for a in (x, y))
     coll = LineCollection(np.stack((x, y), axis=2), zorder=zorder)
     if isinstance(color, str):
         coll.set_color(color)
@@ -219,7 +218,13 @@ class Result:
             )
             x[line_selection] = np.nan
             y[line_selection] = np.nan
-            _add_rays(ax=ax, x=x, y=y, color="lightgray", zorder=-1)
+            _add_rays(
+                ax=ax,
+                x=x.reshape((-1, 2)),
+                y=y.reshape((-1, 2)),
+                color="lightgray",
+                zorder=-1,
+            )
 
             # Plot pulse
             self.source.plot_on_time_distance_diagram(ax, pulse=i)
@@ -227,17 +232,18 @@ class Result:
         # Add coloured rays in one go so that they share the same colorbar, thus
         # enabling using zoom on the colorbar to select a wavelength range across all
         # pulses.
-        _add_rays(
-            ax=ax,
-            x=np.concatenate(rays["x"], axis=0),
-            y=np.concatenate(rays["y"], axis=0),
-            color=np.concatenate(rays["color"], axis=0),
-            cbar=cbar,
-            cmap=cmap,
-            vmin=wmin.value if vmin is None else vmin,
-            vmax=wmax.value if vmax is None else vmax,
-            cax=cax,
-        )
+        if len(rays["x"]) > 0:
+            _add_rays(
+                ax=ax,
+                x=np.concatenate([r.reshape((-1, 2)) for r in rays["x"]], axis=0),
+                y=np.concatenate([r.reshape((-1, 2)) for r in rays["y"]], axis=0),
+                color=np.concatenate([r.ravel() for r in rays["color"]], axis=0),
+                cbar=cbar,
+                cmap=cmap,
+                vmin=wmin.value if vmin is None else vmin,
+                vmax=wmax.value if vmax is None else vmax,
+                cax=cax,
+            )
 
         if furthest_component.toa.data.sum().value > 0:
             toa_max = furthest_component.toa.max().value
