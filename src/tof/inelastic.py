@@ -71,15 +71,14 @@ class InelasticSample(Component):
     delta_e:
         The change in energy applied to the neutrons as they pass through the
         inelastic sample. This should be a function or callable that takes the
-        incident energy as a :class:`DataArray` and returns the change in energy as a
-        :class:`DataArray`.
+        incident energy and returns the final energy.
     """
 
     def __init__(
         self,
         distance: sc.Variable,
         name: str,
-        delta_e: Callable[[sc.DataArray], sc.DataArray],
+        delta_e: Callable[[sc.Variable], sc.Variable],
     ):
         self.distance = distance.to(dtype=float, copy=False)
         self.name = name
@@ -144,8 +143,7 @@ class InelasticSample(Component):
         """
         incident_wavelength = neutrons.coords["wavelength"]
         incident_energy = wavelength_to_energy(incident_wavelength)
-        d_e = self.delta_e(incident_energy)
-        final_energy = incident_energy - d_e.to(unit=incident_energy.unit, copy=False)
+        final_energy = self.delta_e(incident_energy)
         zero_energy = sc.scalar(1.0e-30, unit=final_energy.unit)
         final_energy = sc.where(final_energy < zero_energy, zero_energy, final_energy)
         w_final = energy_to_wavelength(final_energy, unit=incident_wavelength.unit)
