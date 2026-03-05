@@ -17,8 +17,10 @@ def test_inelastic_sample_flat_distribution():
 
     def uniform_deltae(e_i):
         # Uniform sampling between -0.2 and 0.2 meV
-        de = rng.uniform(-0.2, 0.2, size=e_i.shape)
-        return sc.array(dims=e_i.dims, values=de, unit='meV')
+        de = sc.array(
+            dims=e_i.dims, values=rng.uniform(-0.2, 0.2, size=e_i.shape), unit='meV'
+        )
+        return e_i.to(unit='meV', copy=False) - de
 
     sample = tof.InelasticSample(
         distance=28.0 * meter,
@@ -69,8 +71,10 @@ def test_inelastic_sample_double_peaked_distribution():
 
     def double_peak(e_i):
         # Either -0.2 or 0.2 meV
-        de = rng.choice([-0.2, 0.2], size=e_i.shape)
-        return sc.array(dims=e_i.dims, values=de, unit='meV')
+        de = sc.array(
+            dims=e_i.dims, values=rng.choice([-0.2, 0.2], size=e_i.shape), unit='meV'
+        )
+        return e_i.to(unit='meV', copy=False) - de
 
     sample = tof.InelasticSample(
         distance=28.0 * meter, name="sample", delta_e=double_peak
@@ -118,8 +122,10 @@ def test_inelastic_sample_normal_distribution():
     rng = np.random.default_rng(seed=85)
 
     def normal_deltae(e_i):
-        de = rng.normal(scale=0.05, size=e_i.shape)
-        return sc.array(dims=e_i.dims, values=de, unit='meV')
+        de = sc.array(
+            dims=e_i.dims, values=rng.normal(scale=0.05, size=e_i.shape), unit='meV'
+        )
+        return e_i.to(unit='meV', copy=False) - de
 
     sample = tof.InelasticSample(
         distance=28.0 * meter,
@@ -167,7 +173,7 @@ def test_inelastic_sample_normal_distribution():
 
 def test_inelastic_sample_that_has_zero_delta_e():
     def zero_deltae(e_i):
-        return sc.zeros(sizes=e_i.sizes, unit='meV')
+        return e_i
 
     sample = tof.InelasticSample(
         distance=28.0 * meter,
@@ -213,9 +219,11 @@ def test_inelastic_sample_final_energy_is_positive():
     rng = np.random.default_rng(seed=86)
 
     def uniform_deltae(e_i):
-        # Wide distribution which exceeds the initial energy
-        de = rng.uniform(-0.6, 0.6, size=e_i.shape)
-        return sc.array(dims=e_i.dims, values=de, unit='meV')
+        # Uniform sampling between -0.6 and 0.6 meV
+        de = sc.array(
+            dims=e_i.dims, values=rng.uniform(-0.6, 0.6, size=e_i.shape), unit='meV'
+        )
+        return e_i.to(unit='meV', copy=False) - de
 
     sample = tof.InelasticSample(
         distance=28.0 * meter,
