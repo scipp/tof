@@ -8,8 +8,7 @@ from dataclasses import dataclass
 
 import plopp as pp
 import scipp as sc
-
-from .utils import Plot
+from plopp.core.typing import FigureLike
 
 
 @dataclass(frozen=True)
@@ -17,7 +16,7 @@ class ReadingField:
     data: sc.DataArray
     dim: str
 
-    def plot(self, bins: int = 300, **kwargs):
+    def plot(self, bins: int = 300, **kwargs) -> FigureLike:
         by_pulse = sc.collapse(self.data, keep="event")
         to_plot = {}
         color = {}
@@ -120,7 +119,7 @@ class ComponentReading:
         """
         return _make_reading_field(self.data, dim="speed")
 
-    def plot(self, bins: int = 300) -> Plot:
+    def plot(self, bins: int = 300) -> FigureLike:
         """
         Plot both the toa and wavelength data side by side.
 
