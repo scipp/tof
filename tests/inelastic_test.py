@@ -215,7 +215,7 @@ def test_inelastic_sample_that_has_zero_delta_e():
     )
 
 
-def test_inelastic_sample_final_energy_is_positive():
+def test_inelastic_sample_negative_final_energyies_are_dropped():
     rng = np.random.default_rng(seed=86)
 
     def uniform_deltae(e_i):
@@ -252,10 +252,9 @@ def test_inelastic_sample_final_energy_is_positive():
     model = tof.Model(source=source, components=choppers + detectors + [sample])
     res = model.run()
 
-    final_energy = wavelength_to_energy(res['detector'].data.coords['wavelength'])
-
-    assert sc.all(final_energy > sc.scalar(0.0, unit='meV'))
-    assert sc.isclose(final_energy.min(), sc.scalar(1.0e-30, unit='meV'))
+    # Verify that some wavelengths are NaN
+    assert sc.all(~sc.isnan(res['monitor'].data.coords['wavelength']))
+    assert not sc.all(~sc.isnan(res['detector'].data.coords['wavelength']))
 
 
 def test_inelastic_sample_as_json():

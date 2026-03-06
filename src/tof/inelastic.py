@@ -133,6 +133,11 @@ class InelasticSample(Component):
 
         where :math:`E_i` is the initial energy and :math:`E_f` is the final energy.
 
+        Neutrons that would end up with a negative final energy are removed from the
+        output by setting their wavelength to NaN. This is done to avoid issues with
+        neutrons that would have a negative final energy being plotted with a very large
+        wavelength.
+
         Parameters
         ----------
         neutrons:
@@ -144,8 +149,11 @@ class InelasticSample(Component):
         incident_wavelength = neutrons.coords["wavelength"]
         incident_energy = wavelength_to_energy(incident_wavelength)
         final_energy = self.delta_e(incident_energy)
-        zero_energy = sc.scalar(1.0e-30, unit=final_energy.unit)
-        final_energy = sc.where(final_energy < zero_energy, zero_energy, final_energy)
+        final_energy = sc.where(
+            final_energy < sc.scalar(0.0, unit=final_energy.unit),
+            sc.scalar(float("nan"), unit=final_energy.unit),
+            final_energy,
+        )
         w_final = energy_to_wavelength(final_energy, unit=incident_wavelength.unit)
 
         neutrons = neutrons.assign_coords(
