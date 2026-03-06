@@ -173,22 +173,14 @@ class Result:
         )
         furthest_component = components[-1]
 
-        wavelengths = sc.DataArray(
-            data=furthest_component.data.coords["wavelength"],
-            masks=furthest_component.data.masks,
-        )
-        wmin, wmax = wavelengths.min(), wavelengths.max()
-
         rng = np.random.default_rng(seed)
         # Make ids for neutrons per pulse, instead of using their id coord
         ids = np.arange(self.source.neutrons)
         rays = {"x": [], "y": [], "color": []}
 
         for i in range(self._source.data.sizes["pulse"]):
-            component_data = furthest_component.data["pulse", i]
-
             # Plot visible rays
-            blocked = one_mask(component_data.masks).values
+            blocked = one_mask(furthest_component.data["pulse", i].masks).values
             nblocked = int(blocked.sum())
             if nblocked < self.source.neutrons:
                 inds = rng.choice(
@@ -233,6 +225,15 @@ class Result:
         # enabling using zoom on the colorbar to select a wavelength range across all
         # pulses.
         if len(rays["x"]) > 0:
+            wavelengths = sc.DataArray(
+                data=furthest_component.data.coords["wavelength"],
+                masks=furthest_component.data.masks,
+            )
+            if vmin is None:
+                vmin = wavelengths.nanmin().value
+            if vmax is None:
+                vmax = wavelengths.nanmax().value
+
             _add_rays(
                 ax=ax,
                 x=np.concatenate([r.reshape((-1, 2)) for r in rays["x"]], axis=0),
@@ -240,15 +241,15 @@ class Result:
                 color=np.concatenate([r.ravel() for r in rays["color"]], axis=0),
                 cbar=cbar,
                 cmap=cmap,
-                vmin=wmin.value if vmin is None else vmin,
-                vmax=wmax.value if vmax is None else vmax,
+                vmin=vmin,
+                vmax=vmax,
                 cax=cax,
             )
 
         if furthest_component.toa.data.sum().value > 0:
-            toa_max = furthest_component.toa.max().value
+            toa_max = furthest_component.toa.nanmax().value
         else:
-            toa_max = furthest_component.toa.data.coords["toa"].max().value
+            toa_max = furthest_component.toa.data.coords["toa"].nanmax().value
 
         # Plot components
         for comp in self._components.values():

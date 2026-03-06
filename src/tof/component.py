@@ -48,6 +48,26 @@ class ReadingField:
         da.data = da.coords[self.dim]
         return da.max().data
 
+    def mean(self):
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.mean().data
+
+    def nanmin(self):
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.nanmin().data
+
+    def nanmax(self):
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.nanmax().data
+
+    def nanmean(self):
+        da = self.data.copy(deep=False)
+        da.data = da.coords[self.dim]
+        return da.nanmean().data
+
     def __repr__(self) -> str:
         da = self.data.copy(deep=False)
         da.data = da.coords[self.dim]
