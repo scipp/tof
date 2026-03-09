@@ -68,7 +68,7 @@ class InelasticSample(Component):
         The distance from the source to the inelastic sample.
     name:
         The name of the inelastic sample.
-    delta_e:
+    func:
         The change in energy applied to the neutrons as they pass through the
         inelastic sample. This should be a function or callable that takes the
         incident energy and returns the final energy.
@@ -78,11 +78,11 @@ class InelasticSample(Component):
         self,
         distance: sc.Variable,
         name: str,
-        delta_e: Callable[[sc.Variable], sc.Variable],
+        func: Callable[[sc.Variable], sc.Variable],
     ):
         self.distance = distance.to(dtype=float, copy=False)
         self.name = name
-        self.delta_e = delta_e
+        self.func = func
         self.kind = "inelastic_sample"
 
     def __repr__(self) -> str:
@@ -95,7 +95,7 @@ class InelasticSample(Component):
         """
         Return the inelastic sample as a dictionary.
         """
-        return {'distance': self.distance, 'name': self.name, 'delta_e': self.delta_e}
+        return {'distance': self.distance, 'name': self.name, 'func': self.func}
 
     @classmethod
     def from_json(cls, name: str, params: dict) -> InelasticSample:
@@ -148,7 +148,7 @@ class InelasticSample(Component):
         """
         incident_wavelength = neutrons.coords["wavelength"]
         incident_energy = wavelength_to_energy(incident_wavelength)
-        final_energy = self.delta_e(incident_energy)
+        final_energy = self.func(incident_energy)
         final_energy = sc.where(
             final_energy < sc.scalar(0.0, unit=final_energy.unit),
             sc.scalar(float("nan"), unit=final_energy.unit),

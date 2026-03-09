@@ -5,7 +5,6 @@ import numpy as np
 import scipp as sc
 
 import tof
-from tof.utils import wavelength_to_energy
 
 Hz = sc.Unit('Hz')
 deg = sc.Unit('deg')
@@ -23,9 +22,7 @@ def test_inelastic_sample_flat_distribution():
         return e_i.to(unit='meV', copy=False) - de
 
     sample = tof.InelasticSample(
-        distance=28.0 * meter,
-        name="sample",
-        delta_e=uniform_deltae,
+        distance=28.0 * meter, name="sample", func=uniform_deltae
     )
 
     choppers = [
@@ -76,9 +73,7 @@ def test_inelastic_sample_double_peaked_distribution():
         )
         return e_i.to(unit='meV', copy=False) - de
 
-    sample = tof.InelasticSample(
-        distance=28.0 * meter, name="sample", delta_e=double_peak
-    )
+    sample = tof.InelasticSample(distance=28.0 * meter, name="sample", func=double_peak)
 
     choppers = [
         tof.Chopper(
@@ -128,9 +123,7 @@ def test_inelastic_sample_normal_distribution():
         return e_i.to(unit='meV', copy=False) - de
 
     sample = tof.InelasticSample(
-        distance=28.0 * meter,
-        name="sample",
-        delta_e=normal_deltae,
+        distance=28.0 * meter, name="sample", func=normal_deltae
     )
 
     choppers = [
@@ -171,15 +164,11 @@ def test_inelastic_sample_normal_distribution():
     )
 
 
-def test_inelastic_sample_that_has_zero_delta_e():
+def test_inelastic_sample_that_has_zero_energy_transfer():
     def zero_deltae(e_i):
         return e_i
 
-    sample = tof.InelasticSample(
-        distance=28.0 * meter,
-        name="sample",
-        delta_e=zero_deltae,
-    )
+    sample = tof.InelasticSample(distance=28.0 * meter, name="sample", func=zero_deltae)
 
     choppers = [
         tof.Chopper(
@@ -226,9 +215,7 @@ def test_inelastic_sample_negative_final_energyies_are_dropped():
         return e_i.to(unit='meV', copy=False) - de
 
     sample = tof.InelasticSample(
-        distance=28.0 * meter,
-        name="sample",
-        delta_e=uniform_deltae,
+        distance=28.0 * meter, name="sample", func=uniform_deltae
     )
 
     choppers = [
@@ -259,7 +246,7 @@ def test_inelastic_sample_negative_final_energyies_are_dropped():
 
 def test_inelastic_sample_as_json():
     sample = tof.InelasticSample(
-        distance=28.0 * meter, name="sample1", delta_e=lambda x: x
+        distance=28.0 * meter, name="sample1", func=lambda x: x
     )
 
     json_dict = sample.as_json()
