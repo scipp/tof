@@ -274,7 +274,7 @@ class Model:
             groups[comp.kind].append(comp)
 
         for group, comps in groups.items():
-            out += f"  {group.capitalize()}s:\n"
+            out += f"  {group.capitalize().replace('_', ' ')}s:\n"
             for comp in sorted(comps, key=lambda c: c.distance):
                 out += f"    {comp.name}: {comp}\n"
         return out
