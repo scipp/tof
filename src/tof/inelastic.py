@@ -88,9 +88,6 @@ class InelasticSample(Component):
     def __repr__(self) -> str:
         return f"InelasticSample(name={self.name}, distance={self.distance:c})"
 
-    def plot(self, **kwargs) -> pp.FigureLike:
-        return pp.xyplot(self.energies, self.probabilities, **kwargs)
-
     def as_dict(self) -> dict:
         """
         Return the inelastic sample as a dictionary.
