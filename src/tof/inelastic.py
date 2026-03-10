@@ -91,6 +91,15 @@ class InelasticSample(Component):
     def __repr__(self) -> str:
         return f"InelasticSample(name={self.name}, distance={self.distance:c})"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, InelasticSample):
+            return False
+        return (
+            self.name == other.name
+            and sc.identical(self.distance, other.distance)
+            and self.func is other.func
+        )
+
     def as_dict(self) -> dict:
         """
         Return the inelastic sample as a dictionary.
