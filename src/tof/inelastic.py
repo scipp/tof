@@ -104,13 +104,8 @@ class InelasticSample(Component):
     def as_json(self) -> dict:
         """
         Return the inelastic sample as a JSON-serializable dictionary.
-        .. versionadded:: 26.03.0
         """
-        return {
-            'type': 'inelastic_sample',
-            'distance': var_to_dict(self.distance),
-            'name': self.name,
-        }
+        raise NotImplementedError
 
     def as_readonly(self, neutrons: sc.DataArray) -> InelasticSampleReading:
         return InelasticSampleReading(

@@ -19,9 +19,9 @@ from .utils import extract_component_group
 ComponentType = Chopper | Detector
 
 
-def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]:
+def make_beamline(instrument: dict) -> dict[str, Source | list[Component]]:
     """
-    Create choppers and detectors from a dictionary.
+    Create components from a dictionary.
     The dictionary is typically loaded from a pre-configured instrument library, or
     from a JSON file.
 
@@ -30,12 +30,13 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
     instrument:
         A dictionary defining the instrument components.
         Each key is the name of a component, and the value is a dictionary with the
-        component parameters. Each component dictionary must have a "type" key, which
-        must be either "chopper" or "detector". Other keys depend on the component
-        type, see the documentation of the :class:`Chopper` and :class:`Detector`
-        classes for details.
+        component parameters. Each component dictionary must have a "type" key.
+        Other keys depend on the component type, see the documentation of the
+        component classes for details.
     """
     beamline = {"components": []}
+    # TODO: until we figure out how to serialize the InelasticSample, we do not support
+    # creating it from a JSON blob.
     mapping = {"chopper": Chopper, "detector": Detector}
     for name, comp in instrument.items():
         if comp["type"] == "source":
@@ -154,7 +155,15 @@ class Model:
             else:
                 instrument_dict['source'] = self.source.as_json()
         for comp in self._components.values():
-            instrument_dict[comp.name] = comp.as_json()
+            try:
+                instrument_dict[comp.name] = comp.as_json()
+            except NotImplementedError:
+                warnings.warn(
+                    f"Component '{comp.name}' does not support JSON serialization and "
+                    "will be skipped.",
+                    UserWarning,
+                    stacklevel=2,
+                )
         return instrument_dict
 
     def to_json(self, filename: str) -> None:
