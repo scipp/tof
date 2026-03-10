@@ -5,16 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 
-import plopp as pp
 import scipp as sc
 
 from .component import Component, ComponentReading
-from .utils import (
-    energy_to_wavelength,
-    var_to_dict,
-    wavelength_to_energy,
-    wavelength_to_speed,
-)
+from .utils import energy_to_wavelength, wavelength_to_energy, wavelength_to_speed
 
 
 @dataclass(frozen=True)
