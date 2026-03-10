@@ -177,14 +177,14 @@ class Model:
     def add(self, component: Component) -> None:
         """
         Add a component to the instrument.
-        Component names must be unique across choppers and detectors.
+        Component names must be unique for a given Model.
         The name "source" is reserved for the source, and can thus not be used for other
         components.
 
         Parameters
         ----------
         component:
-            A chopper or detector.
+            A component to add to the model (chopper, detector, sample, etc.).
         """
         if not isinstance(component, Component):
             raise TypeError(
