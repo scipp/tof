@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import plopp as pp
@@ -133,13 +133,11 @@ class ComponentReading:
         return self.toa.plot(bins=bins) + self.wavelength.plot(bins=bins)
 
 
-class Component:
+class Component(ABC):
     kind: str
 
     @abstractmethod
-    def apply(
-        self, neutrons: sc.DataArray, time_limit: sc.Variable
-    ) -> tuple[sc.DataArray, ComponentReading]:
+    def apply(self, neutrons: sc.DataArray) -> tuple[sc.DataArray, ComponentReading]:
         """
         Apply the component to the given neutrons.
 
