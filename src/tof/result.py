@@ -334,14 +334,11 @@ class Result:
     @property
     def data(self) -> sc.DataGroup:
         """
-        Get the data for the source, choppers, and detectors, as a DataGroup.
+        Get the data for the source and all the components, as a DataGroup.
         The components are sorted by distance.
         """
         out = {"source": self.source.data}
-        components = sorted(
-            chain(self.choppers.values(), self.detectors.values()),
-            key=lambda c: c.distance.value,
-        )
+        components = sorted(self._components.values(), key=lambda c: c.distance.value)
         for comp in components:
             out[comp.name] = comp.data
         return sc.DataGroup(out)
