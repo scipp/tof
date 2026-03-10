@@ -83,7 +83,10 @@ class InelasticSample(Component):
         self.distance = distance.to(dtype=float, copy=False)
         self.name = name
         self.func = func
-        self.kind = "inelastic_sample"
+
+    @property
+    def kind(self) -> str:
+        return "inelastic_sample"
 
     def __repr__(self) -> str:
         return f"InelasticSample(name={self.name}, distance={self.distance:c})"

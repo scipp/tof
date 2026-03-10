@@ -64,7 +64,10 @@ class Detector(Component):
     def __init__(self, distance: sc.Variable, name: str):
         self.distance = distance.to(dtype=float, copy=False)
         self.name = name
-        self.kind = "detector"
+
+    @property
+    def kind(self) -> str:
+        return "detector"
 
     def __repr__(self) -> str:
         return f"Detector(name={self.name}, distance={self.distance:c})"

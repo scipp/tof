@@ -134,7 +134,10 @@ class ComponentReading:
 
 
 class Component(ABC):
-    kind: str
+    @property
+    @abstractmethod
+    def kind(self) -> str:
+        raise NotImplementedError
 
     @abstractmethod
     def apply(self, neutrons: sc.DataArray) -> tuple[sc.DataArray, ComponentReading]:

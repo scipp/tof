@@ -176,8 +176,11 @@ class Chopper(Component):
         self.distance = distance.to(dtype=float, copy=False)
         self.phase = phase.to(dtype=float, copy=False)
         self.name = name
-        self.kind = "chopper"
         super().__init__()
+
+    @property
+    def kind(self) -> str:
+        return "chopper"
 
     @property
     def omega(self) -> sc.Variable:
