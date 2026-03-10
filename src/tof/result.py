@@ -20,7 +20,7 @@ from .utils import Plot, extract_component_group, one_mask
 
 def _get_rays(
     components: list[ComponentReading], pulse: int, inds: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     x = []
     y = []
     c = []
