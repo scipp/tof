@@ -244,18 +244,24 @@ def test_inelastic_sample_negative_final_energies_are_dropped():
     assert not sc.all(~sc.isnan(res['detector'].data.coords['wavelength']))
 
 
-def test_inelastic_sample_as_json():
-    sample = tof.InelasticSample(
-        distance=28.0 * meter, name="sample1", func=lambda x: x
+def test_inelastic_sample_eq():
+    def func1(e_i):
+        return e_i
+
+    def func2(e_i):
+        return 1.0 * e_i
+
+    sample1 = tof.InelasticSample(distance=28.0 * meter, name="sample1", func=func1)
+    assert sample1 == sample1
+    assert sample1 == tof.InelasticSample(
+        distance=28.0 * meter, name="sample1", func=func1
     )
-
-    json_dict = sample.as_json()
-    assert json_dict['type'] == 'inelastic_sample'
-    assert json_dict['name'] == 'sample1'
-    assert json_dict['distance']['value'] == 28.0
-    assert json_dict['distance']['unit'] == 'm'
-
-
-# # TODO: Not implemented yet: how to save a callable to json
-# def test_inelastic_sample_from_json():
-#     pass
+    assert sample1 != tof.InelasticSample(
+        distance=28.2 * meter, name="sample1", func=func1
+    )
+    assert sample1 != tof.InelasticSample(
+        distance=28.0 * meter, name="sample12", func=func1
+    )
+    assert sample1 != tof.InelasticSample(
+        distance=28.0 * meter, name="sample1", func=func2
+    )
