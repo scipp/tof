@@ -40,7 +40,6 @@ def normal_deltae(e_i):
 
 @pytest.mark.parametrize("deltae_func", [uniform_deltae, double_peak, normal_deltae])
 def test_inelastic_samples(deltae_func):
-
     sample = tof.InelasticSample(distance=28.0 * meter, name="sample", func=deltae_func)
 
     choppers = [
@@ -158,7 +157,6 @@ def test_inelastic_sample_negative_final_energies_are_dropped():
 
 
 def test_two_inelastic_samples():
-
     sample1 = tof.InelasticSample(
         distance=28.0 * meter, name="sample1", func=uniform_deltae
     )
@@ -202,7 +200,6 @@ def test_two_inelastic_samples():
 
 
 def test_inelastic_sample_between_two_choppers():
-
     sample1 = tof.InelasticSample(
         distance=15.0 * meter, name="sample1", func=uniform_deltae
     )
