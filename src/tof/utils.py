@@ -165,7 +165,7 @@ def extract_component_group(
         The kind of components to extract.
     """
     return MappingProxyType(
-        {name: comp for name, comp in components.items() if kind in comp.kind}
+        {name: comp for name, comp in components.items() if kind == comp.kind}
     )
 
 

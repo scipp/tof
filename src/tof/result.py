@@ -105,7 +105,7 @@ class Result:
         """
         A dictionary of the samples in the instrument.
         """
-        return extract_component_group(self._components, "sample")
+        return extract_component_group(self._components, "inelastic_sample")
 
     @property
     def source(self) -> SourceReading:
