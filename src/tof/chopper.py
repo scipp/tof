@@ -457,13 +457,19 @@ class Chopper(Component):
             data=neutrons,
         )
 
-    def apply(
-        self, neutrons: sc.DataArray, time_limit: sc.Variable
-    ) -> tuple[sc.DataArray, ChopperReading]:
+    def apply(self, neutrons: sc.DataArray) -> tuple[sc.DataArray, ChopperReading]:
         """
         Apply the effect of the chopper to the given neutrons.
+        Choppers open and close periodically, allowing neutrons to pass through only
+        during the open times.
+
+        Parameters
+        ----------
+        neutrons:
+            The neutrons traveling through the instrument, that will either be blocked
+            or let through by the chopper.
         """
-        # Apply the chopper's open/close times to the data
+        time_limit = neutrons.coords['toa'].max()
         m = sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool)
         to, tc = self.open_close_times(time_limit=time_limit)
         for i in range(len(to)):

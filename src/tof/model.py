@@ -242,13 +242,6 @@ class Model:
         time_unit = neutrons.coords['birth_time'].unit
 
         readings = {}
-        time_limit = (
-            neutrons.coords['birth_time']
-            + (
-                (components[-1].distance - self.source.distance)
-                / neutrons.coords['speed']
-            ).to(unit=time_unit)
-        ).max()
         for comp in components:
             neutrons = neutrons.copy(deep=False)
             toa = neutrons.coords['toa'] + (
@@ -267,7 +260,7 @@ class Model:
                     'blocked_by_others'
                 ] | neutrons.masks.pop('blocked_by_me')
 
-            neutrons, reading = comp.apply(neutrons=neutrons, time_limit=time_limit)
+            neutrons, reading = comp.apply(neutrons=neutrons)
             readings[comp.name] = reading
 
         return Result(source=self.source.as_readonly(), readings=readings)

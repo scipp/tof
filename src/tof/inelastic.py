@@ -121,7 +121,7 @@ class InelasticSample(Component):
         )
 
     def apply(
-        self, neutrons: sc.DataArray, time_limit: sc.Variable
+        self, neutrons: sc.DataArray
     ) -> tuple[sc.DataArray, InelasticSampleReading]:
         """
         Apply the change in energy to the given neutrons.
@@ -142,9 +142,6 @@ class InelasticSample(Component):
         ----------
         neutrons:
             The neutrons to which the inelastic sample will be applied.
-        time_limit:
-            The time limit for the neutrons to be considered as reaching the inelastic
-            sample.
         """
         incident_wavelength = neutrons.coords["wavelength"]
         incident_energy = wavelength_to_energy(incident_wavelength)

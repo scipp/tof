@@ -105,9 +105,7 @@ class Detector(Component):
     def as_readonly(self, neutrons: sc.DataArray) -> DetectorReading:
         return DetectorReading(distance=self.distance, name=self.name, data=neutrons)
 
-    def apply(
-        self, neutrons: sc.DataArray, time_limit: sc.Variable
-    ) -> tuple[sc.DataArray, DetectorReading]:
+    def apply(self, neutrons: sc.DataArray) -> tuple[sc.DataArray, DetectorReading]:
         """
         Apply the detector to the given neutrons.
         A detector does not modify the neutrons, it simply records them without
@@ -117,7 +115,5 @@ class Detector(Component):
         ----------
         neutrons:
             The neutrons to which the detector will be applied.
-        time_limit:
-            The time limit for the neutrons to be considered as reaching the detector.
         """
         return neutrons, self.as_readonly(neutrons)
