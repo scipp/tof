@@ -38,35 +38,23 @@ class ReadingField:
             raise RuntimeError("Nothing to plot.")
         return pp.plot(to_plot, **{**{"color": color}, **kwargs})
 
-    def min(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.min().data
+    def min(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).min().data
 
-    def max(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.max().data
+    def max(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).max().data
 
-    def mean(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.mean().data
+    def mean(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).mean().data
 
-    def nanmin(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.nanmin().data
+    def nanmin(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).nanmin().data
 
-    def nanmax(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.nanmax().data
+    def nanmax(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).nanmax().data
 
-    def nanmean(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.nanmean().data
+    def nanmean(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).nanmean().data
 
     def __repr__(self) -> str:
         da = self.data.copy(deep=False)
