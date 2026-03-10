@@ -204,7 +204,7 @@ def test_inelastic_sample_that_has_zero_energy_transfer():
     )
 
 
-def test_inelastic_sample_negative_final_energyies_are_dropped():
+def test_inelastic_sample_negative_final_energies_are_dropped():
     rng = np.random.default_rng(seed=86)
 
     def uniform_deltae(e_i):
