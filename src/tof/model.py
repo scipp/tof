@@ -41,7 +41,7 @@ def make_beamline(instrument: dict) -> dict[str, list[Chopper] | list[Detector]]
         if comp["type"] == "source":
             if "source" in beamline:
                 raise ValueError(
-                    "Only one source is allowed, but multiple were found in the"
+                    "Only one source is allowed, but multiple were found in the "
                     "instrument parameters."
                 )
             beamline["source"] = Source.from_json(params=comp)
