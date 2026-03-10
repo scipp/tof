@@ -477,6 +477,8 @@ class Chopper(Component):
         to, tc = self.open_close_times(time_limit=time_limit)
         for i in range(len(to)):
             m |= (neutrons.coords['toa'] > to[i]) & (neutrons.coords['toa'] < tc[i])
-        neutrons.masks['blocked_by_me'] = (~m) & (~neutrons.masks['blocked_by_others'])
 
-        return neutrons, self.as_readonly(neutrons, time_limit=time_limit)
+        out = neutrons.assign_masks(
+            blocked_by_me=(~m) & (~neutrons.masks['blocked_by_others'])
+        )
+        return out, self.as_readonly(out, time_limit=time_limit)

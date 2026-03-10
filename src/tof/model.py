@@ -240,27 +240,24 @@ class Model:
                 "itself. Please check the distances of the components."
             )
 
-        neutrons = self.source.data.copy(deep=False)
-        neutrons.masks["blocked_by_others"] = sc.zeros(
-            sizes=neutrons.sizes, unit=None, dtype=bool
-        )
-        neutrons.coords.update(
-            distance=self.source.distance, toa=neutrons.coords['birth_time']
+        neutrons = self.source.data.assign_masks(
+            blocked_by_others=sc.zeros(
+                sizes=self.source.data.sizes, unit=None, dtype=bool
+            )
+        ).assign_coords(
+            distance=self.source.distance, toa=self.source.data.coords['birth_time']
         )
 
         time_unit = neutrons.coords['birth_time'].unit
 
         readings = {}
         for comp in components:
-            neutrons = neutrons.copy(deep=False)
             toa = neutrons.coords['toa'] + (
                 (comp.distance - neutrons.coords['distance']) / neutrons.coords['speed']
             ).to(unit=time_unit, copy=False)
-            neutrons.coords['toa'] = toa
-            neutrons.coords['eto'] = toa % (1 / self.source.frequency).to(
-                unit=time_unit, copy=False
-            )
-            neutrons.coords['distance'] = comp.distance
+            eto = toa % (1 / self.source.frequency).to(unit=time_unit, copy=False)
+
+            neutrons = neutrons.assign_coords(toa=toa, eto=eto, distance=comp.distance)
 
             if "blocked_by_me" in neutrons.masks:
                 # Because we use shallow copies, we do not want to do an in-place |=
