@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 import plopp as pp
 import scipp as sc
+from plopp.core.typing import FigureLike
 
 from .component import ComponentReading
 from .utils import wavelength_to_speed
@@ -454,7 +455,7 @@ class Source:
     def __len__(self) -> int:
         return self.data.sizes["pulse"]
 
-    def plot(self, bins: int = 300) -> tuple:
+    def plot(self, bins: int = 300) -> FigureLike:
         """
         Plot the pulses of the source.
 
