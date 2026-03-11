@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
+# Copyright (c) 2026 Scipp contributors (https://github.com/scipp)
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import plopp as pp
@@ -37,15 +38,23 @@ class ReadingField:
             raise RuntimeError("Nothing to plot.")
         return pp.plot(to_plot, **{**{"color": color}, **kwargs})
 
-    def min(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.min().data
+    def min(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).min().data
 
-    def max(self):
-        da = self.data.copy(deep=False)
-        da.data = da.coords[self.dim]
-        return da.max().data
+    def max(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).max().data
+
+    def mean(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).mean().data
+
+    def nanmin(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).nanmin().data
+
+    def nanmax(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).nanmax().data
+
+    def nanmean(self) -> sc.Variable:
+        return self.data.assign(self.data.coords[self.dim]).nanmean().data
 
     def __repr__(self) -> str:
         da = self.data.copy(deep=False)
@@ -66,11 +75,7 @@ class ReadingField:
 
 def _make_reading_field(da: sc.DataArray, dim: str) -> ReadingField:
     return ReadingField(
-        data=sc.DataArray(
-            data=da.data,
-            coords={dim: da.coords[dim]},
-            masks=da.masks,
-        ),
+        data=sc.DataArray(data=da.data, coords={dim: da.coords[dim]}, masks=da.masks),
         dim=dim,
     )
 
@@ -87,13 +92,6 @@ class ComponentReading:
         Time of arrival of the neutrons at the component.
         """
         return _make_reading_field(self.data, dim="toa")
-
-    @property
-    def tof(self) -> ReadingField:
-        """
-        Time of flight of the neutrons from source to the component.
-        """
-        return _make_reading_field(self.data, dim="tof")
 
     @property
     def eto(self) -> ReadingField:
@@ -133,3 +131,26 @@ class ComponentReading:
             Number of bins to use for histogramming the neutrons.
         """
         return self.toa.plot(bins=bins) + self.wavelength.plot(bins=bins)
+
+
+class Component(ABC):
+    @property
+    @abstractmethod
+    def kind(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def apply(self, neutrons: sc.DataArray) -> tuple[sc.DataArray, ComponentReading]:
+        """
+        Apply the component to the given neutrons.
+
+        Parameters
+        ----------
+        neutrons:
+            The neutrons to which the component will be applied.
+
+        Returns
+        -------
+        The modified neutrons.
+        """
+        raise NotImplementedError

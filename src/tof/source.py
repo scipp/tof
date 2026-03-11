@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
+from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ import numpy as np
 import plopp as pp
 import scipp as sc
 
+from .component import ComponentReading
 from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
@@ -22,6 +24,18 @@ def _default_frequency(frequency: sc.Variable | None, pulses: int) -> sc.Variabl
             )
         frequency = 1.0 * sc.Unit("Hz")
     return frequency
+
+
+def _bin_edges_to_midpoints(
+    da: sc.DataArray, dims: list[str] | tuple[str]
+) -> sc.DataArray:
+    return da.assign_coords(
+        {
+            dim: sc.midpoints(da.coords[dim], dim)
+            for dim in dims
+            if da.coords.is_edges(dim)
+        }
+    )
 
 
 def _make_pulses(
@@ -407,6 +421,14 @@ class Source:
             distance if distance is not None else sc.scalar(0.0, unit="m")
         )
         source._frequency = _default_frequency(frequency, pulses)
+
+        if p is not None:
+            p = _bin_edges_to_midpoints(p, dims=["birth_time", "wavelength"])
+        if p_time is not None:
+            p_time = _bin_edges_to_midpoints(p_time, dims=["birth_time"])
+        if p_wav is not None:
+            p_wav = _bin_edges_to_midpoints(p_wav, dims=["wavelength"])
+
         pulse_params = _make_pulses(
             neutrons=neutrons,
             p=p,
@@ -452,8 +474,10 @@ class Source:
         return f1 + f2
 
     def as_readonly(self):
-        return SourceParameters(
-            data=self.data,
+        return SourceReading(
+            data=self.data.assign_masks(
+                blocked_by_others=sc.zeros_like(self.data.data, dtype=bool, unit=None)
+            ),
             facility=self.facility,
             neutrons=self.neutrons,
             frequency=self.frequency,
@@ -468,6 +492,31 @@ class Source:
             f"  frequency={self.frequency:c}\n  facility='{self.facility}'\n"
             f"  distance={self.distance:c}"
         )
+
+    @classmethod
+    def from_json(cls, params: dict) -> Source:
+        """
+        Create a source from a JSON-serializable dictionary.
+        Currently, only sources from facilities are supported when loading from JSON.
+
+        The dictionary should have the following format:
+
+        .. code-block:: json
+
+            {
+                "type": "source",
+                "facility": "ess",
+                "neutrons": 1000000,
+                "pulses": 1,
+                "seed": 42
+            }
+        """
+        if params.get("facility") is None:
+            raise ValueError(
+                "Currently, only sources from facilities are supported when "
+                "loading from JSON."
+            )
+        return cls(**{k: v for k, v in params.items() if k != "type"})
 
     def as_json(self) -> dict:
         """
@@ -485,7 +534,7 @@ class Source:
 
 
 @dataclass(frozen=True)
-class SourceParameters:
+class SourceReading(ComponentReading):
     """
     Read-only container for the parameters of a source.
     """
@@ -496,3 +545,14 @@ class SourceParameters:
     frequency: sc.Variable
     pulses: int
     distance: sc.Variable
+
+    @property
+    def kind(self) -> str:
+        return "source"
+
+    def plot_on_time_distance_diagram(self, ax, pulse) -> None:
+        birth_time = self.data.coords["birth_time"]["pulse", pulse]
+        tmin = birth_time.min().value
+        dist = self.distance.value
+        ax.plot([tmin, birth_time.max().value], [dist] * 2, color="gray", lw=3)
+        ax.text(tmin, dist, "Pulse", ha="left", va="top", color="gray")

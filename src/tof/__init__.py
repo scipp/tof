@@ -17,12 +17,13 @@ __getattr__, __dir__, __all__ = lazy.attach(
     submodules=['facilities'],
     submod_attrs={
         'chopper': ['AntiClockwise', 'Chopper', 'ChopperReading', 'Clockwise'],
+        'component': ['Component', 'ComponentReading', 'ReadingField'],
         'dashboard': ['Dashboard'],
         'detector': ['Detector', 'DetectorReading'],
+        'inelastic': ['InelasticSample', 'InelasticSampleReading'],
         'model': ['Model'],
-        'reading': ['ComponentReading', 'ReadingField'],
         'result': ['Result'],
-        'source': ['Source', 'SourceParameters'],
+        'source': ['Source', 'SourceReading'],
     },
 )
 

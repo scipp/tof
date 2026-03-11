@@ -259,24 +259,25 @@ class TofWidget:
         for det in self.detectors_container.children:
             self.remove_detector(None, uid=det._uid)
         params = INSTRUMENT_LIBRARY[change["new"]]
-        for ch in params["choppers"]:
-            self.add_chopper(None)
-            chop = self.choppers_container.children[-1]
-            chop.frequency_widget.value = ch.frequency.to(unit='Hz').value
-            chop.open_widget.value = ", ".join(
-                str(x) for x in ch.open.to(unit='deg').values
-            )
-            chop.close_widget.value = ", ".join(
-                str(x) for x in ch.close.to(unit='deg').values
-            )
-            chop.phase_widget.value = ch.phase.to(unit='deg').value
-            chop.distance_widget.value = ch.distance.to(unit='m').value
-            chop.name_widget.value = ch.name
-        for d in params["detectors"]:
-            self.add_detector(None)
-            det = self.detectors_container.children[-1]
-            det.distance_widget.value = d.distance.to(unit='m').value
-            det.name_widget.value = d.name
+        for comp in params["components"]:
+            if comp.kind == "chopper":
+                self.add_chopper(None)
+                chop = self.choppers_container.children[-1]
+                chop.frequency_widget.value = comp.frequency.to(unit='Hz').value
+                chop.open_widget.value = ", ".join(
+                    str(x) for x in comp.open.to(unit='deg').values
+                )
+                chop.close_widget.value = ", ".join(
+                    str(x) for x in comp.close.to(unit='deg').values
+                )
+                chop.phase_widget.value = comp.phase.to(unit='deg').value
+                chop.distance_widget.value = comp.distance.to(unit='m').value
+                chop.name_widget.value = comp.name
+            elif comp.kind == "detector":
+                self.add_detector(None)
+                det = self.detectors_container.children[-1]
+                det.distance_widget.value = comp.distance.to(unit='m').value
+                det.name_widget.value = comp.name
         self.run(None)
         self.continuous_update.value = cont_update_value
 

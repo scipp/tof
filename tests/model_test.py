@@ -17,7 +17,8 @@ meter = sc.Unit('m')
 ms = sc.Unit('ms')
 
 
-def test_one_chopper_one_opening(make_chopper, make_source):
+@pytest.mark.parametrize("use_components", [True, False])
+def test_one_chopper_one_opening(make_chopper, make_source, use_components):
     # Make a chopper open from 10-20 ms. Assume zero phase.
     topen = 10.0 * ms
     tclose = 20.0 * ms
@@ -40,7 +41,11 @@ def test_one_chopper_one_opening(make_chopper, make_source):
         distance=chopper.distance,
     )
 
-    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
+    if use_components:
+        args = {"components": [chopper, detector]}
+    else:
+        args = {"choppers": [chopper], "detectors": [detector]}
+    model = tof.Model(source=source, **args)
     res = model.run()
 
     toa = res.choppers['chopper'].toa.data
@@ -71,7 +76,8 @@ def test_one_chopper_one_opening(make_chopper, make_source):
     )
 
 
-def test_two_choppers_one_opening(make_chopper, make_source):
+@pytest.mark.parametrize("use_components", [True, False])
+def test_two_choppers_one_opening(make_chopper, make_source, use_components):
     # Make a first chopper open from 5-16 ms. Assume zero phase.
     topen = 5.0 * ms
     tclose = 16.0 * ms
@@ -105,9 +111,11 @@ def test_two_choppers_one_opening(make_chopper, make_source):
         distance=chopper1.distance,
     )
 
-    model = tof.Model(
-        source=source, choppers=[chopper1, chopper2], detectors=[detector]
-    )
+    if use_components:
+        args = {"components": [chopper1, chopper2, detector]}
+    else:
+        args = {"choppers": [chopper1, chopper2], "detectors": [detector]}
+    model = tof.Model(source=source, **args)
     res = model.run()
 
     ch1_toas = res.choppers['chopper1'].toa.data
@@ -158,7 +166,8 @@ def test_two_choppers_one_opening(make_chopper, make_source):
     )
 
 
-def test_two_choppers_one_and_two_openings(make_chopper, make_source):
+@pytest.mark.parametrize("use_components", [True, False])
+def test_two_choppers_one_and_two_openings(make_chopper, make_source, use_components):
     topen = 5.0 * ms
     tclose = 16.0 * ms
     chopper1 = make_chopper(
@@ -201,9 +210,11 @@ def test_two_choppers_one_and_two_openings(make_chopper, make_source):
         distance=chopper1.distance,
     )
 
-    model = tof.Model(
-        source=source, choppers=[chopper1, chopper2], detectors=[detector]
-    )
+    if use_components:
+        args = {"components": [chopper1, chopper2, detector]}
+    else:
+        args = {"choppers": [chopper1, chopper2], "detectors": [detector]}
+    model = tof.Model(source=source, **args)
     res = model.run()
 
     assert res.choppers['chopper1'].toa.data.sum().value == 5
@@ -216,7 +227,8 @@ def test_two_choppers_one_and_two_openings(make_chopper, make_source):
     )
 
 
-def test_neutron_conservation(make_chopper):
+@pytest.mark.parametrize("use_components", [True, False])
+def test_neutron_conservation(make_chopper, use_components):
     N = 100_000
     source = tof.Source(facility='ess', neutrons=N)
 
@@ -238,9 +250,11 @@ def test_neutron_conservation(make_chopper):
     )
 
     detector = tof.Detector(distance=20 * meter, name='detector')
-    model = tof.Model(
-        source=source, choppers=[chopper1, chopper2], detectors=[detector]
-    )
+    if use_components:
+        args = {"components": [chopper1, chopper2, detector]}
+    else:
+        args = {"choppers": [chopper1, chopper2], "detectors": [detector]}
+    model = tof.Model(source=source, **args)
     res = model.run()
 
     ch1 = res.choppers['chopper1'].toa.data
@@ -256,42 +270,6 @@ def test_neutron_conservation(make_chopper):
         ch2.masks['blocked_by_me'] | ch1.masks['blocked_by_me'],
     )
     assert det.sum().value + det.masks['blocked_by_others'].sum().value == N
-
-
-def test_neutron_time_of_flight(make_chopper):
-    N = 10_000
-    source = tof.Source(facility='ess', neutrons=N)
-
-    chopper1 = make_chopper(
-        topen=[5.0 * ms],
-        tclose=[16.0 * ms],
-        f=10.0 * Hz,
-        phase=0.0 * deg,
-        distance=10 * meter,
-        name='chopper1',
-    )
-    chopper2 = make_chopper(
-        topen=[9.0 * ms, 15.0 * ms],
-        tclose=[15.0 * ms, 20.0 * ms],
-        f=15.0 * Hz,
-        phase=0.0 * deg,
-        distance=15 * meter,
-        name='chopper2',
-    )
-
-    detector = tof.Detector(distance=20 * meter, name='detector')
-    model = tof.Model(
-        source=source, choppers=[chopper1, chopper2], detectors=[detector]
-    )
-    res = model.run()
-
-    ch1 = res.choppers['chopper1'].data
-    ch2 = res.choppers['chopper2'].data
-    det = res.detectors['detector'].data
-
-    assert sc.allclose(ch1.coords['tof'], ch1.coords['toa'] - ch1.coords['birth_time'])
-    assert sc.allclose(ch2.coords['tof'], ch2.coords['toa'] - ch2.coords['birth_time'])
-    assert sc.allclose(det.coords['tof'], det.coords['toa'] - det.coords['birth_time'])
 
 
 def test_source_not_at_origin(make_chopper):
@@ -405,50 +383,25 @@ def test_remove(dummy_chopper, dummy_detector, dummy_source):
     chopper = dummy_chopper
     detector = dummy_detector
     model = tof.Model(source=dummy_source, choppers=[chopper], detectors=[detector])
-    del model['dummy_chopper']
-    assert 'dummy_chopper' not in model
-    assert 'dummy_detector' in model
-    del model['dummy_detector']
-    assert 'dummy_detector' not in model
-
-
-def test_getitem(dummy_chopper, dummy_detector, dummy_source):
-    chopper = dummy_chopper
-    detector = dummy_detector
-    model = tof.Model(source=dummy_source, choppers=[chopper], detectors=[detector])
-    assert model['dummy_chopper'] is chopper
-    assert model['dummy_detector'] is detector
-    with pytest.raises(KeyError, match='No component with name foo'):
-        model['foo']
+    model.remove('dummy_chopper')
+    assert 'dummy_chopper' not in model.components
+    assert 'dummy_detector' in model.components
+    model.remove('dummy_detector')
+    assert 'dummy_detector' not in model.components
 
 
 def test_bad_input_type_raises(dummy_chopper, dummy_detector, dummy_source):
     chopper = dummy_chopper
     detector = dummy_detector
-    with pytest.raises(
-        TypeError, match='Beamline components: expected Chopper instance'
-    ):
+    err = "Component must be an instance of Component or derived class"
+    with pytest.raises(TypeError, match=err):
         _ = tof.Model(source=dummy_source, choppers='bad chopper')
-    with pytest.raises(
-        TypeError, match='Beamline components: expected Detector instance'
-    ):
+    with pytest.raises(TypeError, match=err):
         _ = tof.Model(source=dummy_source, choppers=[chopper], detectors='abc')
-    with pytest.raises(
-        TypeError, match='Beamline components: expected Chopper instance'
-    ):
+    with pytest.raises(TypeError, match=err):
         _ = tof.Model(source=dummy_source, choppers=[chopper, 'bad chopper'])
-    with pytest.raises(
-        TypeError, match='Beamline components: expected Detector instance'
-    ):
+    with pytest.raises(TypeError, match=err):
         _ = tof.Model(source=dummy_source, detectors=(1234, detector))
-    with pytest.raises(
-        TypeError, match='Beamline components: expected Chopper instance'
-    ):
-        _ = tof.Model(source=dummy_source, choppers=[detector])
-    with pytest.raises(
-        TypeError, match='Beamline components: expected Detector instance'
-    ):
-        _ = tof.Model(source=dummy_source, detectors=[chopper])
 
 
 def test_model_repr_does_not_raise(make_chopper):
