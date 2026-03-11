@@ -38,7 +38,7 @@ def _bin_edges_to_midpoints(
     )
 
 
-def _make_pulses(
+def _create_probability_distribution(
     neutrons: int,
     frequency: sc.Variable,
     pulses: int,
@@ -134,6 +134,15 @@ def _make_pulses(
     dt = 0.5 * (tmax - tmin).value / (p[tsel].sizes[t_dim] - 1)
     dw = 0.5 * (wmax - wmin).value / (p[wsel].sizes[w_dim] - 1)
 
+    prob = sc.concat([p] * pulses, dim='pulse')
+    prob.coords['birth_time'] = (sc.arange("pulse", pulses) / p.coords['frequency']).to(
+        unit=TIME_UNIT, copy=False
+    ) + prob.coords['birth_time']
+    flat_prob = prob.flatten(to='x')
+    flat_prob.coords.update(time_resolution=dt, wavelength_resolution=dw)
+
+    return flat_prob
+
     # Because of the added noise, some values end up being outside the specified range
     # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
     # edges of the range. To avoid this, we remove the outliers and resample until we
@@ -189,6 +198,7 @@ def _make_pulses(
         "birth_time": birth_time,
         "wavelength": wavelength,
         "speed": speed,
+        "probability": p,
     }
 
 
@@ -233,6 +243,7 @@ class Source:
         self._neutrons = int(neutrons)
         self._pulses = int(pulses)
         self._data = None
+        self._probability = None
         self.seed = seed
 
         if self._facility is not None:
@@ -263,6 +274,7 @@ class Source:
                     ).fold("event", sizes=pulse_params["birth_time"].sizes),
                 },
             )
+            self._probability = pulse_params["probability"]
 
     @property
     def facility(self) -> str | None:
@@ -310,6 +322,7 @@ class Source:
                 "eto": self._data.coords["birth_time"]
                 % (1.0 / self._frequency).to(unit=TIME_UNIT, copy=False),
                 "toa": self._data.coords["birth_time"],
+                "birth_wavelength": self._data.coords["wavelength"],
             }
         )
 
@@ -449,6 +462,7 @@ class Source:
                 ).fold("event", sizes=pulse_params["birth_time"].sizes),
             },
         )
+        source._probability = pulse_params["probability"]
         return source
 
     def __len__(self) -> int:

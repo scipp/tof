@@ -244,9 +244,10 @@ class Model:
             blocked_by_others=sc.zeros(
                 sizes=self.source.data.sizes, unit=None, dtype=bool
             )
-        ).assign_coords(
-            distance=self.source.distance, toa=self.source.data.coords['birth_time']
         )
+        # .assign_coords(
+        #     distance=self.source.distance, toa=self.source.data.coords['birth_time']
+        # )
 
         time_unit = neutrons.coords['birth_time'].unit
 
