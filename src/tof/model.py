@@ -240,10 +240,9 @@ class Model:
                 "itself. Please check the distances of the components."
             )
 
-        neutrons = self.source.data.assign_masks(
-            blocked_by_others=sc.zeros(
-                sizes=self.source.data.sizes, unit=None, dtype=bool
-            )
+        neutrons = self.source.sample()
+        neutrons = neutrons.assign_masks(
+            blocked_by_others=sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool)
         )
         # .assign_coords(
         #     distance=self.source.distance, toa=self.source.data.coords['birth_time']

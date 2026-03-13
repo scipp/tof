@@ -577,9 +577,10 @@ class Source:
 
     def as_readonly(self):
         return SourceReading(
-            data=self.data.assign_masks(
-                blocked_by_others=sc.zeros_like(self.data.data, dtype=bool, unit=None)
-            ),
+            # data=self.data.assign_masks(
+            #     blocked_by_others=sc.zeros_like(self.data.data, dtype=bool, unit=None)
+            # ),
+            data=None,
             facility=self.facility,
             neutrons=self.neutrons,
             frequency=self.frequency,
@@ -653,6 +654,7 @@ class SourceReading(ComponentReading):
         return "source"
 
     def plot_on_time_distance_diagram(self, ax, pulse) -> None:
+        return
         birth_time = self.data.coords["birth_time"]["pulse", pulse]
         tmin = birth_time.min().value
         dist = self.distance.value
