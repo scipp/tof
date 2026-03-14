@@ -141,9 +141,9 @@ def _initialize_probability_distribution(
 def _make_data(
     birth_time: sc.Variable,
     wavelength: sc.Variable,
-    distance: sc.Variable,
     frequency: sc.Variable,
-) -> sc.DataArray:
+    distance: sc.Variable,
+) -> sc.DataGroup:
     return sc.DataArray(
         data=sc.ones(sizes=birth_time.sizes, unit="counts"),
         coords={
@@ -157,6 +157,9 @@ def _make_data(
             "eto": birth_time % (1.0 / frequency).to(unit=TIME_UNIT, copy=False),
             "toa": birth_time,
             "birth_wavelength": wavelength,
+        },
+        masks={
+            "blocked_by_others": sc.zeros(sizes=birth_time.sizes, unit=None, dtype=bool)
         },
     )
 
@@ -261,10 +264,26 @@ class Source:
             .flatten(to='x')
         )
 
-        self._tmin = self._tmin or self._distribution.coords[T_DIM].min()
-        self._tmax = self._tmax or self._distribution.coords[T_DIM].max()
-        self._wmin = self._wmin or self._distribution.coords[W_DIM].min()
-        self._wmax = self._wmax or self._distribution.coords[W_DIM].max()
+        self._tmin = (
+            self._tmin
+            if self._tmin is not None
+            else self._distribution.coords[T_DIM].min()
+        )
+        self._tmax = (
+            self._tmax
+            if self._tmax is not None
+            else self._distribution.coords[T_DIM].max()
+        )
+        self._wmin = (
+            self._wmin
+            if self._wmin is not None
+            else self._distribution.coords[W_DIM].min()
+        )
+        self._wmax = (
+            self._wmax
+            if self._wmax is not None
+            else self._distribution.coords[W_DIM].max()
+        )
 
     def sample(self, neutrons: int | None = None) -> sc.DataArray:
         """
@@ -291,17 +310,21 @@ class Source:
 
         if neutrons is None:
             neutrons = self._neutrons
+        neutrons = int(neutrons)
         n = 0
-        times = []
-        wavs = []
+        times = [[] for _ in range(self._pulses)]
+        wavs = [[] for _ in range(self._pulses)]
         ntot = self._pulses * neutrons
         rng = np.random.default_rng(self.seed)
+        period = self.period.to(unit=TIME_UNIT)
 
         # Because of the added noise, some values end up being outside the specified
         # range for the birth times and wavelengths. Using naive clipping leads to
         # pile-up on the edges of the range. To avoid this, we remove the outliers and
         # resample until we have the desired number of neutrons.
+        count = 0
         while n < ntot:
+            count += 1
             size = ntot - n
             inds = rng.choice(len(self._pflat), size=size, p=self._pflat.values)
             t = self._pflat.coords[T_DIM].values[inds] + (
@@ -310,30 +333,56 @@ class Source:
             w = self._pflat.coords[W_DIM].values[inds] + (
                 rng.normal(scale=0.5, size=size) * self._widths[W_DIM].values[inds]
             )
-            mask = (
-                (t >= self._tmin.value)
-                & (t <= self._tmax.value)
-                & (w >= self._wmin.value)
-                & (w <= self._wmax.value)
-            )
-            times.append(t[mask])
-            wavs.append(w[mask])
-            n += mask.sum()
+            wsel = (w >= self._wmin.value) & (w <= self._wmax.value)
+            m = 0
+            for i in range(self._pulses):
+                sel = wsel & (
+                    (t >= (self._tmin + (period * i)).value)
+                    & (t <= (self._tmax + (period * i)).value)
+                )
+                times[i].append(t[sel])
+                wavs[i].append(w[sel])
+                m += sel.sum()
+            n += m
 
-        dim = "event"
-        birth_time = sc.array(
-            dims=[dim], values=np.concatenate(times), unit=TIME_UNIT
-        ).fold(dim=dim, sizes={"pulse": self._pulses, dim: -1})
+        print(count, "iterations during sampling")
+
+        # return times
+
+        # # dim = "event"
+        # events = sc.DataGroup(
+        #     {
+        #         f"pulse-{i}": _make_data(
+        #             birth_time=sc.array(
+        #                 dims=["event"], values=np.concatenate(t), unit=TIME_UNIT
+        #             ),
+        #             wavelength=sc.array(
+        #                 dims=["event"], values=np.concatenate(w), unit=WAV_UNIT
+        #             ),
+        #             frequency=self._frequency,
+        #         )
+        #         for i, (t, w) in enumerate(zip(times, wavs, strict=True))
+        #     }
+        # )
+        # birth_time = sc.array(
+        #     dims=["pulse", "event"],
+        #     values=[np.concatenate(pieces_t) for pieces_t in times],
+        #     unit=TIME_UNIT,
+        # )  # .fold(dim=dim, sizes={"pulse": self._pulses, dim: -1})
 
         # wavelengths = np.concatenate(wavs)
         # if np.any(wavelengths <= 0):
         #     warnings.warn(
         #         "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
         #     )
-        wavelength = sc.array(
-            dims=[dim], values=np.concatenate(wavs), unit=WAV_UNIT
-        ).fold(dim=dim, sizes={"pulse": self._pulses, dim: -1})
-        # speed = wavelength_to_speed(wavelength)
+        # wavelength = sc.DataGroup(
+        #     {
+        #         f"pulse-{i}": sc.array(
+        #             dims=["event"], values=np.concatenate(v), unit=WAV_UNIT
+        #         )
+        #         for i, v in enumerate(wavs)
+        #     }
+        # )
 
         #  "distance": self._distance,
         # "eto": self._data.coords["birth_time"]
@@ -341,12 +390,22 @@ class Source:
         # "toa": self._data.coords["birth_time"],
         # "birth_wavelength": self._data.coords["wavelength"],
 
-        return _make_data(
-            birth_time=birth_time,
-            wavelength=wavelength,
-            distance=self._distance,
-            frequency=self._frequency,
+        events = sc.DataGroup(
+            {
+                f"pulse-{i}": _make_data(
+                    birth_time=sc.array(
+                        dims=["event"], values=np.concatenate(t), unit=TIME_UNIT
+                    ),
+                    wavelength=sc.array(
+                        dims=["event"], values=np.concatenate(w), unit=WAV_UNIT
+                    ),
+                    frequency=self._frequency,
+                    distance=self._distance,
+                )
+                for i, (t, w) in enumerate(zip(times, wavs, strict=True))
+            }
         )
+        return events
 
     @property
     def facility(self) -> str | None:
@@ -368,6 +427,13 @@ class Source:
         The frequency of the pulse.
         """
         return self._frequency
+
+    @property
+    def period(self) -> sc.Variable:
+        """
+        The period of the pulse.
+        """
+        return sc.reciprocal(self.frequency)
 
     @property
     def distance(self) -> sc.Variable:
@@ -591,9 +657,10 @@ class Source:
 
     def as_readonly(self, data: sc.DataArray):
         return SourceReading(
-            data=data.assign_masks(
-                blocked_by_others=sc.zeros_like(data.data, dtype=bool, unit=None)
-            ),
+            data=data,
+            # .assign_masks(
+            #     blocked_by_others=sc.zeros_like(data.data, dtype=bool, unit=None)
+            # ),
             # data=None,
             facility=self.facility,
             neutrons=self.neutrons,

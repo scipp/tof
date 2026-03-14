@@ -242,18 +242,19 @@ class Model:
 
         neutrons = self.source.sample()
         source_reading = self.source.as_readonly(neutrons)
-        neutrons = neutrons.assign_masks(
-            blocked_by_others=sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool)
-        )
+        # neutrons = neutrons.assign_masks(
+        #     blocked_by_others=sc.zeros(sizes=neutrons.sizes, unit=None, dtype=bool)
+        # )
 
         # .assign_coords(
         #     distance=self.source.distance, toa=self.source.data.coords['birth_time']
         # )
 
-        time_unit = neutrons.coords['birth_time'].unit
+        time_unit = neutrons['pulse-0'].coords['birth_time'].unit
 
         readings = {}
         for comp in components:
+            # for da_pulse in neutrons:
             toa = neutrons.coords['toa'] + (
                 (comp.distance - neutrons.coords['distance']) / neutrons.coords['speed']
             ).to(unit=time_unit, copy=False)
