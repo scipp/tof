@@ -208,7 +208,7 @@ class Source:
         self._wmin = wmin
         self._wmax = wmax
         # self._data = None
-        self.probability = None
+        self._distribution = None
 
         self.seed = seed
         if self.seed is None:
@@ -222,7 +222,7 @@ class Source:
 
             self._frequency = facility_pulse.coords["frequency"]
             self._distance = facility_pulse.coords["distance"]
-            self._probability = _initialize_probability_distribution(
+            self._distribution = _initialize_probability_distribution(
                 p=facility_pulse,
                 frequency=self._frequency,
                 pulses=self._pulses,
@@ -234,10 +234,10 @@ class Source:
             self._post_init()
 
     def _post_init(self):
-        self._pflat = self._probability.flatten(to='x')
+        self._pflat = self._distribution.flatten(to='x')
 
-        t = self._probability.coords[T_DIM]['pulse', 0]
-        w = self._probability.coords[W_DIM]
+        t = self._distribution.coords[T_DIM]['pulse', 0]
+        w = self._distribution.coords[W_DIM]
         self._widths = {T_DIM: sc.empty_like(t), W_DIM: sc.empty_like(w)}
 
         dt = t[T_DIM, 1:] - t[T_DIM, :-1]
@@ -251,16 +251,20 @@ class Source:
         self._widths[W_DIM][W_DIM, -1] = dw[W_DIM, -1]
 
         self._widths[T_DIM] = (
-            self._widths[T_DIM].broadcast(sizes=self._probability.sizes).flatten(to='x')
+            self._widths[T_DIM]
+            .broadcast(sizes=self._distribution.sizes)
+            .flatten(to='x')
         )
         self._widths[W_DIM] = (
-            self._widths[W_DIM].broadcast(sizes=self._probability.sizes).flatten(to='x')
+            self._widths[W_DIM]
+            .broadcast(sizes=self._distribution.sizes)
+            .flatten(to='x')
         )
 
-        self._tmin = self._tmin or self._probability.coords[T_DIM].min()
-        self._tmax = self._tmax or self._probability.coords[T_DIM].max()
-        self._wmin = self._wmin or self._probability.coords[W_DIM].min()
-        self._wmax = self._wmax or self._probability.coords[W_DIM].max()
+        self._tmin = self._tmin or self._distribution.coords[T_DIM].min()
+        self._tmax = self._tmax or self._distribution.coords[T_DIM].max()
+        self._wmin = self._wmin or self._distribution.coords[W_DIM].min()
+        self._wmax = self._wmax or self._distribution.coords[W_DIM].max()
 
     def sample(self, neutrons: int | None = None) -> sc.DataArray:
         """
@@ -282,7 +286,7 @@ class Source:
         neutrons : int
             Number of neutrons to sample.
         """
-        if self._probability is None:
+        if self._distribution is None:
             return self._custom_neutrons
 
         if neutrons is None:
@@ -378,6 +382,14 @@ class Source:
         The number of pulses.
         """
         return self._pulses
+
+    @property
+    def distribution(self) -> sc.DataArray:
+        """
+        The probability distribution of the source. Neutrons will be sampled from this
+        distribution when calling the :func:`sample` method.
+        """
+        return self._distribution
 
     # @property
     # def data(self) -> sc.DataArray:
@@ -554,33 +566,35 @@ class Source:
         return source
 
     def __len__(self) -> int:
-        return self.data.sizes["pulse"]
+        return self._pulses
 
-    def plot(self, bins: int = 300) -> tuple:
+    def plot(self) -> tuple:
         """
         Plot the pulses of the source.
-
-        Parameters
-        ----------
-        bins:
-            Number of bins to use for histogramming the neutrons.
         """
-        dim = (set(self.data.dims) - {"pulse"}).pop()
-        collapsed = sc.collapse(self.data, keep=dim)
+        style = {"ls": "-", "marker": None}
         f1 = pp.plot(
-            {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
+            {
+                f"pulse-{i}": self._distribution['pulse', i].sum('wavelength')
+                for i in range(self._pulses)
+            },
+            **style,
         )
         f2 = pp.plot(
-            {k: da.hist(wavelength=bins) for k, da in collapsed.items()},
+            {
+                f"pulse-{i}": self._distribution['pulse', i].sum('birth_time')
+                for i in range(self._pulses)
+            },
+            **style,
         )
-        return f1 + f2
+        return self._distribution['pulse', 0].plot() + f1 + f2
 
-    def as_readonly(self):
+    def as_readonly(self, data: sc.DataArray):
         return SourceReading(
-            # data=self.data.assign_masks(
-            #     blocked_by_others=sc.zeros_like(self.data.data, dtype=bool, unit=None)
-            # ),
-            data=None,
+            data=data.assign_masks(
+                blocked_by_others=sc.zeros_like(data.data, dtype=bool, unit=None)
+            ),
+            # data=None,
             facility=self.facility,
             neutrons=self.neutrons,
             frequency=self.frequency,
@@ -654,7 +668,6 @@ class SourceReading(ComponentReading):
         return "source"
 
     def plot_on_time_distance_diagram(self, ax, pulse) -> None:
-        return
         birth_time = self.data.coords["birth_time"]["pulse", pulse]
         tmin = birth_time.min().value
         dist = self.distance.value
