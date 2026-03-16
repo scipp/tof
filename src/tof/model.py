@@ -254,23 +254,27 @@ class Model:
 
         readings = {}
         for comp in components:
-            # for da_pulse in neutrons:
-            toa = neutrons.coords['toa'] + (
-                (comp.distance - neutrons.coords['distance']) / neutrons.coords['speed']
-            ).to(unit=time_unit, copy=False)
-            eto = toa % (1 / self.source.frequency).to(unit=time_unit, copy=False)
+            neutrons = neutrons.copy(deep=False)
 
-            neutrons = neutrons.assign_coords(toa=toa, eto=eto, distance=comp.distance)
+            for key, pulse_data in neutrons.items():
+                toa = pulse_data.coords['toa'] + (
+                    (comp.distance - pulse_data.coords['distance'])
+                    / pulse_data.coords['speed']
+                ).to(unit=time_unit, copy=False)
+                eto = toa % (1 / self.source.frequency).to(unit=time_unit, copy=False)
 
-            if "blocked_by_me" in neutrons.masks:
-                # Because we use shallow copies, we do not want to do an in-place |=
-                # operation here
-                neutrons.masks['blocked_by_others'] = neutrons.masks[
-                    'blocked_by_others'
-                ] | neutrons.masks.pop('blocked_by_me')
+                new = pulse_data.assign_coords(toa=toa, eto=eto, distance=comp.distance)
 
-            neutrons, reading = comp.apply(neutrons=neutrons)
-            readings[comp.name] = reading
+                if "blocked_by_me" in new.masks:
+                    # Because we use shallow copies, we do not want to do an in-place |=
+                    # operation here
+                    new.masks['blocked_by_others'] = new.masks[
+                        'blocked_by_others'
+                    ] | new.masks.pop('blocked_by_me')
+
+                new, reading = comp.apply(neutrons=new)
+                neutrons[key] = new
+                readings[comp.name] = reading
 
         return Result(source=source_reading, readings=readings)
 
