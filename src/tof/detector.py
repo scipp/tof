@@ -25,7 +25,7 @@ class DetectorReading(ComponentReading):
         return "detector"
 
     def _repr_stats(self) -> str:
-        return f"visible={int(self.data.sum().value)}"
+        return f"visible={int(sc.reduce(self.data.sum().values()).sum().value)}"
 
     def __repr__(self) -> str:
         return f"""DetectorReading: '{self.name}'
@@ -108,6 +108,9 @@ class Detector(Component):
     def as_readonly(self, neutrons: sc.DataArray) -> DetectorReading:
         return DetectorReading(distance=self.distance, name=self.name, data=neutrons)
 
+    def as_reading(self, neutrons: sc.DataArray) -> DetectorReading:
+        return DetectorReading(distance=self.distance, name=self.name, data=neutrons)
+
     def apply(self, neutrons: sc.DataArray) -> tuple[sc.DataArray, DetectorReading]:
         """
         Apply the detector to the given neutrons.
@@ -119,4 +122,4 @@ class Detector(Component):
         neutrons:
             The neutrons to which the detector will be applied.
         """
-        return neutrons, self.as_readonly(neutrons)
+        return neutrons  # , self.as_readonly(neutrons)

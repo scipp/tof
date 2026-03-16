@@ -272,9 +272,11 @@ class Model:
                         'blocked_by_others'
                     ] | new.masks.pop('blocked_by_me')
 
-                new, reading = comp.apply(neutrons=new)
+                # new, reading = comp.apply(neutrons=new)
+                new = comp.apply(neutrons=new)
                 neutrons[key] = new
-                readings[comp.name] = reading
+            # readings[comp.name] = reading
+            readings[comp.name] = comp.as_reading(neutrons=neutrons)
 
         return Result(source=source_reading, readings=readings)
 

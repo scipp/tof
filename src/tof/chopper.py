@@ -54,8 +54,8 @@ class ChopperReading(ComponentReading):
 
     def _repr_stats(self) -> str:
         return (
-            f"visible={int(self.data.sum().value)}, "
-            f"blocked={int(self.data.masks['blocked_by_me'].sum().value)}"
+            f"visible={int(sc.reduce(self.data.sum().values()).sum().value)}, "
+            # f"blocked={int(sc.reduce(self.data.masks['blocked_by_me'].sum().values()).sum().value)}"
         )
 
     def __repr__(self) -> str:
@@ -460,6 +460,28 @@ class Chopper(Component):
             data=neutrons,
         )
 
+    def as_reading(self, neutrons: sc.DataGroup) -> ChopperReading:
+        """
+        Create a ChopperReading from the given neutrons that have been processed by this
+        chopper.
+        """
+        time_limit = sc.reduce(
+            [da.coords['toa'].max() for da in neutrons.values()]
+        ).max()
+        print("time_limit", time_limit)
+        to, tc = self.open_close_times(time_limit=time_limit)
+        return ChopperReading(
+            distance=self.distance,
+            name=self.name,
+            frequency=self.frequency,
+            phase=self.phase,
+            open=self.open,
+            close=self.close,
+            open_times=to,
+            close_times=tc,
+            data=neutrons,
+        )
+
     def apply(self, neutrons: sc.DataArray) -> tuple[sc.DataArray, ChopperReading]:
         """
         Apply the effect of the chopper to the given neutrons.
@@ -481,4 +503,4 @@ class Chopper(Component):
         out = neutrons.assign_masks(
             blocked_by_me=(~m) & (~neutrons.masks['blocked_by_others'])
         )
-        return out, self.as_readonly(out, time_limit=time_limit)
+        return out  # , self.as_readonly(out, time_limit=time_limit)
