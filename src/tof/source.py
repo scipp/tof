@@ -14,6 +14,8 @@ from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
 WAV_UNIT = "angstrom"
+T_DIM = "birth_time"
+W_DIM = "wavelength"
 
 
 def _default_frequency(frequency: sc.Variable | None, pulses: int) -> sc.Variable:
@@ -38,36 +40,34 @@ def _bin_edges_to_midpoints(
     )
 
 
-def _make_pulses(
-    neutrons: int,
+def _initialize_probability_distribution(
     frequency: sc.Variable,
     pulses: int,
-    seed: int | None,
     p: sc.DataArray | None = None,
     p_time: sc.DataArray | None = None,
     p_wav: sc.DataArray | None = None,
+    tmin: sc.Variable | None = None,
+    tmax: sc.Variable | None = None,
     wmin: sc.Variable | None = None,
     wmax: sc.Variable | None = None,
 ):
     """
-    Create pulses from time a wavelength probability distributions.
+    Initialize the probability distribution as a function of time and wavelength.
+    The inputs can either be two separate 1D distributions for time and wavelength,
+    or a single 2D distribution for both.
     The distributions should be supplied as DataArrays where the coordinates
     are the values of the distribution, and the values are the probability.
-    Note that the time and wavelength distributions are independent. A neutron with
-    a randomly selected birth time from ``p_time`` can adopt any wavelength in
-    ``p_wav`` (in other words, the two distributions are simply broadcast into a
+
+    In the case of two separate distributions, the time and wavelength distributions
+    are considered independent (the two distributions are simply broadcast into a
     square 2D parameter space).
 
     Parameters
     ----------
-    neutrons:
-        Number of neutrons per pulse.
     frequency:
         Pulse frequency.
     pulses:
         Number of pulses.
-    seed:
-        Seed for the random number generator.
     p:
         2D probability distribution for a single pulse.
     p_time:
@@ -79,8 +79,6 @@ def _make_pulses(
     wmax:
         Maximum neutron wavelength.
     """
-    t_dim = "birth_time"
-    w_dim = "wavelength"
 
     if p is None:
         if None in (p_time, p_wav):
@@ -103,93 +101,68 @@ def _make_pulses(
     else:
         p = p.copy(deep=False)
 
-    if p.sizes[t_dim] < 2 or p.sizes[w_dim] < 2:
+    if p.sizes[T_DIM] < 2 or p.sizes[W_DIM] < 2:
         raise ValueError(
             f"Distribution must have at least 2 points in each dimension. "
-            f"Got {p.sizes[t_dim]} in {t_dim}, {p.sizes[w_dim]} in {w_dim}"
+            f"Got {p.sizes[T_DIM]} in {T_DIM}, {p.sizes[W_DIM]} in {W_DIM}"
         )
 
-    p.coords[t_dim] = p.coords[t_dim].to(dtype=float, unit=TIME_UNIT)
-    p.coords[w_dim] = p.coords[w_dim].to(dtype=float, unit=WAV_UNIT)
+    p.coords[T_DIM] = p.coords[T_DIM].to(dtype=float, unit=TIME_UNIT)
+    p.coords[W_DIM] = p.coords[W_DIM].to(dtype=float, unit=WAV_UNIT)
+    # Filter parameter space defined by limits
+    ind_tmin, ind_tmax = 0, p.sizes[T_DIM]
+    ind_wmin, ind_wmax = 0, p.sizes[W_DIM]
+    trange = sc.arange(T_DIM, p.sizes[T_DIM])
+    wrange = sc.arange(W_DIM, p.sizes[W_DIM])
+    if tmin is not None:
+        ind_tmin = max(trange[p.coords[T_DIM] >= tmin][0].value - 1, 0)
+    if tmax is not None:
+        ind_tmax = min(trange[p.coords[T_DIM] <= tmax][-1].value + 2, p.sizes[T_DIM])
+    if wmin is not None:
+        ind_wmin = max(wrange[p.coords[W_DIM] >= wmin][0].value - 1, 0)
+    if wmax is not None:
+        ind_wmax = min(wrange[p.coords[W_DIM] <= wmax][-1].value + 2, p.sizes[W_DIM])
+    prob = p[T_DIM, ind_tmin:ind_tmax][W_DIM, ind_wmin:ind_wmax]
+    # prob = sc.concat([prob] * pulses, dim='pulse')
+    # prob.coords['birth_time'] = (sc.arange("pulse", pulses) / p.coords['frequency']).to(
+    #     unit=TIME_UNIT, copy=False
+    # ) + prob.coords['birth_time']
 
-    tmin = p.coords[t_dim].min()
-    tmax = p.coords[t_dim].max()
-    if wmin is None:
-        wmin = p.coords[w_dim].min()
-    if wmax is None:
-        wmax = p.coords[w_dim].max()
-
-    # In the following, random.choice only allows to select from the values listed
-    # in the coordinate of the probability distribution arrays. This leads to data
-    # grouped into spikes and empty in between because the sampling resolution used
-    # in the linear interpolation above is usually kept low for performance.
-    # To make the distribution more uniform, we add some random noise to the chosen
-    # values, which effectively fills in the gaps between the spikes.
-    # Scipy has some methods to sample from a continuous distribution, but they are
-    # prohibitively slow.
-    # See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more
-    # information.
-    tsel = (p.coords[t_dim] >= tmin) & (p.coords[t_dim] <= tmax)
-    wsel = (p.coords[w_dim] >= wmin) & (p.coords[w_dim] <= wmax)
-    dt = 0.5 * (tmax - tmin).value / (p[tsel].sizes[t_dim] - 1)
-    dw = 0.5 * (wmax - wmin).value / (p[wsel].sizes[w_dim] - 1)
-
-    # Because of the added noise, some values end up being outside the specified range
-    # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
-    # edges of the range. To avoid this, we remove the outliers and resample until we
-    # have the desired number of neutrons.
-    n = 0
-    times = []
-    wavs = []
-    ntot = pulses * neutrons
-    rng = np.random.default_rng(seed)
-    p_flat = p.flatten(to='x')
-
-    p_sum = p_flat.data.sum()
+    p_sum = prob.data.sum()
     if p_sum.value <= 0:
         raise ValueError(
             "Distribution must have at least one positive probability value. "
             f"Sum of probabilities is {p_sum.value}"
         )
-    p_flat /= p_sum
-    while n < ntot:
-        size = ntot - n
-        inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
-        t = p_flat.coords[t_dim].values[inds] + rng.normal(scale=dt, size=size)
-        w = p_flat.coords[w_dim].values[inds] + rng.normal(scale=dw, size=size)
-        mask = (
-            (t >= tmin.value)
-            & (t <= tmax.value)
-            & (w >= wmin.value)
-            & (w <= wmax.value)
-        )
-        times.append(t[mask])
-        wavs.append(w[mask])
-        n += mask.sum()
 
-    dim = "event"
-    birth_time = sc.array(
-        dims=[dim],
-        values=np.concatenate(times),
-        unit=TIME_UNIT,
-    ).fold(dim=dim, sizes={"pulse": pulses, dim: neutrons}) + (
-        sc.arange("pulse", pulses) / frequency
-    ).to(unit=TIME_UNIT, copy=False)
+    return sc.concat([prob / p_sum] * pulses, dim='pulse')
 
-    wavelengths = np.concatenate(wavs)
-    if np.any(wavelengths <= 0):
-        warnings.warn(
-            "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
-        )
-    wavelength = sc.array(dims=[dim], values=wavelengths, unit=WAV_UNIT).fold(
-        dim=dim, sizes={"pulse": pulses, dim: neutrons}
+
+def _make_data(
+    birth_time: sc.Variable,
+    wavelength: sc.Variable,
+    period: sc.Variable,
+    # frequency: sc.Variable,
+    # distance: sc.Variable,
+) -> sc.DataGroup:
+    return sc.DataArray(
+        data=sc.ones(sizes=birth_time.sizes, unit="counts"),
+        coords={
+            "birth_time": birth_time,
+            "wavelength": wavelength,
+            "speed": wavelength_to_speed(wavelength),
+            "id": sc.arange("event", birth_time.size, unit=None).fold(
+                "event", sizes=birth_time.sizes
+            ),
+            # "distance": distance,
+            "eto": birth_time % period,
+            "toa": birth_time,
+            "birth_wavelength": wavelength,
+        },
+        masks={
+            "blocked_by_others": sc.zeros(sizes=birth_time.sizes, unit=None, dtype=bool)
+        },
     )
-    speed = wavelength_to_speed(wavelength)
-    return {
-        "birth_time": birth_time,
-        "wavelength": wavelength,
-        "speed": speed,
-    }
 
 
 class Source:
@@ -225,6 +198,9 @@ class Source:
         facility: str | None,
         neutrons: int = 1_000_000,
         pulses: int = 1,
+        # TODO: Add frequency arg
+        tmin: sc.Variable | None = None,
+        tmax: sc.Variable | None = None,
         wmin: sc.Variable | None = None,
         wmax: sc.Variable | None = None,
         seed: int | None = None,
@@ -232,8 +208,16 @@ class Source:
         self._facility = facility.lower() if facility is not None else None
         self._neutrons = int(neutrons)
         self._pulses = int(pulses)
-        self._data = None
+        self._tmin = tmin
+        self._tmax = tmax
+        self._wmin = wmin
+        self._wmax = wmax
+        # self._data = None
+        self._distribution = None
+
         self.seed = seed
+        if self.seed is None:
+            self.seed = np.random.SeedSequence().entropy
 
         if self._facility is not None:
             from .facilities import get_source_path
@@ -243,26 +227,221 @@ class Source:
 
             self._frequency = facility_pulse.coords["frequency"]
             self._distance = facility_pulse.coords["distance"]
-            pulse_params = _make_pulses(
-                neutrons=self._neutrons,
+            self._distribution = _initialize_probability_distribution(
                 p=facility_pulse,
                 frequency=self._frequency,
                 pulses=self._pulses,
-                wmin=wmin,
-                wmax=wmax,
-                seed=seed,
+                tmin=self._tmin,
+                tmax=self._tmax,
+                wmin=self._wmin,
+                wmax=self._wmax,
             )
-            self._data = sc.DataArray(
-                data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
-                coords={
-                    "birth_time": pulse_params["birth_time"],
-                    "wavelength": pulse_params["wavelength"],
-                    "speed": pulse_params["speed"],
-                    "id": sc.arange(
-                        "event", pulse_params["birth_time"].size, unit=None
-                    ).fold("event", sizes=pulse_params["birth_time"].sizes),
-                },
+            self._post_init()
+
+    def _post_init(self):
+        print(self._distribution)
+        self._pflat = self._distribution.flatten(
+            dims=['wavelength', 'birth_time'], to='x'
+        )
+
+        t = self._distribution.coords[T_DIM]  # ['pulse', 0]
+        w = self._distribution.coords[W_DIM]
+        self._widths = {T_DIM: sc.empty_like(t), W_DIM: sc.empty_like(w)}
+
+        dt = t[T_DIM, 1:] - t[T_DIM, :-1]
+        self._widths[T_DIM][T_DIM, 1:-1] = 0.5 * (dt[T_DIM, :-1] + dt[T_DIM, 1:])
+        self._widths[T_DIM][T_DIM, 0] = dt[T_DIM, 0]
+        self._widths[T_DIM][T_DIM, -1] = dt[T_DIM, -1]
+
+        dw = w[W_DIM, 1:] - w[W_DIM, :-1]
+        self._widths[W_DIM][W_DIM, 1:-1] = 0.5 * (dw[W_DIM, :-1] + dw[W_DIM, 1:])
+        self._widths[W_DIM][W_DIM, 0] = dw[W_DIM, 0]
+        self._widths[W_DIM][W_DIM, -1] = dw[W_DIM, -1]
+
+        self._widths[T_DIM] = (
+            self._widths[T_DIM]
+            .broadcast(sizes=self._distribution.sizes)
+            .flatten(to='x')
+        )
+        self._widths[W_DIM] = (
+            self._widths[W_DIM]
+            .broadcast(sizes=self._distribution.sizes)
+            .flatten(to='x')
+        )
+
+        self._tmin = (
+            self._tmin
+            if self._tmin is not None
+            else self._distribution.coords[T_DIM].min()
+        )
+        self._tmax = (
+            self._tmax
+            if self._tmax is not None
+            else self._distribution.coords[T_DIM].max()
+        )
+        self._wmin = (
+            self._wmin
+            if self._wmin is not None
+            else self._distribution.coords[W_DIM].min()
+        )
+        self._wmax = (
+            self._wmax
+            if self._wmax is not None
+            else self._distribution.coords[W_DIM].max()
+        )
+
+    def sample(self, neutrons: int | None = None) -> sc.DataArray:
+        """
+        Sample neutrons from the source.
+
+        For the sampling, random.choice only allows to select from the values listed
+        in the coordinate of the probability distribution arrays. This leads to data
+        grouped into spikes and empty in between because the sampling resolution used
+        in the linear interpolation above is usually kept low for performance.
+        To make the distribution more uniform, we add some random (Gaussian) noise to
+        the chosen values, which effectively fills in the gaps between the spikes.
+        Scipy has some methods to sample from a continuous distribution, but they are
+        prohibitively slow.
+        See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more
+        information.
+
+        Parameters
+        ----------
+        neutrons : int
+            Number of neutrons to sample.
+        """
+        if self._distribution is None:
+            return self._custom_neutrons
+
+        if neutrons is None:
+            neutrons = self._neutrons
+        neutrons = int(neutrons)
+        # n = 0
+        # times = [[] for _ in range(self._pulses)]
+        # wavs = [[] for _ in range(self._pulses)]
+        # ntot = self._pulses * neutrons
+        rng = np.random.default_rng(self.seed)
+        period = self.period.to(unit=TIME_UNIT)
+
+        pulses = []
+
+        for ip in range(self._pulses):
+            times = []
+            wavs = []
+            # Because of the added noise, some values end up being outside the specified
+            # range for the birth times and wavelengths. Using naive clipping leads to
+            # pile-up on the edges of the range. To avoid this, we remove the outliers and
+            # resample until we have the desired number of neutrons.
+            count = 0
+            p = self._pflat['pulse', ip]
+            n = 0
+            while n < neutrons:
+                count += 1
+                size = neutrons - n
+                inds = rng.choice(len(p), size=size, p=p.values, replace=True)
+                t = p.coords[T_DIM].values[inds] + (
+                    rng.normal(scale=0.5, size=size) * self._widths[T_DIM].values[inds]
+                )
+                w = p.coords[W_DIM].values[inds] + (
+                    rng.normal(scale=0.5, size=size) * self._widths[W_DIM].values[inds]
+                )
+                sel = (
+                    (t >= self._tmin.value)
+                    & (t <= self._tmax.value)
+                    & (w >= self._wmin.value)
+                    & (w <= self._wmax.value)
+                )
+                # wsel = (w >= self._wmin.value) & (w <= self._wmax.value)
+                # m = 0
+                # for i in range(self._pulses):
+                #     sel = wsel & (
+                #         (t >= (self._tmin + (period * i)).value)
+                #         & (t <= (self._tmax + (period * i)).value)
+                #     )
+                times.append(t[sel])
+                wavs.append(w[sel])
+                # m += sel.sum()
+                n += sel.sum()
+
+            times = np.concatenate(times)
+            times += period.value * ip
+            pulses.append(
+                _make_data(
+                    birth_time=sc.array(dims=["event"], values=times, unit=TIME_UNIT),
+                    wavelength=sc.array(
+                        dims=["event"], values=np.concatenate(wavs), unit=WAV_UNIT
+                    ),
+                    period=period,
+                    # frequency=self._frequency,
+                    # distance=self._distance,
+                )
             )
+
+        print(count, "iterations during sampling")
+
+        # return times
+
+        # # dim = "event"
+        # events = sc.DataGroup(
+        #     {
+        #         f"pulse-{i}": _make_data(
+        #             birth_time=sc.array(
+        #                 dims=["event"], values=np.concatenate(t), unit=TIME_UNIT
+        #             ),
+        #             wavelength=sc.array(
+        #                 dims=["event"], values=np.concatenate(w), unit=WAV_UNIT
+        #             ),
+        #             frequency=self._frequency,
+        #         )
+        #         for i, (t, w) in enumerate(zip(times, wavs, strict=True))
+        #     }
+        # )
+        # birth_time = sc.array(
+        #     dims=["pulse", "event"],
+        #     values=[np.concatenate(pieces_t) for pieces_t in times],
+        #     unit=TIME_UNIT,
+        # )  # .fold(dim=dim, sizes={"pulse": self._pulses, dim: -1})
+
+        # wavelengths = np.concatenate(wavs)
+        # if np.any(wavelengths <= 0):
+        #     warnings.warn(
+        #         "Some neutron wavelengths are negative.", RuntimeWarning, stacklevel=2
+        #     )
+        # wavelength = sc.DataGroup(
+        #     {
+        #         f"pulse-{i}": sc.array(
+        #             dims=["event"], values=np.concatenate(v), unit=WAV_UNIT
+        #         )
+        #         for i, v in enumerate(wavs)
+        #     }
+        # )
+
+        #  "distance": self._distance,
+        # "eto": self._data.coords["birth_time"]
+        # % (1.0 / self._frequency).to(unit=TIME_UNIT, copy=False),
+        # "toa": self._data.coords["birth_time"],
+        # "birth_wavelength": self._data.coords["wavelength"],
+
+        return sc.concat(pulses, dim="pulse").assign_coords(
+            distance=self._distance, frequency=self._frequency
+        )
+
+        # events = sc.DataGroup(
+        #     {
+        #         f"pulse-{i}": _make_data(
+        #             birth_time=sc.array(
+        #                 dims=["event"], values=np.concatenate(t), unit=TIME_UNIT
+        #             ),
+        #             wavelength=sc.array(
+        #                 dims=["event"], values=np.concatenate(w), unit=WAV_UNIT
+        #             ),
+        #             frequency=self._frequency,
+        #             distance=self._distance,
+        #         )
+        #         for i, (t, w) in enumerate(zip(times, wavs, strict=True))
+        #     }
+        # )
+        # return events
 
     @property
     def facility(self) -> str | None:
@@ -286,6 +465,13 @@ class Source:
         return self._frequency
 
     @property
+    def period(self) -> sc.Variable:
+        """
+        The period of the pulse.
+        """
+        return sc.reciprocal(self.frequency)
+
+    @property
     def distance(self) -> sc.Variable:
         """
         The position of the source along the beamline.
@@ -300,18 +486,27 @@ class Source:
         return self._pulses
 
     @property
-    def data(self) -> sc.DataArray:
+    def distribution(self) -> sc.DataArray:
         """
-        The data array containing the neutrons in the pulse.
+        The probability distribution of the source. Neutrons will be sampled from this
+        distribution when calling the :func:`sample` method.
         """
-        return self._data.assign_coords(
-            {
-                "distance": self._distance,
-                "eto": self._data.coords["birth_time"]
-                % (1.0 / self._frequency).to(unit=TIME_UNIT, copy=False),
-                "toa": self._data.coords["birth_time"],
-            }
-        )
+        return self._distribution
+
+    # @property
+    # def data(self) -> sc.DataArray:
+    #     """
+    #     The data array containing the neutrons in the pulse.
+    #     """
+    #     return self._data.assign_coords(
+    #         {
+    #             "distance": self._distance,
+    #             "eto": self._data.coords["birth_time"]
+    #             % (1.0 / self._frequency).to(unit=TIME_UNIT, copy=False),
+    #             "toa": self._data.coords["birth_time"],
+    #             "birth_wavelength": self._data.coords["wavelength"],
+    #         }
+    #     )
 
     @classmethod
     def from_neutrons(
@@ -359,16 +554,11 @@ class Source:
             wavelengths.to(unit=WAV_UNIT, copy=False), sizes=birth_times.sizes
         )
 
-        source._data = sc.DataArray(
-            data=sc.ones(sizes=birth_times.sizes, unit="counts"),
-            coords={
-                "birth_time": birth_times,
-                "wavelength": wavelengths,
-                "speed": wavelength_to_speed(wavelengths).to(unit="m/s", copy=False),
-                "id": sc.arange("event", birth_times.size, unit=None).fold(
-                    "event", sizes=birth_times.sizes
-                ),
-            },
+        source._custom_neutrons = _make_data(
+            birth_time=birth_times,
+            wavelength=wavelengths,
+            distance=source._distance,
+            frequency=source._frequency,
         )
 
         return source
@@ -384,6 +574,10 @@ class Source:
         frequency: sc.Variable | None = None,
         seed: int | None = None,
         distance: sc.Variable | None = None,
+        tmin: sc.Variable | None = None,
+        tmax: sc.Variable | None = None,
+        wmin: sc.Variable | None = None,
+        wmax: sc.Variable | None = None,
     ):
         """
         Create source pulses from time a wavelength probability distributions.
@@ -416,7 +610,15 @@ class Source:
             Position of the source along the beamline.
         """
 
-        source = cls(facility=None, neutrons=neutrons, pulses=pulses)
+        source = cls(
+            facility=None,
+            neutrons=neutrons,
+            pulses=pulses,
+            tmin=tmin,
+            tmax=tmax,
+            wmin=wmin,
+            wmax=wmax,
+        )
         source._distance = (
             distance if distance is not None else sc.scalar(0.0, unit="m")
         )
@@ -429,55 +631,61 @@ class Source:
         if p_wav is not None:
             p_wav = _bin_edges_to_midpoints(p_wav, dims=["wavelength"])
 
-        pulse_params = _make_pulses(
-            neutrons=neutrons,
+        source._probability = _initialize_probability_distribution(
             p=p,
             p_time=p_time,
             p_wav=p_wav,
             frequency=source._frequency,
-            pulses=pulses,
-            seed=seed,
+            pulses=source._pulses,
+            tmin=source._tmin,
+            tmax=source._tmax,
+            wmin=source._wmin,
+            wmax=source._wmax,
         )
-        source._data = sc.DataArray(
-            data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
-            coords={
-                "birth_time": pulse_params["birth_time"],
-                "wavelength": pulse_params["wavelength"],
-                "speed": pulse_params["speed"],
-                "id": sc.arange(
-                    "event", pulse_params["birth_time"].size, unit=None
-                ).fold("event", sizes=pulse_params["birth_time"].sizes),
-            },
-        )
+        source._post_init()
+
+        # pulse_params = _make_pulses(
+        #     neutrons=neutrons,
+        #     p=p,
+        #     p_time=p_time,
+        #     p_wav=p_wav,
+        #     frequency=source._frequency,
+        #     pulses=pulses,
+        #     seed=seed,
+        # )
+        # source._data = sc.DataArray(
+        #     data=sc.ones(sizes=pulse_params["birth_time"].sizes, unit="counts"),
+        #     coords={
+        #         "birth_time": pulse_params["birth_time"],
+        #         "wavelength": pulse_params["wavelength"],
+        #         "speed": pulse_params["speed"],
+        #         "id": sc.arange(
+        #             "event", pulse_params["birth_time"].size, unit=None
+        #         ).fold("event", sizes=pulse_params["birth_time"].sizes),
+        #     },
+        # )
+        # source._probability = pulse_params["probability"]
         return source
 
     def __len__(self) -> int:
-        return self.data.sizes["pulse"]
+        return self._pulses
 
-    def plot(self, bins: int = 300) -> tuple:
+    def plot(self) -> tuple:
         """
         Plot the pulses of the source.
-
-        Parameters
-        ----------
-        bins:
-            Number of bins to use for histogramming the neutrons.
         """
-        dim = (set(self.data.dims) - {"pulse"}).pop()
-        collapsed = sc.collapse(self.data, keep=dim)
-        f1 = pp.plot(
-            {k: da.hist(birth_time=bins) for k, da in collapsed.items()},
-        )
-        f2 = pp.plot(
-            {k: da.hist(wavelength=bins) for k, da in collapsed.items()},
-        )
-        return f1 + f2
+        style = {"ls": "-", "marker": None}
+        f1 = self._distribution['pulse', 0].sum('wavelength').plot(**style)
+        f2 = self._distribution['pulse', 0].sum('birth_time').plot(**style)
+        return self._distribution['pulse', 0].plot() + f1 + f2
 
-    def as_readonly(self):
+    def as_readonly(self, data: sc.DataArray):
         return SourceReading(
-            data=self.data.assign_masks(
-                blocked_by_others=sc.zeros_like(self.data.data, dtype=bool, unit=None)
-            ),
+            data=data,
+            # .assign_masks(
+            #     blocked_by_others=sc.zeros_like(data.data, dtype=bool, unit=None)
+            # ),
+            # data=None,
             facility=self.facility,
             neutrons=self.neutrons,
             frequency=self.frequency,
