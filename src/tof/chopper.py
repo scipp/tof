@@ -440,13 +440,12 @@ class Chopper(Component):
             name=name,
         )
 
-    def as_readonly(
-        self, neutrons: sc.DataArray, time_limit: sc.Variable
-    ) -> ChopperReading:
+    def as_readonly(self, neutrons: sc.DataArray) -> ChopperReading:
         """
         Create a ChopperReading from the given neutrons that have been processed by this
         chopper.
         """
+        time_limit = neutrons.coords['toa'].max()
         to, tc = self.open_close_times(time_limit=time_limit)
         return ChopperReading(
             distance=self.distance,
@@ -481,4 +480,4 @@ class Chopper(Component):
         out = neutrons.assign_masks(
             blocked_by_me=(~m) & (~neutrons.masks['blocked_by_others'])
         )
-        return out, self.as_readonly(out, time_limit=time_limit)
+        return out  # , self.as_readonly(out, time_limit=time_limit)

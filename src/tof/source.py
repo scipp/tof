@@ -40,6 +40,19 @@ def _bin_edges_to_midpoints(
     )
 
 
+def _midpoints_to_edges(x, dim):
+    if x.sizes[dim] < 2:
+        half = sc.scalar(0.5, unit=x.unit)
+        return sc.concat([x[dim, 0:1] - half, x[dim, 0:1] + half], dim)
+    else:
+        center = sc.midpoints(x, dim=dim)
+        # Note: use range of 0:1 to keep dimension dim in the slice to avoid
+        # switching round dimension order in concatenate step.
+        left = center[dim, 0:1] - (x[dim, 1] - x[dim, 0])
+        right = center[dim, -1] + (x[dim, -1] - x[dim, -2])
+        return sc.concat([left, center, right], dim)
+
+
 def _initialize_probability_distribution(
     frequency: sc.Variable,
     pulses: int,
@@ -269,25 +282,32 @@ class Source:
             .flatten(to='x')
         )
 
+        self._distribution.coords[f"{T_DIM}_edges"] = _midpoints_to_edges(
+            self._distribution.coords[T_DIM], dim=T_DIM
+        )
+        self._distribution.coords[f"{W_DIM}_edges"] = _midpoints_to_edges(
+            self._distribution.coords[W_DIM], dim=W_DIM
+        )
+
         self._tmin = (
             self._tmin
             if self._tmin is not None
-            else self._distribution.coords[T_DIM].min()
+            else self._distribution.coords[f"{T_DIM}_edges"].min()
         )
         self._tmax = (
             self._tmax
             if self._tmax is not None
-            else self._distribution.coords[T_DIM].max()
+            else self._distribution.coords[f"{T_DIM}_edges"].max()
         )
         self._wmin = (
             self._wmin
             if self._wmin is not None
-            else self._distribution.coords[W_DIM].min()
+            else self._distribution.coords[f"{W_DIM}_edges"].min()
         )
         self._wmax = (
             self._wmax
             if self._wmax is not None
-            else self._distribution.coords[W_DIM].max()
+            else self._distribution.coords[f"{W_DIM}_edges"].max()
         )
 
     def sample(self, neutrons: int | None = None) -> sc.DataArray:
@@ -446,6 +466,22 @@ class Source:
         #     }
         # )
         # return events
+
+    def copy(self):
+        """
+        Make a copy of the source.
+        """
+        out = self.__class__(
+            facility=None,
+            neutrons=self._neutrons,
+            pulses=self._pulses,
+        )
+        out._facility = self._facility
+        out._frequency = self._frequency.copy(deep=True)
+        out._distance = self._distance.copy(deep=True)
+        out._distribution = self._distribution.copy(deep=True)
+        out._post_init()
+        return out
 
     @property
     def facility(self) -> str | None:

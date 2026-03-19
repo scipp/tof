@@ -119,4 +119,4 @@ class Detector(Component):
         neutrons:
             The neutrons to which the detector will be applied.
         """
-        return neutrons, self.as_readonly(neutrons)
+        return neutrons  # , self.as_readonly(neutrons)

@@ -220,9 +220,16 @@ class Model:
         """
         del self._components[name]
 
-    def run(self) -> Result:
+    def run(self, N: int, optimize_for: str | None = None) -> Result:
         """
         Run the simulation.
+
+        Parameters:
+        -----------
+        N:
+            The number of neutrons to simulate.
+        optimize_for:
+            The component for which to optimize the neutron sampling.
         """
         if self.source is None:
             raise ValueError(
@@ -240,12 +247,61 @@ class Model:
                 "itself. Please check the distances of the components."
             )
 
-        neutrons = self.source.sample()
-        source_reading = self.source.as_readonly(neutrons)
+        N = int(N)
 
-        time_unit = neutrons.coords['birth_time'].unit
+        if optimize_for is None:
+            chunks = [N]
+        else:
+            chunks = [int(N * x) for x in (0.3, 0.25, 0.2, 0.15)]
+            chunks.append(N - sum(chunks))
 
-        readings = {}
+        _source = self.source.copy()
+
+        for chunk in chunks:
+            neutrons = _source.sample(chunk)
+            source_reading = _source.as_readonly(neutrons)
+            time_unit = neutrons.coords['birth_time'].unit
+
+            trace = self._propagate(
+                components=components, neutrons=neutrons, time_unit=time_unit
+            )
+
+            if optimize_for is not None:
+                # Find all neutrons that were blocked up to the component we wish to
+                # optimize for
+                res = trace[optimize_for]
+                blocked = res.masks['blocked_by_others']
+                if 'blocked_by_me' in res.masks:
+                    blocked |= res.masks['blocked_by_me']
+                # for pulse in res.sizes["pulse"]:
+                # r = res['Frame-overlap 2'].data
+                # blocked = r.masks['blocked_by_others']
+                # if 'blocked_by_me' in r.masks:
+                #     blocked |= r.masks['blocked_by_me']
+                # blocked
+                for pls in range(res.sizes["pulse"]):
+                    d = _source.distribution['pulse', pls]
+                    a = res['pulse', pls][blocked['pulse', pls]].copy(deep=False)
+                    a.masks.clear()
+                    a = a.hist(
+                        birth_wavelength=d.coords['wavelength_edges'].rename_dims(
+                            wavelength='birth_wavelength'
+                        ),
+                        birth_time=d.coords['birth_time_edges'],
+                    )
+
+                # inds = blocked.values
+                # res
+
+        return Result(
+            source=source_reading,
+            readings={
+                comp.name: comp.as_readonly(trace[comp.name]) for comp in components
+            },
+        )
+
+    def _propagate(self, components, neutrons, time_unit):
+        trace = {}
         for comp in components:
             toa = neutrons.coords['toa'] + (
                 (comp.distance - neutrons.coords['distance']) / neutrons.coords['speed']
@@ -261,10 +317,10 @@ class Model:
                     'blocked_by_others'
                 ] | neutrons.masks.pop('blocked_by_me')
 
-            neutrons, reading = comp.apply(neutrons=neutrons)
-            readings[comp.name] = reading
-
-        return Result(source=source_reading, readings=readings)
+            # neutrons, reading = comp.apply(neutrons=neutrons)
+            neutrons = comp.apply(neutrons=neutrons)
+            trace[comp.name] = neutrons
+        return trace
 
     def __repr__(self) -> str:
         out = f"Model:\n  Source: {self.source}\n"
