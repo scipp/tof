@@ -290,6 +290,13 @@ class Model:
                         birth_time=d.coords['birth_time_edges'],
                     )
 
+                    aggressive = 0.5
+
+                    decay_factor = 1.0 - 1.0 / (N / (np.prod(a.shape) * aggressive))
+                    decay_factor
+                    alpha = sc.array(dims=a.dims, values=decay_factor**a.values)
+                    # sc.full_like(a, value=0.
+
                 # inds = blocked.values
                 # res
 
