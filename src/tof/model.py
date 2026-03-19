@@ -240,13 +240,8 @@ class Model:
                 "itself. Please check the distances of the components."
             )
 
-        neutrons = self.source.data.assign_masks(
-            blocked_by_others=sc.zeros(
-                sizes=self.source.data.sizes, unit=None, dtype=bool
-            )
-        ).assign_coords(
-            distance=self.source.distance, toa=self.source.data.coords['birth_time']
-        )
+        neutrons = self.source.sample()
+        source_reading = self.source.as_readonly(neutrons)
 
         time_unit = neutrons.coords['birth_time'].unit
 
@@ -269,7 +264,7 @@ class Model:
             neutrons, reading = comp.apply(neutrons=neutrons)
             readings[comp.name] = reading
 
-        return Result(source=self.source.as_readonly(), readings=readings)
+        return Result(source=source_reading, readings=readings)
 
     def __repr__(self) -> str:
         out = f"Model:\n  Source: {self.source}\n"

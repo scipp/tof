@@ -374,7 +374,7 @@ class Source:
                     period=period,
                     # frequency=self._frequency,
                     # distance=self._distance,
-                )
+                ).fold(dim="event", sizes={"pulse": 1, "event": -1})
             )
 
         print(count, "iterations during sampling")
@@ -421,6 +421,10 @@ class Source:
         # % (1.0 / self._frequency).to(unit=TIME_UNIT, copy=False),
         # "toa": self._data.coords["birth_time"],
         # "birth_wavelength": self._data.coords["wavelength"],
+
+        # print("PULSES", pulses)
+        # print("===============")
+        # print(sc.concat(pulses, dim="pulse"))
 
         return sc.concat(pulses, dim="pulse").assign_coords(
             distance=self._distance, frequency=self._frequency
