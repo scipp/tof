@@ -182,6 +182,8 @@ class Result:
             # Plot visible rays
             blocked = one_mask(furthest_component.data["pulse", i].masks).values
             nblocked = int(blocked.sum())
+            print("nblocked", nblocked)
+            print(blocked, blocked.shape)
             if nblocked < self.source.neutrons:
                 inds = rng.choice(
                     ids[~blocked],

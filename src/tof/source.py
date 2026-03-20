@@ -252,7 +252,7 @@ class Source:
             self._post_init()
 
     def _post_init(self):
-        print(self._distribution)
+        # print(self._distribution)
         self._pflat = self._distribution.flatten(
             dims=['wavelength', 'birth_time'], to='x'
         )
@@ -397,7 +397,7 @@ class Source:
                 ).fold(dim="event", sizes={"pulse": 1, "event": -1})
             )
 
-        print(count, "iterations during sampling")
+        # print(count, "iterations during sampling")
 
         # return times
 
@@ -727,7 +727,7 @@ class Source:
             # ),
             # data=None,
             facility=self.facility,
-            neutrons=self.neutrons,
+            neutrons=data.sizes["event"],
             frequency=self.frequency,
             pulses=self.pulses,
             distance=self.distance,
