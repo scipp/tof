@@ -142,7 +142,6 @@ class Frame:
         chopped = Frame(distance=frame.distance, subframes=[])
         open_times, close_times = (t.to(unit='s') for t in chopper.open_close_times())
         for subframe in frame.subframes:
-            # for open, close in zip(chopper.time_open, chopper.time_close, strict=True):
             for open, close in zip(open_times, close_times, strict=True):
                 if (tmp := _chop(subframe, open, close_to_open=True)) is not None:
                     if (tmp := _chop(tmp, close, close_to_open=False)) is not None:

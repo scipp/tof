@@ -264,14 +264,10 @@ def _optimize_source(p, choppers: list[Chopper]) -> sc.DataArray:
         wavelength_max=wave_edges.max(),
     )
     frames = frames.chop(choppers)
-    # for f in frames:
-    #     print("frame distance", f.distance)
     # Propagate frames back to source
     frames = FrameSequence(
         [frame.propagate_to(p.coords['distance']) for frame in frames]
     )
-    # for f in frames:
-    #     print("frame distance", f.distance)
 
     X, Y = np.meshgrid(time_edges.values, wave_edges.values)
     mask = np.zeros(shape=p.shape, dtype=bool)
@@ -286,13 +282,9 @@ def _optimize_source(p, choppers: list[Chopper]) -> sc.DataArray:
             X,
             Y,
         )
-        # break
+
     out = p.copy(deep=True)
     out.values = np.where(mask, out.values, 0.0)
-
-    # print("Original", p)
-    # print("====================")
-    # print("NEW", out)
     return out
 
 
