@@ -9,11 +9,15 @@ import numpy as np
 import plopp as pp
 import scipp as sc
 
+from .chopper import Chopper
 from .component import ComponentReading
+from .optimization import FrameSequence, polygon_grid_overlap_mask
 from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
 WAV_UNIT = "angstrom"
+T_DIM = "birth_time"
+W_DIM = "wavelength"
 
 
 def _default_frequency(frequency: sc.Variable | None, pulses: int) -> sc.Variable:
@@ -38,6 +42,28 @@ def _bin_edges_to_midpoints(
     )
 
 
+def _midpoints_to_edges(x, dim):
+    if x.sizes[dim] < 2:
+        half = sc.scalar(0.5, unit=x.unit)
+        return sc.concat([x[dim, 0:1] - half, x[dim, 0:1] + half], dim)
+    else:
+        center = sc.midpoints(x, dim=dim)
+        # Note: use range of 0:1 to keep dimension dim in the slice to avoid
+        # switching round dimension order in concatenate step.
+        left = center[dim, 0:1] - (x[dim, 1] - x[dim, 0])
+        right = center[dim, -1] + (x[dim, -1] - x[dim, -2])
+        return sc.concat([left, center, right], dim)
+
+
+def _compute_grid_spacing(x: sc.Variable, dim: str) -> sc.Variable:
+    out = sc.empty_like(x)
+    dx = x[dim, 1:] - x[dim, :-1]
+    out[dim, 1:-1] = 0.5 * (dx[dim, :-1] + dx[dim, 1:])
+    out[dim, 0] = dx[dim, 0]
+    out[dim, -1] = dx[dim, -1]
+    return out
+
+
 def _make_pulses(
     neutrons: int,
     frequency: sc.Variable,
@@ -48,6 +74,8 @@ def _make_pulses(
     p_wav: sc.DataArray | None = None,
     wmin: sc.Variable | None = None,
     wmax: sc.Variable | None = None,
+    tmin: sc.Variable | None = None,
+    tmax: sc.Variable | None = None,
 ):
     """
     Create pulses from time a wavelength probability distributions.
@@ -78,9 +106,13 @@ def _make_pulses(
         Minimum neutron wavelength.
     wmax:
         Maximum neutron wavelength.
+    tmin:
+        Minimum neutron birth time.
+    tmax:
+        Maximum neutron birth time.
     """
-    t_dim = "birth_time"
-    w_dim = "wavelength"
+    # t_dim = "birth_time"
+    # w_dim = "wavelength"
 
     if p is None:
         if None in (p_time, p_wav):
@@ -103,21 +135,37 @@ def _make_pulses(
     else:
         p = p.copy(deep=False)
 
-    if p.sizes[t_dim] < 2 or p.sizes[w_dim] < 2:
+    if p.sizes[T_DIM] < 2 or p.sizes[W_DIM] < 2:
         raise ValueError(
             f"Distribution must have at least 2 points in each dimension. "
-            f"Got {p.sizes[t_dim]} in {t_dim}, {p.sizes[w_dim]} in {w_dim}"
+            f"Got {p.sizes[T_DIM]} in {T_DIM}, {p.sizes[W_DIM]} in {W_DIM}"
         )
 
-    p.coords[t_dim] = p.coords[t_dim].to(dtype=float, unit=TIME_UNIT)
-    p.coords[w_dim] = p.coords[w_dim].to(dtype=float, unit=WAV_UNIT)
+    p.coords[T_DIM] = p.coords[T_DIM].to(dtype=float, unit=TIME_UNIT)
+    p.coords[W_DIM] = p.coords[W_DIM].to(dtype=float, unit=WAV_UNIT)
 
-    tmin = p.coords[t_dim].min()
-    tmax = p.coords[t_dim].max()
-    if wmin is None:
-        wmin = p.coords[w_dim].min()
-    if wmax is None:
-        wmax = p.coords[w_dim].max()
+    # Filter parameter space defined by limits
+    ind_tmin, ind_tmax = 0, p.sizes[T_DIM]
+    ind_wmin, ind_wmax = 0, p.sizes[W_DIM]
+    trange = sc.arange(T_DIM, p.sizes[T_DIM])
+    wrange = sc.arange(W_DIM, p.sizes[W_DIM])
+    if tmin is not None:
+        ind_tmin = max(trange[p.coords[T_DIM] >= tmin][0].value - 1, 0)
+    else:
+        tmin = p.coords[T_DIM][0] - 0.5 * (p.coords[T_DIM][1] - p.coords[T_DIM][0])
+    if tmax is not None:
+        ind_tmax = min(trange[p.coords[T_DIM] <= tmax][-1].value + 2, p.sizes[T_DIM])
+    else:
+        tmax = p.coords[T_DIM][-1] + 0.5 * (p.coords[T_DIM][-1] - p.coords[T_DIM][-2])
+    if wmin is not None:
+        ind_wmin = max(wrange[p.coords[W_DIM] >= wmin][0].value - 1, 0)
+    else:
+        wmin = p.coords[W_DIM][0] - 0.5 * (p.coords[W_DIM][1] - p.coords[W_DIM][0])
+    if wmax is not None:
+        ind_wmax = min(wrange[p.coords[W_DIM] <= wmax][-1].value + 2, p.sizes[W_DIM])
+    else:
+        wmax = p.coords[W_DIM][-1] + 0.5 * (p.coords[W_DIM][-1] - p.coords[W_DIM][-2])
+    prob = p[T_DIM, ind_tmin:ind_tmax][W_DIM, ind_wmin:ind_wmax]
 
     # In the following, random.choice only allows to select from the values listed
     # in the coordinate of the probability distribution arrays. This leads to data
@@ -129,10 +177,16 @@ def _make_pulses(
     # prohibitively slow.
     # See https://docs.scipy.org/doc/scipy/tutorial/stats/sampling.html for more
     # information.
-    tsel = (p.coords[t_dim] >= tmin) & (p.coords[t_dim] <= tmax)
-    wsel = (p.coords[w_dim] >= wmin) & (p.coords[w_dim] <= wmax)
-    dt = 0.5 * (tmax - tmin).value / (p[tsel].sizes[t_dim] - 1)
-    dw = 0.5 * (wmax - wmin).value / (p[wsel].sizes[w_dim] - 1)
+
+    t = prob.coords[T_DIM]
+    w = prob.coords[W_DIM]
+    widths = {
+        T_DIM: _compute_grid_spacing(t, T_DIM),
+        W_DIM: _compute_grid_spacing(w, W_DIM),
+    }
+
+    widths[T_DIM] = widths[T_DIM].broadcast(sizes=prob.sizes).flatten(to='x')
+    widths[W_DIM] = widths[W_DIM].broadcast(sizes=prob.sizes).flatten(to='x')
 
     # Because of the added noise, some values end up being outside the specified range
     # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
@@ -143,7 +197,7 @@ def _make_pulses(
     wavs = []
     ntot = pulses * neutrons
     rng = np.random.default_rng(seed)
-    p_flat = p.flatten(to='x')
+    p_flat = prob.flatten(to='x')
 
     p_sum = p_flat.data.sum()
     if p_sum.value <= 0:
@@ -155,8 +209,12 @@ def _make_pulses(
     while n < ntot:
         size = ntot - n
         inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
-        t = p_flat.coords[t_dim].values[inds] + rng.normal(scale=dt, size=size)
-        w = p_flat.coords[w_dim].values[inds] + rng.normal(scale=dw, size=size)
+        t = p_flat.coords[T_DIM].values[inds] + (
+            rng.normal(scale=0.5, size=size) * widths[T_DIM].values[inds]
+        )
+        w = p_flat.coords[W_DIM].values[inds] + (
+            rng.normal(scale=0.5, size=size) * widths[W_DIM].values[inds]
+        )
         mask = (
             (t >= tmin.value)
             & (t <= tmax.value)
@@ -192,6 +250,52 @@ def _make_pulses(
     }
 
 
+def _optimize_source(p, choppers: list[Chopper]) -> sc.DataArray:
+    time_edges = _midpoints_to_edges(p.coords[T_DIM], T_DIM).to(
+        unit=TIME_UNIT, copy=False
+    )
+    wave_edges = _midpoints_to_edges(p.coords[W_DIM], W_DIM).to(
+        unit=WAV_UNIT, copy=False
+    )
+    frames = FrameSequence.from_source_pulse(
+        time_min=time_edges.min(),
+        time_max=time_edges.max(),
+        wavelength_min=wave_edges.min(),
+        wavelength_max=wave_edges.max(),
+    )
+    frames = frames.chop(choppers)
+    # for f in frames:
+    #     print("frame distance", f.distance)
+    # Propagate frames back to source
+    frames = FrameSequence(
+        [frame.propagate_to(p.coords['distance']) for frame in frames]
+    )
+    # for f in frames:
+    #     print("frame distance", f.distance)
+
+    X, Y = np.meshgrid(time_edges.values, wave_edges.values)
+    mask = np.zeros(shape=p.shape, dtype=bool)
+    for subf in frames[-1].subframes:
+        mask |= polygon_grid_overlap_mask(
+            np.column_stack(
+                [
+                    subf.time.to(unit=TIME_UNIT).values,
+                    subf.wavelength.to(unit=WAV_UNIT).values,
+                ]
+            ),
+            X,
+            Y,
+        )
+        # break
+    out = p.copy(deep=True)
+    out.values = np.where(mask, out.values, 0.0)
+
+    # print("Original", p)
+    # print("====================")
+    # print("NEW", out)
+    return out
+
+
 class Source:
     """
     A class that represents a source of neutrons.
@@ -216,6 +320,10 @@ class Source:
         Minimum neutron wavelength.
     wmax:
         Maximum neutron wavelength.
+    tmin:
+        Minimum neutron birth time.
+    tmax:
+        Maximum neutron birth time.
     seed:
         Seed for the random number generator.
     """  # noqa: E501
@@ -227,7 +335,10 @@ class Source:
         pulses: int = 1,
         wmin: sc.Variable | None = None,
         wmax: sc.Variable | None = None,
+        tmin: sc.Variable | None = None,
+        tmax: sc.Variable | None = None,
         seed: int | None = None,
+        optimize_for: list[Chopper] | None = None,
     ):
         self._facility = facility.lower() if facility is not None else None
         self._neutrons = int(neutrons)
@@ -241,6 +352,11 @@ class Source:
             file_path = get_source_path(self._facility)
             facility_pulse = sc.io.load_hdf5(file_path)
 
+            if optimize_for is not None:
+                facility_pulse = _optimize_source(
+                    p=facility_pulse, choppers=optimize_for
+                )
+
             self._frequency = facility_pulse.coords["frequency"]
             self._distance = facility_pulse.coords["distance"]
             pulse_params = _make_pulses(
@@ -250,6 +366,8 @@ class Source:
                 pulses=self._pulses,
                 wmin=wmin,
                 wmax=wmax,
+                tmin=tmin,
+                tmax=tmax,
                 seed=seed,
             )
             self._data = sc.DataArray(

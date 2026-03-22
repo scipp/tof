@@ -1,31 +1,22 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
-# @author Simon Heybrock
+# Copyright (c) 2026 Scipp contributors (https://github.com/scipp)
 """
 Compute result of applying a chopper cascade to a neutron pulse at a time-of-flight
 neutron source.
 
-See :py:class:`FrameSequence` for the main entry point.
+This is copied over from scippneutron/tof/chopper_cascade.py, with the unused parts
+stripped out (see https://github.com/scipp/scippneutron).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import scipp as sc
 
 from .chopper import Chopper
 from .utils import wavelength_to_inverse_speed
-
-# from ..chopper import DiskChopper
-
-
-# def wavelength_to_inverse_velocity(wavelength):
-#     h = sc.constants.h
-#     m_n = sc.constants.m_n
-#     return (wavelength * m_n / h).to(unit='s/m')
 
 
 def propagate_times(
@@ -66,39 +57,6 @@ class Subframe:
         self.time = time.to(unit='s', copy=False)
         self.wavelength = wavelength.to(unit='angstrom', copy=False)
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Subframe):
-            return NotImplemented
-        # Using sc.identical can lead to flaky behavior (different frames might have
-        # been obtained via a different operation order), so we use allclose instead.
-        same_time = sc.allclose(
-            self.time,
-            other.time,
-            rtol=sc.scalar(1.0e-12),
-            atol=sc.scalar(1.0e-16, unit=self.time.unit),
-        )
-        same_wavelength = sc.allclose(
-            self.wavelength,
-            other.wavelength,
-            rtol=sc.scalar(1.0e-12),
-            atol=sc.scalar(1.0e-16, unit=self.wavelength.unit),
-        )
-        return same_time and same_wavelength
-
-    def is_regular(self) -> bool:
-        """
-        Return True if the subframe is regular, i.e., if the vertex with the minimum
-        wavelength also has the minimum time, and the vertex with the maximum wavelength
-        also has the maximum time.
-        """
-        min_time = self.time == self.time.min()
-        min_wavelength = self.wavelength == self.wavelength.min()
-        max_time = self.time == self.time.max()
-        max_wavelength = self.wavelength == self.wavelength.max()
-        coinciding_min = min_time & min_wavelength
-        coinciding_max = max_time & max_wavelength
-        return coinciding_min.any() and coinciding_max.any()
-
     def propagate_by(self, distance: sc.Variable) -> Subframe:
         """
         Propagate subframe by a distance.
@@ -119,37 +77,6 @@ class Subframe:
             wavelength=self.wavelength,
         )
 
-    @property
-    def start_time(self) -> sc.Variable:
-        """The start time of the subframe for each of the distances in self.time."""
-        # The `self.time` may have an additional dimension for distance, compared to
-        # `self.wavelength`, and we need to keep that dimension in the output.
-        out = self.time
-        for dim in self.wavelength.dims:
-            out = out.min(dim)
-        return out
-
-    @property
-    def end_time(self) -> sc.Variable:
-        """The end time of the subframe for each of the distances in self.time."""
-        # The `self.time` may have an additional dimension for distance, compared to
-        # `self.wavelength`, and we need to keep that dimension in the output.
-        out = self.time
-        for dim in self.wavelength.dims:
-            out = out.max(dim)
-        return out
-
-    @property
-    def start_wavelength(self) -> sc.Variable:
-        """The start wavelength of the subframe for each of the distances in
-        self.time"""
-        return self.wavelength.min()
-
-    @property
-    def end_wavelength(self) -> sc.Variable:
-        """The end wavelength of the subframe for each of the distances in self.time."""
-        return self.wavelength.max()
-
 
 @dataclass
 class Frame:
@@ -160,20 +87,6 @@ class Frame:
 
     distance: sc.Variable
     subframes: list[Subframe]
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Frame):
-            return NotImplemented
-        # Note: we don't use sc.identical here because it can fail on the dtype even
-        # if the values are equal.
-        same_distance = (
-            np.array_equal(self.distance.values, other.distance.values)
-            and self.distance.unit == other.distance.unit
-        )
-        return same_distance and all(
-            self_sub == other_sub
-            for self_sub, other_sub in zip(self.subframes, other.subframes, strict=True)
-        )
 
     def propagate_to(self, distance: sc.Variable) -> Frame:
         """
@@ -235,53 +148,6 @@ class Frame:
                     if (tmp := _chop(tmp, close, close_to_open=False)) is not None:
                         chopped.subframes.append(tmp)
         return chopped
-
-    def bounds(self) -> sc.DataGroup:
-        """The bounds of the frame, i.e., the global min and max time and wavelength."""
-        start = sc.reduce([sub.start_time for sub in self.subframes]).min()
-        end = sc.reduce([sub.end_time for sub in self.subframes]).max()
-        wav_start = sc.reduce([sub.start_wavelength for sub in self.subframes]).min()
-        wav_end = sc.reduce([sub.end_wavelength for sub in self.subframes]).max()
-        return sc.DataGroup(
-            time=sc.concat([start, end], dim='bound'),
-            wavelength=sc.concat([wav_start, wav_end], dim='bound'),
-        )
-
-    def subbounds(self) -> sc.DataGroup:
-        """
-        The bounds of the individual subframes, stored as a DataGroup.
-        """
-        starts = sc.concat(
-            [subframe.start_time for subframe in self.subframes], dim='subframe'
-        )
-        ends = sc.concat(
-            [subframe.end_time for subframe in self.subframes], dim='subframe'
-        )
-        # Given how time-propagation and chopping works, the min wavelength is always
-        # given by the same vertex as the min time, and the max wavelength by the same
-        # vertex as the max time. Thus, this check should generally always pass.
-        # Exceptions may be subframes that have been created manually.
-        if not all(subframe.is_regular() for subframe in self.subframes):
-            raise NotImplementedError(
-                'Subframes must be regular, i.e., min/max time and wavelength must '
-                'coincide.'
-            )
-        wav_starts = sc.concat(
-            [subframe.start_wavelength for subframe in self.subframes], dim='subframe'
-        )
-        wav_ends = sc.concat(
-            [subframe.end_wavelength for subframe in self.subframes], dim='subframe'
-        )
-
-        time = sc.concat([starts, ends], dim='bound')
-        wavelength = sc.concat([wav_starts, wav_ends], dim='bound')
-        time_dims = list(set(time.dims) - {'subframe', 'bound'})
-        wavelength_dims = list(set(wavelength.dims) - {'subframe', 'bound'})
-
-        return sc.DataGroup(
-            time=time.transpose([*time_dims, 'subframe', 'bound']),
-            wavelength=wavelength.transpose([*wavelength_dims, 'subframe', 'bound']),
-        )
 
 
 @dataclass
@@ -381,179 +247,6 @@ class FrameSequence:
             frames.append(frames[-1].chop(chopper))
         return FrameSequence(frames)
 
-    def draw(
-        self,
-        linewidth: float = 0,
-        fill: bool = True,
-        alpha: float | None = None,
-        transpose: bool = False,
-        colors: list[str] | None = None,
-        grid: bool = True,
-        title: str = 'Frame propagation through chopper cascade',
-        time_unit: str = 'ms',
-        wavelength_unit: str = 'angstrom',
-    ) -> Any:
-        """
-        Draw frames using matplotlib.
-
-        Parameters
-        ----------
-        linewidth:
-            Line width of frame edges.
-        fill:
-            Fill frame with color.
-        alpha:
-            Transparency of frame.
-        transpose:
-            Transpose axes.
-        colors:
-            List of colors to use for frames. If None, use default matplotlib colors.
-        grid:
-            Show grid.
-        time_unit:
-            Unit for time axis. Default is ms.
-        wavelength_unit:
-            Unit for wavelength axis. Default is angstrom.
-        """
-        import matplotlib.colors as mcolors
-        import matplotlib.patches as patches
-        import matplotlib.pyplot as plt
-
-        fig, ax = plt.subplots()
-        x_max = 0
-        y_max = 0
-        for i, frame in enumerate(self.frames):
-            color = colors[i] if colors is not None else f'C{i}'
-            # Add label to legend
-            ax.plot([], [], color=color, label=f'{frame.distance:c}')
-            # All subframes have same color
-            for subframe in frame.subframes:
-                x = subframe.time.to(unit=time_unit, copy=False)
-                y = subframe.wavelength.to(unit=wavelength_unit, copy=False)
-                if transpose:
-                    x, y = y, x
-                x_unit = x.unit
-                y_unit = y.unit
-                x_max = max(x_max, x.max().value)
-                y_max = max(y_max, y.max().value)
-                if alpha:
-                    color = mcolors.to_rgba(color, alpha=alpha)
-                polygon = patches.Polygon(
-                    np.stack((x.values, y.values), axis=1),
-                    closed=True,
-                    fill=fill,
-                    color=color,
-                    linewidth=linewidth,
-                )
-                ax.add_patch(polygon)
-        ax.set_xlabel(x_unit)
-        ax.set_ylabel(y_unit)
-        ax.set_xlim(0, x_max)
-        ax.set_ylim(0, y_max)
-        ax.minorticks_on()
-        if grid:
-            ax.grid(True, linestyle='-', linewidth='0.5', color='gray')
-            ax.grid(which='minor', linestyle=':', linewidth='0.5', color='gray')
-        ax.legend(loc='best')
-        ax.set_title(title)
-        fig.tight_layout()
-        return fig, ax
-
-    def acceptance_diagram(self, transpose: bool = True):
-        """
-        Draw a chopper acceptance diagram.
-
-        See, e.g., J.R.D. Copley, An acceptance diagram analysis of the contaminant
-        pulse removal problem with direct geometry neutron chopper spectrometers,
-        https://doi.org/10.1016/S0168-9002(03)01731-5 for more background.
-
-        Parameters
-        ----------
-        transpose:
-            Transpose axes if ``True``, i.e., show wavelength on horizontal axis and
-            time on vertical axis.
-        """
-        import matplotlib.pyplot as plt
-
-        source_distance = self.frames[0].distance
-        frames = FrameSequence(
-            [frame.propagate_to(source_distance) for frame in self.frames]
-        )
-        # Reset frame distance for plotting labels. This is a bit of a hack.
-        # We should use chopper names if available.
-        for i, frame in enumerate(frames.frames):
-            frame.distance = self.frames[i].distance
-        blue = np.linspace(0.1, 1, len(frames.frames))
-        colors = plt.cm.Blues(blue)
-        fig, ax = frames.draw(
-            fill=True,
-            linewidth=0.5,
-            transpose=transpose,
-            colors=colors,
-            title='Chopper acceptance diagram',
-        )
-        # Put legend outside of plot
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        ax.legend(
-            loc='center left',
-            bbox_to_anchor=(1, 0.5),
-            title='Distance',
-            frameon=False,
-        )
-        return fig, ax
-
-
-# @dataclass
-# class Chopper:
-#     distance: sc.Variable
-#     time_open: sc.Variable
-#     time_close: sc.Variable
-
-#     def __post_init__(self):
-#         if self.time_open.sizes != self.time_close.sizes:
-#             raise sc.DimensionError(
-#                 f'Inconsistent dims or shape: {self.time_open.sizes} vs '
-#                 f'{self.time_close.sizes}'
-#             )
-
-#     def __getitem__(self, key) -> Chopper:
-#         return Chopper(
-#             distance=self.distance,
-#             time_open=self.time_open[key],
-#             time_close=self.time_close[key],
-#         )
-
-#     @classmethod
-#     def from_disk_chopper(
-#         cls,
-#         disk_chopper: DiskChopper,
-#         pulse_frequency: sc.Variable,
-#         npulses: int,
-#     ) -> Chopper:
-#         """
-#         Create a chopper from a NeXus disk chopper.
-
-#         Parameters
-#         ----------
-#         disk_chopper:
-#             Disk chopper.
-#         pulse_frequency:
-#             The frequency of pulses in the neutron source (this is to determine how
-#             many rotations the chopper performs per pulse).
-#         npulses:
-#             Number of pulses to rotate the chopper for.
-#         """
-#         tpulse = 1.0 / pulse_frequency
-#         topen = disk_chopper.time_offset_open(pulse_frequency=pulse_frequency)
-#         tclose = disk_chopper.time_offset_close(pulse_frequency=pulse_frequency)
-#         offsets = sc.arange('pulse', npulses) * tpulse
-#         return cls(
-#             distance=sc.norm(disk_chopper.axle_position),
-#             time_open=(offsets + topen).flatten(to=topen.dim),
-#             time_close=(offsets + tclose).flatten(to=tclose.dim),
-#         )
-
 
 def _chop(frame: Subframe, time: sc.Variable, close_to_open: bool) -> Subframe | None:
     inside = frame.time >= time if close_to_open else frame.time <= time
@@ -575,3 +268,165 @@ def _chop(frame: Subframe, time: sc.Variable, close_to_open: bool) -> Subframe |
     time = sc.concat([t for t, _ in output], dim=frame.time.dim)
     wavelength = sc.concat([v for _, v in output], dim=frame.wavelength.dim)
     return Subframe(time=time, wavelength=wavelength)
+
+
+def polygon_grid_overlap_mask(
+    polygon: np.ndarray, X: np.ndarray, Y: np.ndarray, tol: float | None = None
+) -> np.ndarray:
+    """
+    Compute a mask indicating which grid cells overlap with a polygon.
+    This is used to select relevant regions of the source distribution where the
+    selection is made from the polygons generated by the FrameSequence.
+
+    Parameters
+    ----------
+    polygon : (N,2) array
+        Coordinates of the polygon vertices.
+    X, Y    : (H,W) array
+        Coordinates of the grid corners.
+    tol     : float, optional
+        Tolerance for intersection checks (default = small fraction of grid spacing).
+
+    Notes:
+        Generated by ChatGPT-5.2.
+
+        Original prompt:
+        "Using numpy, can you make a function that would take in a polygon as a set
+        of vertices, and a 2d grid of xy coordinates, and return a mask that would
+        indicate which squares in the grid overlap with the polygon (even in the
+        slightest of ways). The math should be exact, I can't afford to approximate
+        the polygon with a cloud of points.
+        I don't need to know the area of overlap between squares and the polygon,
+        just whether there is overlap or not (True/False).
+
+        Refinement:
+        Can you:
+        1. Integrate bounding-box pruning per edge directly into the function
+        2. Add some tolerance when checking for equalities (maybe something like a
+        fraction of the grid spacing) because it can sometimes go wrong when a
+        polygon edge is perfectly aligned with a grid edge
+
+    Returns:
+        mask (H-1, W-1)
+    """
+
+    H, W = X.shape
+
+    # --- Cell bounds ---
+    cells_xmin = X[:-1, :-1]
+    cells_xmax = X[1:, 1:]
+    cells_ymin = Y[:-1, :-1]
+    cells_ymax = Y[1:, 1:]
+
+    # --- Auto tolerance ---
+    if tol is None:
+        dx = np.min(np.diff(X, axis=1))
+        dy = np.min(np.diff(Y, axis=0))
+        tol = 1e-9 + 1e-6 * min(dx, dy)
+
+    # Expand cell bounds slightly (robustness)
+    cells_xmin -= tol
+    cells_xmax += tol
+    cells_ymin -= tol
+    cells_ymax += tol
+
+    # --- Point in polygon ---
+    def points_in_poly(px, py, poly):
+        x = poly[:, 0]
+        y = poly[:, 1]
+        x2 = np.roll(x, -1)
+        y2 = np.roll(y, -1)
+
+        inside = np.zeros(px.shape, dtype=bool)
+
+        for i in range(len(poly)):
+            cond = ((y[i] > py) != (y2[i] > py)) & (
+                px < (x2[i] - x[i]) * (py - y[i]) / (y2[i] - y[i] + tol) + x[i]
+            )
+            inside ^= cond
+
+        return inside
+
+    # --- 1. Corner inside polygon ---
+    corners_x = np.stack([X[:-1, :-1], X[1:, :-1], X[:-1, 1:], X[1:, 1:]], axis=0)
+    corners_y = np.stack([Y[:-1, :-1], Y[1:, :-1], Y[:-1, 1:], Y[1:, 1:]], axis=0)
+
+    corner_inside = np.any(points_in_poly(corners_x, corners_y, polygon), axis=0)
+
+    # --- 2. Polygon vertex inside cell ---
+    vx = polygon[:, 0][:, None, None]
+    vy = polygon[:, 1][:, None, None]
+
+    vertex_inside = (
+        (vx >= cells_xmin)
+        & (vx <= cells_xmax)
+        & (vy >= cells_ymin)
+        & (vy <= cells_ymax)
+    ).any(axis=0)
+
+    # --- Segment intersection ---
+    def segments_intersect(p1, p2, q1, q2):
+        def orient(a, b, c):
+            return (b[..., 0] - a[..., 0]) * (c[..., 1] - a[..., 1]) - (
+                b[..., 1] - a[..., 1]
+            ) * (c[..., 0] - a[..., 0])
+
+        o1 = orient(p1, p2, q1)
+        o2 = orient(p1, p2, q2)
+        o3 = orient(q1, q2, p1)
+        o4 = orient(q1, q2, p2)
+
+        return (o1 * o2 <= tol) & (o3 * o4 <= tol)
+
+    edges_p1 = polygon
+    edges_p2 = np.roll(polygon, -1, axis=0)
+
+    intersect_mask = np.zeros((H - 1, W - 1), dtype=bool)
+
+    # Cell edges
+    cell_edges = [
+        (
+            np.stack([cells_xmin, cells_ymin], axis=-1),
+            np.stack([cells_xmax, cells_ymin], axis=-1),
+        ),
+        (
+            np.stack([cells_xmin, cells_ymax], axis=-1),
+            np.stack([cells_xmax, cells_ymax], axis=-1),
+        ),
+        (
+            np.stack([cells_xmin, cells_ymin], axis=-1),
+            np.stack([cells_xmin, cells_ymax], axis=-1),
+        ),
+        (
+            np.stack([cells_xmax, cells_ymin], axis=-1),
+            np.stack([cells_xmax, cells_ymax], axis=-1),
+        ),
+    ]
+
+    # --- 3. Edge intersection with pruning ---
+    for p1, p2 in zip(edges_p1, edges_p2, strict=True):
+        # Edge bounding box (+ tolerance)
+        xmin = min(p1[0], p2[0]) - tol
+        xmax = max(p1[0], p2[0]) + tol
+        ymin = min(p1[1], p2[1]) - tol
+        ymax = max(p1[1], p2[1]) + tol
+
+        # Candidate cells only
+        candidate = (
+            (cells_xmax >= xmin)
+            & (cells_xmin <= xmax)
+            & (cells_ymax >= ymin)
+            & (cells_ymin <= ymax)
+        )
+
+        if not np.any(candidate):
+            continue
+
+        p1e = p1[None, None, :]
+        p2e = p2[None, None, :]
+
+        for q1, q2 in cell_edges:
+            hit = segments_intersect(p1e, p2e, q1, q2)
+            intersect_mask[candidate] |= hit[candidate]
+
+    return corner_inside | vertex_inside | intersect_mask
