@@ -42,6 +42,20 @@ def wavelength_to_speed(x: sc.Variable, unit: str = "m/s") -> sc.Variable:
     return (1.0 / (m_over_h * x)).to(unit=unit)
 
 
+def wavelength_to_inverse_speed(x: sc.Variable, unit: str = "s/m") -> sc.Variable:
+    """
+    Convert neutron wavelengths to inverse speeds.
+
+    Parameters
+    ----------
+    x:
+        Input wavelengths.
+    unit:
+        The unit of the output inverse speeds.
+    """
+    return (x * m_over_h).to(unit=unit)
+
+
 def speed_to_energy(x: sc.Variable, unit="meV") -> sc.Variable:
     """
     Convert neutron speeds to energies.
