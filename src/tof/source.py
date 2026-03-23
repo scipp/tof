@@ -64,6 +64,25 @@ def _compute_grid_spacing(x: sc.Variable, dim: str) -> sc.Variable:
     return out
 
 
+def _load_facility_pulse_profile(facility):
+    from .facilities import get_source_path
+
+    file_path = get_source_path(facility)
+    facility_pulse = sc.io.load_hdf5(file_path)
+    facility_pulse.coords.update(
+        {
+            f"{T_DIM}_edges": _midpoints_to_edges(
+                facility_pulse.coords[T_DIM], T_DIM
+            ).to(unit=TIME_UNIT, copy=False),
+            f"{W_DIM}_edges": _midpoints_to_edges(
+                facility_pulse.coords[W_DIM], W_DIM
+            ).to(unit=WAV_UNIT, copy=False),
+        }
+    )
+    # wave_edges = _midpoints_to_edges(w, W_DIM).to(unit=WAV_UNIT, copy=False)
+    return facility_pulse
+
+
 def _make_pulses(
     neutrons: int,
     frequency: sc.Variable,
@@ -188,6 +207,9 @@ def _make_pulses(
     widths[T_DIM] = widths[T_DIM].broadcast(sizes=prob.sizes).flatten(to='x')
     widths[W_DIM] = widths[W_DIM].broadcast(sizes=prob.sizes).flatten(to='x')
 
+    time_edges = p.coords[f"{T_DIM}_edges"]
+    wave_edges = p.coords[f"{W_DIM}_edges"]
+
     # Because of the added noise, some values end up being outside the specified range
     # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
     # edges of the range. To avoid this, we remove the outliers and resample until we
@@ -206,6 +228,11 @@ def _make_pulses(
             f"Sum of probabilities is {p_sum.value}"
         )
     p_flat /= p_sum
+
+    # We want to filter out events that end up in regions where the probability is zero
+    # after adding gaussian spread.
+    zero_mask = prob.data == 0.0
+
     while n < ntot:
         size = ntot - n
         inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
@@ -215,15 +242,41 @@ def _make_pulses(
         w = p_flat.coords[W_DIM].values[inds] + (
             rng.normal(scale=0.5, size=size) * widths[W_DIM].values[inds]
         )
-        mask = (
+        # sel = (
+        #     (t >= tmin.value)
+        #     & (t <= tmax.value)
+        #     & (w >= wmin.value)
+        #     & (w <= wmax.value)
+        # )
+
+        # Additional selection
+        da = sc.DataArray(
+            data=sc.ones(sizes={'event': size}),
+            coords={
+                T_DIM: sc.array(dims=['event'], values=t, unit=TIME_UNIT),
+                W_DIM: sc.array(dims=['event'], values=w, unit=WAV_UNIT),
+            },
+        )
+
+        binned = da.bin({T_DIM: time_edges, W_DIM: wave_edges})
+        filtered = binned.assign_masks(m=zero_mask).bins.concat().value
+
+        t = filtered.coords[T_DIM].values
+        w = filtered.coords[W_DIM].values
+        sel = (
             (t >= tmin.value)
             & (t <= tmax.value)
             & (w >= wmin.value)
             & (w <= wmax.value)
         )
-        times.append(t[mask])
-        wavs.append(w[mask])
-        n += mask.sum()
+
+        # times.append(t[)
+        # wavs.append(filtered.coords[W_DIM].values)
+        # n += filtered.size
+
+        times.append(t[sel])
+        wavs.append(w[sel])
+        n += sel.sum()
 
     dim = "event"
     birth_time = sc.array(
@@ -251,12 +304,14 @@ def _make_pulses(
 
 
 def _optimize_source(p, choppers: list[Chopper]) -> sc.DataArray:
-    time_edges = _midpoints_to_edges(p.coords[T_DIM], T_DIM).to(
-        unit=TIME_UNIT, copy=False
-    )
-    wave_edges = _midpoints_to_edges(p.coords[W_DIM], W_DIM).to(
-        unit=WAV_UNIT, copy=False
-    )
+    # time_edges = _midpoints_to_edges(p.coords[T_DIM], T_DIM).to(
+    #     unit=TIME_UNIT, copy=False
+    # )
+    # wave_edges = _midpoints_to_edges(p.coords[W_DIM], W_DIM).to(
+    #     unit=WAV_UNIT, copy=False
+    # )
+    time_edges = p.coords[f"{T_DIM}_edges"]
+    wave_edges = p.coords[f"{W_DIM}_edges"]
     frames = FrameSequence.from_source_pulse(
         time_min=time_edges.min(),
         time_max=time_edges.max(),
@@ -281,6 +336,7 @@ def _optimize_source(p, choppers: list[Chopper]) -> sc.DataArray:
             ),
             X,
             Y,
+            tol=0,
         )
 
     out = p.copy(deep=True)
@@ -339,15 +395,13 @@ class Source:
         self.seed = seed
 
         if self._facility is not None:
-            from .facilities import get_source_path
-
-            file_path = get_source_path(self._facility)
-            facility_pulse = sc.io.load_hdf5(file_path)
+            facility_pulse = _load_facility_pulse_profile(self._facility)
 
             if optimize_for is not None:
                 facility_pulse = _optimize_source(
                     p=facility_pulse, choppers=optimize_for
                 )
+                self.probability = facility_pulse
 
             self._frequency = facility_pulse.coords["frequency"]
             self._distance = facility_pulse.coords["distance"]
