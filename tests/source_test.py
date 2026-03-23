@@ -148,7 +148,7 @@ def test_multiple_pulses_from_distribution():
     p_time = sc.DataArray(
         data=sc.array(dims=['birth_time'], values=v),
         coords={
-            'birth_time': sc.linspace('birth_time', 0.0, 8000.0, len(v), unit='us')
+            'birth_time': sc.linspace('birth_time', 1.0e3, 6.0e3, len(v), unit='us')
         },
     )
     p_wav = sc.DataArray(
