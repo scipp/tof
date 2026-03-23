@@ -8,10 +8,11 @@ from dataclasses import dataclass
 import numpy as np
 import plopp as pp
 import scipp as sc
+from matplotlib.path import Path
 
 from .chopper import Chopper
 from .component import ComponentReading
-from .optimization import FrameSequence, polygon_grid_overlap_mask
+from .optimization import FrameSequence, Subframe, polygon_grid_overlap_mask
 from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
@@ -79,7 +80,6 @@ def _load_facility_pulse_profile(facility):
             ).to(unit=WAV_UNIT, copy=False),
         }
     )
-    # wave_edges = _midpoints_to_edges(w, W_DIM).to(unit=WAV_UNIT, copy=False)
     return facility_pulse
 
 
@@ -91,10 +91,10 @@ def _make_pulses(
     p: sc.DataArray | None = None,
     p_time: sc.DataArray | None = None,
     p_wav: sc.DataArray | None = None,
-    wmin: sc.Variable | None = None,
-    wmax: sc.Variable | None = None,
-    tmin: sc.Variable | None = None,
-    tmax: sc.Variable | None = None,
+    # wmin: sc.Variable | None = None,
+    # wmax: sc.Variable | None = None,
+    # tmin: sc.Variable | None = None,
+    # tmax: sc.Variable | None = None,
 ):
     """
     Create pulses from time a wavelength probability distributions.
@@ -133,26 +133,29 @@ def _make_pulses(
     # t_dim = "birth_time"
     # w_dim = "wavelength"
 
-    if p is None:
-        if None in (p_time, p_wav):
-            raise ValueError(
-                "Either p (2D) or both p_time (1D) and p_wav (1D) must be supplied."
-            )
-        p_wav_sum = p_wav.data.sum()
-        p_time_sum = p_time.data.sum()
-        if p_wav_sum.value <= 0:
-            raise ValueError(
-                "Wavelength distribution must have at least one positive "
-                f"probability value. Sum of probabilities is {p_wav_sum.value}"
-            )
-        if p_time_sum.value <= 0:
-            raise ValueError(
-                "Time distribution must have at least one positive "
-                f"probability value. Sum of probabilities is {p_time_sum.value}"
-            )
-        p = (p_wav / p_wav_sum) * (p_time / p_time_sum)
-    else:
-        p = p.copy(deep=False)
+    acceptance_polygons = p['acceptance_polygons']
+    p = p['probability'].copy(deep=False)
+
+    # if p is None:
+    #     if None in (p_time, p_wav):
+    #         raise ValueError(
+    #             "Either p (2D) or both p_time (1D) and p_wav (1D) must be supplied."
+    #         )
+    #     p_wav_sum = p_wav.data.sum()
+    #     p_time_sum = p_time.data.sum()
+    #     if p_wav_sum.value <= 0:
+    #         raise ValueError(
+    #             "Wavelength distribution must have at least one positive "
+    #             f"probability value. Sum of probabilities is {p_wav_sum.value}"
+    #         )
+    #     if p_time_sum.value <= 0:
+    #         raise ValueError(
+    #             "Time distribution must have at least one positive "
+    #             f"probability value. Sum of probabilities is {p_time_sum.value}"
+    #         )
+    #     p = (p_wav / p_wav_sum) * (p_time / p_time_sum)
+    # else:
+    #     p = p['probability'].copy(deep=False)
 
     if p.sizes[T_DIM] < 2 or p.sizes[W_DIM] < 2:
         raise ValueError(
@@ -163,28 +166,30 @@ def _make_pulses(
     p.coords[T_DIM] = p.coords[T_DIM].to(dtype=float, unit=TIME_UNIT)
     p.coords[W_DIM] = p.coords[W_DIM].to(dtype=float, unit=WAV_UNIT)
 
-    # Filter parameter space defined by limits
-    ind_tmin, ind_tmax = 0, p.sizes[T_DIM]
-    ind_wmin, ind_wmax = 0, p.sizes[W_DIM]
-    trange = sc.arange(T_DIM, p.sizes[T_DIM])
-    wrange = sc.arange(W_DIM, p.sizes[W_DIM])
-    if tmin is not None:
-        ind_tmin = max(trange[p.coords[T_DIM] >= tmin][0].value - 1, 0)
-    else:
-        tmin = p.coords[T_DIM][0] - 0.5 * (p.coords[T_DIM][1] - p.coords[T_DIM][0])
-    if tmax is not None:
-        ind_tmax = min(trange[p.coords[T_DIM] <= tmax][-1].value + 2, p.sizes[T_DIM])
-    else:
-        tmax = p.coords[T_DIM][-1] + 0.5 * (p.coords[T_DIM][-1] - p.coords[T_DIM][-2])
-    if wmin is not None:
-        ind_wmin = max(wrange[p.coords[W_DIM] >= wmin][0].value - 1, 0)
-    else:
-        wmin = p.coords[W_DIM][0] - 0.5 * (p.coords[W_DIM][1] - p.coords[W_DIM][0])
-    if wmax is not None:
-        ind_wmax = min(wrange[p.coords[W_DIM] <= wmax][-1].value + 2, p.sizes[W_DIM])
-    else:
-        wmax = p.coords[W_DIM][-1] + 0.5 * (p.coords[W_DIM][-1] - p.coords[W_DIM][-2])
-    prob = p[T_DIM, ind_tmin:ind_tmax][W_DIM, ind_wmin:ind_wmax]
+    # # Filter parameter space defined by limits
+    # ind_tmin, ind_tmax = 0, p.sizes[T_DIM]
+    # ind_wmin, ind_wmax = 0, p.sizes[W_DIM]
+    # trange = sc.arange(T_DIM, p.sizes[T_DIM])
+    # wrange = sc.arange(W_DIM, p.sizes[W_DIM])
+    # if tmin is not None:
+    #     ind_tmin = max(trange[p.coords[T_DIM] >= tmin][0].value - 1, 0)
+    # else:
+    #     tmin = p.coords[T_DIM][0] - 0.5 * (p.coords[T_DIM][1] - p.coords[T_DIM][0])
+    # if tmax is not None:
+    #     ind_tmax = min(trange[p.coords[T_DIM] <= tmax][-1].value + 2, p.sizes[T_DIM])
+    # else:
+    #     tmax = p.coords[T_DIM][-1] + 0.5 * (p.coords[T_DIM][-1] - p.coords[T_DIM][-2])
+    # if wmin is not None:
+    #     ind_wmin = max(wrange[p.coords[W_DIM] >= wmin][0].value - 1, 0)
+    # else:
+    #     wmin = p.coords[W_DIM][0] - 0.5 * (p.coords[W_DIM][1] - p.coords[W_DIM][0])
+    # if wmax is not None:
+    #     ind_wmax = min(wrange[p.coords[W_DIM] <= wmax][-1].value + 2, p.sizes[W_DIM])
+    # else:
+    #     wmax = p.coords[W_DIM][-1] + 0.5 * (p.coords[W_DIM][-1] - p.coords[W_DIM][-2])
+    # prob = p[T_DIM, ind_tmin:ind_tmax][W_DIM, ind_wmin:ind_wmax]
+
+    prob = p
 
     # In the following, random.choice only allows to select from the values listed
     # in the coordinate of the probability distribution arrays. This leads to data
@@ -231,7 +236,7 @@ def _make_pulses(
 
     # We want to filter out events that end up in regions where the probability is zero
     # after adding gaussian spread.
-    zero_mask = prob.data == 0.0
+    # zero_mask = prob.data == 0.0
 
     while n < ntot:
         size = ntot - n
@@ -242,6 +247,22 @@ def _make_pulses(
         w = p_flat.coords[W_DIM].values[inds] + (
             rng.normal(scale=0.5, size=size) * widths[W_DIM].values[inds]
         )
+
+        sel = np.zeros(shape=t.shape, dtype=bool)
+        for poly in acceptance_polygons:
+            # time = subf.time.to(unit='us').values
+            # wav = subf.wavelength.values
+
+            verts = np.column_stack(
+                [
+                    poly.time.to(unit=TIME_UNIT).values,
+                    poly.wavelength.to(unit=WAV_UNIT).values,
+                ]
+            )
+            path = Path(verts)
+            points = np.array([t, w]).T
+            sel |= path.contains_points(points)
+
         # sel = (
         #     (t >= tmin.value)
         #     & (t <= tmax.value)
@@ -249,26 +270,26 @@ def _make_pulses(
         #     & (w <= wmax.value)
         # )
 
-        # Additional selection
-        da = sc.DataArray(
-            data=sc.ones(sizes={'event': size}),
-            coords={
-                T_DIM: sc.array(dims=['event'], values=t, unit=TIME_UNIT),
-                W_DIM: sc.array(dims=['event'], values=w, unit=WAV_UNIT),
-            },
-        )
+        # # Additional selection
+        # da = sc.DataArray(
+        #     data=sc.ones(sizes={'event': size}),
+        #     coords={
+        #         T_DIM: sc.array(dims=['event'], values=t, unit=TIME_UNIT),
+        #         W_DIM: sc.array(dims=['event'], values=w, unit=WAV_UNIT),
+        #     },
+        # )
 
-        binned = da.bin({T_DIM: time_edges, W_DIM: wave_edges})
-        filtered = binned.assign_masks(m=zero_mask).bins.concat().value
+        # binned = da.bin({T_DIM: time_edges, W_DIM: wave_edges})
+        # filtered = binned.assign_masks(m=zero_mask).bins.concat().value
 
-        t = filtered.coords[T_DIM].values
-        w = filtered.coords[W_DIM].values
-        sel = (
-            (t >= tmin.value)
-            & (t <= tmax.value)
-            & (w >= wmin.value)
-            & (w <= wmax.value)
-        )
+        # t = filtered.coords[T_DIM].values
+        # w = filtered.coords[W_DIM].values
+        # sel = (
+        #     (t >= tmin.value)
+        #     & (t <= tmax.value)
+        #     & (w >= wmin.value)
+        #     & (w <= wmax.value)
+        # )
 
         # times.append(t[)
         # wavs.append(filtered.coords[W_DIM].values)
@@ -303,7 +324,14 @@ def _make_pulses(
     }
 
 
-def _optimize_source(p, choppers: list[Chopper]) -> sc.DataArray:
+def _optimize_source(
+    p,
+    wmin: sc.Variable | None = None,
+    wmax: sc.Variable | None = None,
+    tmin: sc.Variable | None = None,
+    tmax: sc.Variable | None = None,
+    choppers: list[Chopper] | None = None,
+) -> sc.DataArray:
     # time_edges = _midpoints_to_edges(p.coords[T_DIM], T_DIM).to(
     #     unit=TIME_UNIT, copy=False
     # )
@@ -312,36 +340,54 @@ def _optimize_source(p, choppers: list[Chopper]) -> sc.DataArray:
     # )
     time_edges = p.coords[f"{T_DIM}_edges"]
     wave_edges = p.coords[f"{W_DIM}_edges"]
-    frames = FrameSequence.from_source_pulse(
-        time_min=time_edges.min(),
-        time_max=time_edges.max(),
-        wavelength_min=wave_edges.min(),
-        wavelength_max=wave_edges.max(),
-    )
-    frames = frames.chop(choppers)
-    # Propagate frames back to source
-    frames = FrameSequence(
-        [frame.propagate_to(p.coords['distance']) for frame in frames]
-    )
+
+    if choppers is not None:
+        frames = FrameSequence.from_source_pulse(
+            time_min=time_edges.min(),
+            time_max=time_edges.max(),
+            wavelength_min=wave_edges.min(),
+            wavelength_max=wave_edges.max(),
+        )
+        frames = frames.chop(choppers)
+        # Propagate frames back to source
+        frames = FrameSequence(
+            [frame.propagate_to(p.coords['distance']) for frame in frames]
+        )
+        polygons = frames[-1].subframes
+    else:
+        if tmin is None:
+            tmin = time_edges[0]
+        if tmax is None:
+            tmax = time_edges[-1]
+        if wmin is None:
+            wmin = wave_edges[0]
+        if wmax is None:
+            wmax = wave_edges[-1]
+        polygons = [
+            Subframe(
+                time=sc.concat([tmin, tmax, tmax, tmin, tmin], dim='vertex'),
+                wavelength=sc.concat([wmin, wmin, wmax, wmax, wmin], dim='vertex'),
+            )
+        ]
 
     X, Y = np.meshgrid(time_edges.values, wave_edges.values)
     mask = np.zeros(shape=p.shape, dtype=bool)
-    for subf in frames[-1].subframes:
+    for poly in polygons:
         mask |= polygon_grid_overlap_mask(
             np.column_stack(
                 [
-                    subf.time.to(unit=TIME_UNIT).values,
-                    subf.wavelength.to(unit=WAV_UNIT).values,
+                    poly.time.to(unit=TIME_UNIT).values,
+                    poly.wavelength.to(unit=WAV_UNIT).values,
                 ]
             ),
             X,
             Y,
-            tol=0,
         )
 
-    out = p.copy(deep=True)
-    out.values = np.where(mask, out.values, 0.0)
-    return out
+    da = p.copy(deep=True)
+    da.values = np.where(mask, da.values, 0.0)
+    return sc.DataGroup({"probability": da, "acceptance_polygons": polygons})
+    # return out
 
 
 class Source:
@@ -397,23 +443,28 @@ class Source:
         if self._facility is not None:
             facility_pulse = _load_facility_pulse_profile(self._facility)
 
-            if optimize_for is not None:
-                facility_pulse = _optimize_source(
-                    p=facility_pulse, choppers=optimize_for
-                )
-                self.probability = facility_pulse
+            # if optimize_for is not None:
+            facility_pulse = _optimize_source(
+                p=facility_pulse,
+                wmin=wmin,
+                wmax=wmax,
+                tmin=tmin,
+                tmax=tmax,
+                choppers=optimize_for,
+            )
+            self.probability = facility_pulse["probability"]
 
-            self._frequency = facility_pulse.coords["frequency"]
-            self._distance = facility_pulse.coords["distance"]
+            self._frequency = facility_pulse["probability"].coords["frequency"]
+            self._distance = facility_pulse["probability"].coords["distance"]
             pulse_params = _make_pulses(
                 neutrons=self._neutrons,
                 p=facility_pulse,
                 frequency=self._frequency,
                 pulses=self._pulses,
-                wmin=wmin,
-                wmax=wmax,
-                tmin=tmin,
-                tmax=tmax,
+                # wmin=wmin,
+                # wmax=wmax,
+                # tmin=tmin,
+                # tmax=tmax,
                 seed=seed,
             )
             self._data = sc.DataArray(
