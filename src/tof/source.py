@@ -454,6 +454,7 @@ class Source:
         facility: str | None,
         neutrons: int = 1_000_000,
         pulses: int = 1,
+        frequency: sc.Variable | None = None,
         wmin: sc.Variable | None = None,
         wmax: sc.Variable | None = None,
         tmin: sc.Variable | None = None,
@@ -465,21 +466,24 @@ class Source:
         self._neutrons = int(neutrons)
         self._pulses = int(pulses)
         self._data = None
-        self.seed = seed
+        self._seed = seed
 
         if self._facility is None:
             return
 
         facility_pulse = _load_facility_pulse_profile(self._facility)
 
+        if frequency is not None:
+            facility_pulse = facility_pulse.assign_coords(frequency=frequency)
+
         self._distance = facility_pulse.coords['distance']
         self._frequency = facility_pulse.coords['frequency']
         self._data = _sample_source_data_from_distribution(
             p=facility_pulse,
-            neutrons=neutrons,
-            pulses=pulses,
+            neutrons=self._neutrons,
+            pulses=self._pulses,
             frequency=self._frequency,
-            seed=seed,
+            seed=self._seed,
             distance=self._distance,
             wmin=wmin,
             wmax=wmax,
@@ -512,6 +516,13 @@ class Source:
         return self._frequency
 
     @property
+    def period(self) -> sc.Variable:
+        """
+        The period of the pulse.
+        """
+        return 1.0 / self._frequency
+
+    @property
     def distance(self) -> sc.Variable:
         """
         The position of the source along the beamline.
@@ -524,6 +535,13 @@ class Source:
         The number of pulses.
         """
         return self._pulses
+
+    @property
+    def seed(self) -> int | None:
+        """
+        The seed for the random number generator.
+        """
+        return self._seed
 
     @property
     def data(self) -> sc.DataArray:
@@ -663,7 +681,7 @@ class Source:
             .. versionadded:: 26.4.0
         """
 
-        source = cls(facility=None, neutrons=neutrons, pulses=pulses)
+        source = cls(facility=None, neutrons=neutrons, pulses=pulses, seed=seed)
 
         if distance is None:
             distance = sc.scalar(0.0, unit="m")
@@ -675,11 +693,11 @@ class Source:
             p=p,
             p_time=p_time,
             p_wav=p_wav,
-            neutrons=neutrons,
-            pulses=pulses,
-            frequency=frequency,
-            seed=seed,
-            distance=distance,
+            neutrons=source._neutrons,
+            pulses=source._pulses,
+            frequency=source._frequency,
+            seed=source._seed,
+            distance=source._distance,
             wmin=wmin,
             wmax=wmax,
             tmin=tmin,
