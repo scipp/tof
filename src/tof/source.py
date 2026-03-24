@@ -13,7 +13,7 @@ from matplotlib.path import Path
 
 from .chopper import Chopper
 from .component import ComponentReading
-from .optimization import FrameSequence, Subframe, polygon_grid_overlap_mask
+from .optimization import FrameSequence, Subframe
 from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
@@ -201,8 +201,10 @@ def _make_pulses(
         # This leads to less iterations overall, as we can have many iterations at the
         # end when we are missing just one or two neutrons and we keep sampling them
         # outside of the accepted regions.
-        # size = max(ntot - n, ntot // 2)
-        size = ntot
+        size = max(ntot - n, ntot // 3)
+        # size = max(ntot - n, ntot // 3)
+        # size = ntot
+        # size = ntot - n
         inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
         t = p_flat.coords[T_DIM].values[inds] + (
             rng.normal(scale=0.5, size=size) * widths[T_DIM].values[inds]
@@ -314,7 +316,6 @@ def _optimize_source(
             )
         ]
 
-    # X, Y = np.meshgrid(time_edges.values, wave_edges.values)
     mask = sc.zeros(sizes=p.sizes, dtype=bool)
     for poly in polygons:
         # Mask with bounding box of each polygon
@@ -325,18 +326,6 @@ def _optimize_source(
             & (wave_edges[:-1] <= poly.wavelength.max().to(unit=WAV_UNIT))
         )
 
-    #     mask |= polygon_grid_overlap_mask(
-    #         np.column_stack(
-    #             [
-    #                 poly.time.to(unit=TIME_UNIT).values,
-    #                 poly.wavelength.to(unit=WAV_UNIT).values,
-    #             ]
-    #         ),
-    #         X,
-    #         Y,
-    #     )
-
-    # prob = p.copy(deep=True)
     prob = sc.where(mask, p, sc.scalar(0.0, unit=p.unit))
     return SourceDistribution(probability=prob, acceptance_polygons=polygons)
 
