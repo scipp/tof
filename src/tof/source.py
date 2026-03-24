@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
@@ -189,7 +190,10 @@ def _make_pulses(
         )
     p_flat /= p_sum
 
+    it = 0
+
     while n < ntot:
+        it += 1
         # The first iteration, we sample all neutrons. Because some get discarded, we
         # will have to iterate at least twice. Instead of just sampling the missing
         # number of neutrons, subsequent iterations over-sample (here we choose 50% of
@@ -197,7 +201,8 @@ def _make_pulses(
         # This leads to less iterations overall, as we can have many iterations at the
         # end when we are missing just one or two neutrons and we keep sampling them
         # outside of the accepted regions.
-        size = max(ntot - n, ntot // 2)
+        # size = max(ntot - n, ntot // 2)
+        size = ntot
         inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
         t = p_flat.coords[T_DIM].values[inds] + (
             rng.normal(scale=0.5, size=size) * widths[T_DIM].values[inds]
@@ -229,6 +234,9 @@ def _make_pulses(
         times.append(t[inds])
         wavs.append(w[inds])
         n += len(inds)
+        print("Selected", len(inds), "neutrons", ntot - n, "remaining")
+
+    print("Sampling took", it, "iterations")
 
     dim = "event"
     birth_time = sc.array(
@@ -261,7 +269,7 @@ def _optimize_source(
     wmax: sc.Variable | None = None,
     tmin: sc.Variable | None = None,
     tmax: sc.Variable | None = None,
-    choppers: list[Chopper] | None = None,
+    choppers: list[Chopper] | Mapping[str, Chopper] | None = None,
 ) -> SourceDistribution:
     """
     Optimize the source distribution by applying acceptance criteria.
@@ -282,7 +290,9 @@ def _optimize_source(
             wavelength_min=wave_edges.min(),
             wavelength_max=wave_edges.max(),
         )
-        frames = frames.chop(choppers)
+        frames = frames.chop(
+            choppers.values() if hasattr(choppers, "items") else choppers
+        )
         # Propagate frames back to source
         frames = FrameSequence(
             [frame.propagate_to(p.coords['distance']) for frame in frames]
@@ -304,22 +314,30 @@ def _optimize_source(
             )
         ]
 
-    X, Y = np.meshgrid(time_edges.values, wave_edges.values)
-    mask = np.zeros(shape=p.shape, dtype=bool)
+    # X, Y = np.meshgrid(time_edges.values, wave_edges.values)
+    mask = sc.zeros(sizes=p.sizes, dtype=bool)
     for poly in polygons:
-        mask |= polygon_grid_overlap_mask(
-            np.column_stack(
-                [
-                    poly.time.to(unit=TIME_UNIT).values,
-                    poly.wavelength.to(unit=WAV_UNIT).values,
-                ]
-            ),
-            X,
-            Y,
+        # Mask with bounding box of each polygon
+        mask |= (
+            (time_edges[1:] >= poly.time.min().to(unit=TIME_UNIT))
+            & (time_edges[:-1] <= poly.time.max().to(unit=TIME_UNIT))
+            & (wave_edges[1:] >= poly.wavelength.min().to(unit=WAV_UNIT))
+            & (wave_edges[:-1] <= poly.wavelength.max().to(unit=WAV_UNIT))
         )
 
-    prob = p.copy(deep=True)
-    prob.values = np.where(mask, prob.values, 0.0)
+    #     mask |= polygon_grid_overlap_mask(
+    #         np.column_stack(
+    #             [
+    #                 poly.time.to(unit=TIME_UNIT).values,
+    #                 poly.wavelength.to(unit=WAV_UNIT).values,
+    #             ]
+    #         ),
+    #         X,
+    #         Y,
+    #     )
+
+    # prob = p.copy(deep=True)
+    prob = sc.where(mask, p, sc.scalar(0.0, unit=p.unit))
     return SourceDistribution(probability=prob, acceptance_polygons=polygons)
 
 
@@ -554,6 +572,7 @@ class Source:
                 "eto": self._data.coords["birth_time"]
                 % (1.0 / self._frequency).to(unit=TIME_UNIT, copy=False),
                 "toa": self._data.coords["birth_time"],
+                "birth_wavelength": self._data.coords["wavelength"],
             }
         )
 
