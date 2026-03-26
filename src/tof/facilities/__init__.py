@@ -11,7 +11,7 @@ _source_library.update(ess.sources)
 
 _source_registry = pooch.create(
     path=pooch.os_cache("tof"),
-    base_url="https://github.com/scipp/tof-sources/raw/refs/heads/main/1/",
+    base_url="https://public.esss.dk/groups/scipp/tof/1/",
     retry_if_failed=2,
     registry={f["path"]: f["hash"] for f in _source_library.values()},
 )
