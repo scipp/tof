@@ -28,5 +28,4 @@ def test_source_library_files_identical_on_public_and_github(tmp_path: Path) -> 
         p_gh = Path(gh.fetch(rel))
         p_public = Path(public.fetch(rel))
 
-        assert p_gh.stem == p_public.stem
-        assert p_gh.suffix == p_public.suffix
+        assert p_gh.name == p_public.name
