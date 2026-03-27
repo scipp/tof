@@ -41,7 +41,7 @@ class InelasticSampleReading(ComponentReading):
         self, val: int | slice | tuple[str, int | slice]
     ) -> InelasticSampleReading:
         if isinstance(val, int):
-            val = ("pulse", val)
+            val = ('pulse', val)
         return replace(self, data=self.data[val])
 
     def plot_on_time_distance_diagram(self, ax, tmax) -> None:
@@ -98,7 +98,7 @@ class InelasticSample(Component):
         """
         Return the inelastic sample as a dictionary.
         """
-        return {"distance": self.distance, "name": self.name, "func": self.func}
+        return {'distance': self.distance, 'name': self.name, 'func': self.func}
 
     @classmethod
     def from_json(cls, name: str, params: dict) -> InelasticSample:
