@@ -9,8 +9,8 @@ _source_library = {}
 _source_library.update(ess.sources)
 
 _BASE_URLS = [
-    "https://public.esss.dk/groups/scipp/tof/1/",  # primary: DMSC server
-    "https://github.com/scipp/tof-sources/raw/refs/heads/main/1/",  # fallback: GitHub
+    "https://public.esss.dk/groups/scipp/tof/2/",  # primary: DMSC server
+    "https://github.com/scipp/tof-sources/raw/refs/heads/main/2/",  # fallback: GitHub
 ]
 
 # One registry per mirror URL
