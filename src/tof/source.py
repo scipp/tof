@@ -13,7 +13,7 @@ from matplotlib.path import Path
 
 from .chopper import Chopper
 from .component import ComponentReading
-from .optimization import FrameSequence, Subframe
+from .optimization import FrameSequence, Subframe, polygon_grid_overlap_mask
 from .utils import wavelength_to_speed
 
 TIME_UNIT = "us"
@@ -171,9 +171,9 @@ def _make_pulses(
         for dim in (T_DIM, W_DIM)
     }
 
-    # Because of the added noise, some values end up being outside the specified range
-    # for the birth times and wavelengths. Using naive clipping leads to pile-up on the
-    # edges of the range. To avoid this, we remove the outliers and resample until we
+    # When using an acceptance region (either through time/wavelength limits, or
+    # acceptance polygon), some values end up being outside the specified range
+    # for the birth times and wavelengths. We remove the outliers and resample until we
     # have the desired number of neutrons.
     n = 0
     times = []
@@ -202,15 +202,12 @@ def _make_pulses(
         # end when we are missing just one or two neutrons and we keep sampling them
         # outside of the accepted regions.
         size = max(ntot - n, ntot // 3)
-        # size = max(ntot - n, ntot // 3)
-        # size = ntot
-        # size = ntot - n
         inds = rng.choice(len(p_flat), size=size, p=p_flat.values)
         t = p_flat.coords[T_DIM].values[inds] + (
-            rng.normal(scale=0.5, size=size) * widths[T_DIM].values[inds]
+            rng.uniform(-0.5, 0.5, size=size) * widths[T_DIM].values[inds]
         )
         w = p_flat.coords[W_DIM].values[inds] + (
-            rng.normal(scale=0.5, size=size) * widths[W_DIM].values[inds]
+            rng.uniform(-0.5, 0.5, size=size) * widths[W_DIM].values[inds]
         )
 
         # We filter events that are outside the accepted regions. Accepted regions can
@@ -316,17 +313,22 @@ def _optimize_source(
             )
         ]
 
-    mask = sc.zeros(sizes=p.sizes, dtype=bool)
+    X, Y = np.meshgrid(time_edges.values, wave_edges.values)
+    mask = np.zeros(shape=p.shape, dtype=bool)
     for poly in polygons:
-        # Mask with bounding box of each polygon
-        mask |= (
-            (time_edges[1:] >= poly.time.min().to(unit=TIME_UNIT))
-            & (time_edges[:-1] <= poly.time.max().to(unit=TIME_UNIT))
-            & (wave_edges[1:] >= poly.wavelength.min().to(unit=WAV_UNIT))
-            & (wave_edges[:-1] <= poly.wavelength.max().to(unit=WAV_UNIT))
+        mask |= polygon_grid_overlap_mask(
+            np.column_stack(
+                [
+                    poly.time.to(unit=TIME_UNIT).values,
+                    poly.wavelength.to(unit=WAV_UNIT).values,
+                ]
+            ),
+            X,
+            Y,
         )
 
-    prob = sc.where(mask, p, sc.scalar(0.0, unit=p.unit))
+    prob = p.copy(deep=True)
+    prob.values = np.where(mask, p.values, 0.0)
     return SourceDistribution(probability=prob, acceptance_polygons=polygons)
 
 
