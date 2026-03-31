@@ -4,7 +4,9 @@
 from pathlib import Path
 
 import pooch
+import pytest
 
+import tof
 from tof.facilities import _BASE_URLS, _source_library
 
 
@@ -29,3 +31,13 @@ def test_source_library_files_identical_on_public_and_github(tmp_path: Path) -> 
         p_public = Path(public.fetch(rel))
 
         assert p_gh.name == p_public.name
+
+
+@pytest.mark.parametrize("entry", _source_library.keys())
+def test_can_create_source_for_library_entry(entry) -> None:
+    source = tof.Source(facility=entry, neutrons=1000)
+    assert source.neutrons == 1000
+    assert "birth_time" in source.data.coords
+    assert "wavelength" in source.data.coords
+    assert source.frequency is not None
+    assert source.distance is not None
