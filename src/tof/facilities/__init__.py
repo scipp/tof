@@ -5,12 +5,12 @@ import pooch
 
 from . import ess
 
-_source_library = {}
-_source_library.update(ess.sources)
+source_library = {}
+source_library.update(ess.sources)
 
 _BASE_URLS = [
-    "https://public.esss.dk/groups/scipp/tof/1/",  # primary: DMSC server
-    "https://github.com/scipp/tof-sources/raw/refs/heads/main/1/",  # fallback: GitHub
+    "https://public.esss.dk/groups/scipp/tof/2/",  # primary: DMSC server
+    "https://github.com/scipp/tof-sources/raw/refs/heads/main/2/",  # fallback: GitHub
 ]
 
 # One registry per mirror URL
@@ -19,14 +19,14 @@ _registries = [
         path=pooch.os_cache("tof"),
         base_url=base_url,
         retry_if_failed=2,
-        registry={f["path"]: f["hash"] for f in _source_library.values()},
+        registry={f["path"]: f["hash"] for f in source_library.values()},
     )
     for base_url in _BASE_URLS
 ]
 
 
 def get_source_path(name: str) -> str:
-    path = _source_library[name]["path"]
+    path = source_library[name]["path"]
     last_exc = None
     for registry in _registries:
         try:
@@ -38,4 +38,4 @@ def get_source_path(name: str) -> str:
     ) from last_exc
 
 
-__all__ = ["ess", "get_source_path"]
+__all__ = ["ess", "get_source_path", "source_library"]

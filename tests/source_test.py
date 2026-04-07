@@ -16,7 +16,7 @@ def test_ess_pulse():
     mean = times.mean()
     assert (times[0] < 0.5 * mean).value
     assert (times[-1] < 0.5 * mean).value
-    assert (times[150] > 1.5 * mean).value
+    assert (times['birth_time', sc.scalar(2000, unit='us')] > 1.5 * mean).value
     # Check that there are more neutrons at low wavelengths
     wavs = source.data['pulse', 0].hist(wavelength=300)
     assert (wavs[:150].sum() > 1.5 * wavs[150:].sum()).value
