@@ -7,11 +7,11 @@ import pooch
 import pytest
 
 import tof
-from tof.facilities import _BASE_URLS, _source_library
+from tof.facilities import _BASE_URLS, source_library
 
 
 def test_source_library_files_identical_on_public_and_github(tmp_path: Path) -> None:
-    registry = {f["path"]: f["hash"] for f in _source_library.values()}
+    registry = {f["path"]: f["hash"] for f in source_library.values()}
 
     public = pooch.create(
         path=tmp_path / "cache_public", base_url=_BASE_URLS[0], registry=registry
@@ -21,7 +21,7 @@ def test_source_library_files_identical_on_public_and_github(tmp_path: Path) -> 
         path=tmp_path / "cache_github", base_url=_BASE_URLS[1], registry=registry
     )
 
-    for entry in _source_library.values():
+    for entry in source_library.values():
         rel = entry["path"]
 
         # Verify that hashes are the same in both registries.
@@ -33,7 +33,7 @@ def test_source_library_files_identical_on_public_and_github(tmp_path: Path) -> 
         assert p_gh.name == p_public.name
 
 
-@pytest.mark.parametrize("entry", _source_library.keys())
+@pytest.mark.parametrize("entry", source_library.keys())
 def test_can_create_source_for_library_entry(entry) -> None:
     source = tof.Source(facility=entry, neutrons=1000)
     assert source.neutrons == 1000
