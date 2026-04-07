@@ -270,7 +270,7 @@ def _chop(frame: Subframe, time: sc.Variable, close_to_open: bool) -> Subframe |
 
 
 def polygon_grid_overlap_mask(
-    polygon: np.ndarray, X: np.ndarray, Y: np.ndarray, tol: float | None = None
+    polygons: list[np.ndarray], X: np.ndarray, Y: np.ndarray, tol: float | None = None
 ) -> np.ndarray:
     """
     Compute a mask indicating which grid cells overlap with a polygon.
@@ -279,8 +279,8 @@ def polygon_grid_overlap_mask(
 
     Parameters
     ----------
-    polygon : (N,2) array
-        Coordinates of the polygon vertices.
+    polygons : list of (N,2) arrays
+        List of polygons, each defined by coordinates of its vertices.
     X, Y    : (H,W) array
         Coordinates of the grid corners.
     tol     : float, optional
@@ -304,6 +304,8 @@ def polygon_grid_overlap_mask(
         2. Add some tolerance when checking for equalities (maybe something like a
         fraction of the grid spacing) because it can sometimes go wrong when a
         polygon edge is perfectly aligned with a grid edge
+        3. It is a bit slow, can you improve the performance replacing boolean masks
+        with index slicing pruning?
 
     Returns:
         mask (H-1, W-1)
@@ -311,25 +313,25 @@ def polygon_grid_overlap_mask(
 
     H, W = X.shape
 
-    # --- Cell bounds ---
-    cells_xmin = X[:-1, :-1]
-    cells_xmax = X[1:, 1:]
-    cells_ymin = Y[:-1, :-1]
-    cells_ymax = Y[1:, 1:]
+    # Assume structured grid
+    x = X[0, :]
+    y = Y[:, 0]
 
-    # --- Auto tolerance ---
+    dx = np.min(np.diff(x))
+    dy = np.min(np.diff(y))
+
     if tol is None:
-        dx = np.min(np.diff(X, axis=1))
-        dy = np.min(np.diff(Y, axis=0))
         tol = 1e-9 + 1e-6 * min(dx, dy)
 
-    # Expand cell bounds slightly (robustness)
-    cells_xmin -= tol
-    cells_xmax += tol
-    cells_ymin -= tol
-    cells_ymax += tol
+    # Cell bounds
+    cells_xmin = X[:-1, :-1] - tol
+    cells_xmax = X[1:, 1:] + tol
+    cells_ymin = Y[:-1, :-1] - tol
+    cells_ymax = Y[1:, 1:] + tol
 
-    # --- Point in polygon ---
+    union_mask = np.zeros((H - 1, W - 1), dtype=bool)
+
+    # --- Helpers ---
     def points_in_poly(px, py, poly):
         x = poly[:, 0]
         y = poly[:, 1]
@@ -337,33 +339,13 @@ def polygon_grid_overlap_mask(
         y2 = np.roll(y, -1)
 
         inside = np.zeros(px.shape, dtype=bool)
-
         for i in range(len(poly)):
             cond = ((y[i] > py) != (y2[i] > py)) & (
                 px < (x2[i] - x[i]) * (py - y[i]) / (y2[i] - y[i] + tol) + x[i]
             )
             inside ^= cond
-
         return inside
 
-    # --- 1. Corner inside polygon ---
-    corners_x = np.stack([X[:-1, :-1], X[1:, :-1], X[:-1, 1:], X[1:, 1:]], axis=0)
-    corners_y = np.stack([Y[:-1, :-1], Y[1:, :-1], Y[:-1, 1:], Y[1:, 1:]], axis=0)
-
-    corner_inside = np.any(points_in_poly(corners_x, corners_y, polygon), axis=0)
-
-    # --- 2. Polygon vertex inside cell ---
-    vx = polygon[:, 0][:, None, None]
-    vy = polygon[:, 1][:, None, None]
-
-    vertex_inside = (
-        (vx >= cells_xmin)
-        & (vx <= cells_xmax)
-        & (vy >= cells_ymin)
-        & (vy <= cells_ymax)
-    ).any(axis=0)
-
-    # --- Segment intersection ---
     def segments_intersect(p1, p2, q1, q2):
         def orient(a, b, c):
             return (b[..., 0] - a[..., 0]) * (c[..., 1] - a[..., 1]) - (
@@ -377,55 +359,85 @@ def polygon_grid_overlap_mask(
 
         return (o1 * o2 <= tol) & (o3 * o4 <= tol)
 
-    edges_p1 = polygon
-    edges_p2 = np.roll(polygon, -1, axis=0)
+    # Precompute corners
+    corners_x = np.stack([X[:-1, :-1], X[1:, :-1], X[:-1, 1:], X[1:, 1:]], axis=0)
+    corners_y = np.stack([Y[:-1, :-1], Y[1:, :-1], Y[:-1, 1:], Y[1:, 1:]], axis=0)
 
-    intersect_mask = np.zeros((H - 1, W - 1), dtype=bool)
+    for polygon in polygons:
+        if union_mask.all():
+            break
 
-    # Cell edges
-    cell_edges = [
-        (
-            np.stack([cells_xmin, cells_ymin], axis=-1),
-            np.stack([cells_xmax, cells_ymin], axis=-1),
-        ),
-        (
-            np.stack([cells_xmin, cells_ymax], axis=-1),
-            np.stack([cells_xmax, cells_ymax], axis=-1),
-        ),
-        (
-            np.stack([cells_xmin, cells_ymin], axis=-1),
-            np.stack([cells_xmin, cells_ymax], axis=-1),
-        ),
-        (
-            np.stack([cells_xmax, cells_ymin], axis=-1),
-            np.stack([cells_xmax, cells_ymax], axis=-1),
-        ),
-    ]
+        # --- 1. Corner test (global, cheap enough) ---
+        corner_inside = np.any(points_in_poly(corners_x, corners_y, polygon), axis=0)
 
-    # --- 3. Edge intersection with pruning ---
-    for p1, p2 in zip(edges_p1, edges_p2, strict=True):
-        # Edge bounding box (+ tolerance)
-        xmin = min(p1[0], p2[0]) - tol
-        xmax = max(p1[0], p2[0]) + tol
-        ymin = min(p1[1], p2[1]) - tol
-        ymax = max(p1[1], p2[1]) + tol
+        # --- 2. Vertex test (localized per vertex) ---
+        vertex_inside = np.zeros_like(union_mask)
 
-        # Candidate cells only
-        candidate = (
-            (cells_xmax >= xmin)
-            & (cells_xmin <= xmax)
-            & (cells_ymax >= ymin)
-            & (cells_ymin <= ymax)
-        )
+        for vx, vy in polygon:
+            ix = np.searchsorted(x, vx)
+            iy = np.searchsorted(y, vy)
 
-        if not np.any(candidate):
-            continue
+            ix0 = max(ix - 1, 0)
+            ix1 = min(ix + 1, W - 1)
+            iy0 = max(iy - 1, 0)
+            iy1 = min(iy + 1, H - 1)
 
-        p1e = p1[None, None, :]
-        p2e = p2[None, None, :]
+            vertex_inside[iy0:iy1, ix0:ix1] |= (
+                (vx >= cells_xmin[iy0:iy1, ix0:ix1])
+                & (vx <= cells_xmax[iy0:iy1, ix0:ix1])
+                & (vy >= cells_ymin[iy0:iy1, ix0:ix1])
+                & (vy <= cells_ymax[iy0:iy1, ix0:ix1])
+            )
 
-        for q1, q2 in cell_edges:
-            hit = segments_intersect(p1e, p2e, q1, q2)
-            intersect_mask[candidate] |= hit[candidate]
+        # --- 3. Edge intersections (INDEX PRUNED) ---
+        intersect_mask = np.zeros_like(union_mask)
 
-    return corner_inside | vertex_inside | intersect_mask
+        edges_p1 = polygon
+        edges_p2 = np.roll(polygon, -1, axis=0)
+
+        for p1, p2 in zip(edges_p1, edges_p2, strict=True):
+            xmin = min(p1[0], p2[0]) - tol
+            xmax = max(p1[0], p2[0]) + tol
+            ymin = min(p1[1], p2[1]) - tol
+            ymax = max(p1[1], p2[1]) + tol
+
+            # Convert to index ranges
+            ix0 = max(np.searchsorted(x, xmin) - 1, 0)
+            ix1 = min(np.searchsorted(x, xmax), W - 1)
+            iy0 = max(np.searchsorted(y, ymin) - 1, 0)
+            iy1 = min(np.searchsorted(y, ymax), H - 1)
+
+            if ix0 >= ix1 or iy0 >= iy1:
+                continue
+
+            # Slice relevant region
+            sl = np.s_[iy0:iy1, ix0:ix1]
+
+            # Skip already-filled cells
+            remaining = ~union_mask[sl]
+            if not np.any(remaining):
+                continue
+
+            # Build cell edges only for slice
+            cxmin = cells_xmin[sl]
+            cxmax = cells_xmax[sl]
+            cymin = cells_ymin[sl]
+            cymax = cells_ymax[sl]
+
+            cell_edges = [
+                (np.stack([cxmin, cymin], axis=-1), np.stack([cxmax, cymin], axis=-1)),
+                (np.stack([cxmin, cymax], axis=-1), np.stack([cxmax, cymax], axis=-1)),
+                (np.stack([cxmin, cymin], axis=-1), np.stack([cxmin, cymax], axis=-1)),
+                (np.stack([cxmax, cymin], axis=-1), np.stack([cxmax, cymax], axis=-1)),
+            ]
+
+            p1e = p1[None, None, :]
+            p2e = p2[None, None, :]
+
+            for q1, q2 in cell_edges:
+                hit = segments_intersect(p1e, p2e, q1, q2)
+                intersect_mask[sl] |= hit & remaining
+
+        union_mask |= corner_inside | vertex_inside | intersect_mask
+
+    return union_mask

@@ -140,7 +140,6 @@ def _make_pulses(
     p:
         2D probability distribution for a single pulse.
     """
-
     acceptance_polygons = p.acceptance_polygons
     p = p.probability.copy(deep=False)
 
@@ -190,10 +189,7 @@ def _make_pulses(
         )
     p_flat /= p_sum
 
-    it = 0
-
     while n < ntot:
-        it += 1
         # The first iteration, we sample all neutrons. Because some get discarded, we
         # will have to iterate at least twice. Instead of just sampling the missing
         # number of neutrons, subsequent iterations over-sample (here we choose 50% of
@@ -233,9 +229,6 @@ def _make_pulses(
         times.append(t[inds])
         wavs.append(w[inds])
         n += len(inds)
-        print("Selected", len(inds), "neutrons", ntot - n, "remaining")
-
-    print("Sampling took", it, "iterations")
 
     dim = "event"
     birth_time = sc.array(
@@ -314,18 +307,19 @@ def _optimize_source(
         ]
 
     X, Y = np.meshgrid(time_edges.values, wave_edges.values)
-    mask = np.zeros(shape=p.shape, dtype=bool)
-    for poly in polygons:
-        mask |= polygon_grid_overlap_mask(
+    mask = polygon_grid_overlap_mask(
+        [
             np.column_stack(
                 [
                     poly.time.to(unit=TIME_UNIT).values,
                     poly.wavelength.to(unit=WAV_UNIT).values,
                 ]
-            ),
-            X,
-            Y,
-        )
+            )
+            for poly in polygons
+        ],
+        X,
+        Y,
+    )
 
     prob = p.copy(deep=True)
     prob.values = np.where(mask, p.values, 0.0)
