@@ -40,7 +40,7 @@ def test_optimize_for_an_early_chopper_still_has_some_blocked_neutrons():
     choppers = {
         comp.name: comp
         for comp in beamline['components']
-        if comp.name in ("WFM1", "WFM2")
+        if comp.name in ("WFMC_1", "WFMC_2")
     }
     s2 = tof.Source(facility='ess', neutrons=N, optimize_for=choppers)
     m2 = tof.Model(source=s2, **beamline)
