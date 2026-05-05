@@ -149,7 +149,7 @@ def test_phase_int():
 
 
 def test_frequency_must_be_positive():
-    with pytest.raises(ValueError, match="Chopper frequency must be positive"):
+    with pytest.raises(ValueError, match="Chopper frequency must be non-negative"):
         tof.Chopper(
             frequency=-1.0 * Hz,
             open=0.0 * deg,
