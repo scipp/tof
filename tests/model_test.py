@@ -697,3 +697,28 @@ def test_model_run_without_components_raises(dummy_source):
         ValueError, match="Cannot run model: no components have been defined."
     ):
         model.run()
+
+
+def test_chopper_with_zero_frequency_blocks_nothing(make_source):
+    chopper = tof.Chopper(
+        frequency=0.0 * Hz,
+        open=10.0 * deg,
+        close=20.0 * deg,
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper',
+    )
+    detector = tof.Detector(distance=20 * meter, name='detector')
+
+    N = 10_000
+
+    source = tof.Source(facility='ess', neutrons=N)
+    model = tof.Model(source=source, choppers=[chopper], detectors=[detector])
+    res = model.run()
+
+    assert res.choppers['chopper'].toa.data.sum().value == N
+    assert res.choppers['chopper'].toa.data.masks['blocked_by_me'].sum().value == 0
+    assert res.detectors['detector'].toa.data.sum().value == N
+    assert (
+        res.detectors['detector'].toa.data.masks['blocked_by_others'].sum().value == 0
+    )

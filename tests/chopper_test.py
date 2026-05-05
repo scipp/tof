@@ -149,7 +149,7 @@ def test_phase_int():
 
 
 def test_frequency_must_be_positive():
-    with pytest.raises(ValueError, match="Chopper frequency must be positive"):
+    with pytest.raises(ValueError, match="Chopper frequency must be non-negative"):
         tof.Chopper(
             frequency=-1.0 * Hz,
             open=0.0 * deg,
@@ -688,3 +688,17 @@ def test_from_nexus_clockwise():
         nexus_chopper['slit_edges'][1::2] - nexus_chopper['beam_position'],
     )
     assert chopper.direction == tof.Clockwise
+
+
+def test_chopper_zero_frequency():
+    chopper = tof.Chopper(
+        frequency=0.0 * Hz,
+        open=10.0 * deg,
+        close=20.0 * deg,
+        phase=0.0 * deg,
+        distance=5.0 * meter,
+        name='chopper',
+    )
+    topen, tclose = chopper.open_close_times(0.0 * sec)
+    assert sc.identical(topen[0], -np.inf * sec)
+    assert sc.identical(tclose[0], np.inf * sec)
