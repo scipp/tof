@@ -143,7 +143,7 @@ class Chopper(Component):
         direction: Direction = Clockwise,
     ):
         if frequency < (0.0 * frequency.unit):
-            raise ValueError(f"Chopper frequency must be positive, got {frequency:c}.")
+            raise ValueError(f"Chopper frequency must be non-negative, got {frequency:c}.")
         self.frequency = frequency.to(dtype=float, copy=False)
         if direction not in (Clockwise, AntiClockwise):
             raise ValueError(
