@@ -152,6 +152,8 @@ class InelasticSample(Component):
         w_final = energy_to_wavelength(final_energy, unit=incident_wavelength.unit)
 
         out = neutrons.assign_coords(
-            wavelength=w_final, speed=wavelength_to_speed(w_final)
+            wavelength=w_final,
+            speed=wavelength_to_speed(w_final),
+            kf_over_ki=sc.sqrt(final_energy / incident_energy),
         )
         return out, self.as_readonly(out)

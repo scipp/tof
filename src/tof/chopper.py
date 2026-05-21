@@ -142,8 +142,10 @@ class Chopper(Component):
         widths: sc.Variable | None = None,
         direction: Direction = Clockwise,
     ):
-        if frequency <= (0.0 * frequency.unit):
-            raise ValueError(f"Chopper frequency must be positive, got {frequency:c}.")
+        if frequency < (0.0 * frequency.unit):
+            raise ValueError(
+                f"Chopper frequency must be non-negative, got {frequency:c}."
+            )
         self.frequency = frequency.to(dtype=float, copy=False)
         if direction not in (Clockwise, AntiClockwise):
             raise ValueError(
@@ -208,6 +210,13 @@ class Chopper(Component):
             time_limit = sc.scalar(0.0, unit='us')
         if unit is None:
             unit = time_limit.unit
+
+        if self.frequency.value == 0.0:
+            return (
+                sc.array(dims=['cutout'], values=[-np.inf], unit=unit),
+                sc.array(dims=['cutout'], values=[np.inf], unit=unit),
+            )
+
         nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
         # We make a unique dim name that is different from self.open.dim and
         # self.close.dim to make use of automatic broadcasting below.
