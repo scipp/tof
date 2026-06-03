@@ -5,6 +5,7 @@ ipympl
 ipywidgets
 nbsphinx
 pydata-sphinx-theme>=0.14
+scippneutron
 sphinx<9.0.0
 sphinx-autodoc-typehints
 sphinx-book-theme
