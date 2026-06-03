@@ -36,6 +36,7 @@ dependencies = [
   "scipp>=25.08.0",
   "lazy-loader>=0.3",
   "scipy>=1.14.0",
+  "h5py>=3.12.0",
 ]
 
 dynamic = ["version"]
