@@ -15,29 +15,29 @@ dnspython==2.8.0
     # via email-validator
 email-validator==2.3.0
     # via scippneutron
-fonttools==4.61.0
+fonttools==4.63.0
     # via matplotlib
-h5py==3.15.1
+h5py==3.16.0
     # via
     #   scippneutron
     #   scippnexus
-idna==3.11
+idna==3.18
     # via email-validator
 iniconfig==2.3.0
     # via pytest
-kiwisolver==1.4.9
+kiwisolver==1.5.0
     # via matplotlib
-lazy-loader==0.4
+lazy-loader==0.5
     # via
     #   plopp
     #   scippneutron
-matplotlib==3.10.7
+matplotlib==3.10.9
     # via
     #   mpltoolbox
     #   plopp
-mpltoolbox==25.10.0
+mpltoolbox==26.2.0
     # via scippneutron
-numpy==2.3.5
+numpy==2.4.6
     # via
     #   contourpy
     #   h5py
@@ -45,40 +45,41 @@ numpy==2.3.5
     #   scipp
     #   scippneutron
     #   scipy
-packaging==25.0
+packaging==26.2
     # via
     #   lazy-loader
     #   matplotlib
     #   pytest
-pillow==12.0.0
+pillow==12.2.0
     # via matplotlib
-plopp==25.11.0
+plopp==26.5.0
     # via scippneutron
 pluggy==1.6.0
     # via pytest
-pydantic==2.12.5
+pydantic==2.13.4
     # via scippneutron
-pydantic-core==2.41.5
+pydantic-core==2.46.4
     # via pydantic
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
-pyparsing==3.2.5
+pyparsing==3.3.2
     # via matplotlib
-pytest==9.0.2
+pytest==9.0.3
     # via -r basetest.in
 python-dateutil==2.9.0.post0
     # via
     #   matplotlib
     #   scippneutron
-scipp==26.2.0
+scipp==26.3.1
     # via
+    #   plopp
     #   scippneutron
     #   scippnexus
-scippneutron==25.11.2
+scippneutron==26.5.0
     # via -r basetest.in
-scippnexus==25.11.0
+scippnexus==26.1.1
     # via scippneutron
-scipy==1.16.3
+scipy==1.17.1
     # via
     #   scippneutron
     #   scippnexus
