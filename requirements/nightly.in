@@ -4,6 +4,7 @@
 pooch>=1.5.0
 lazy-loader>=0.3
 scipy>=1.14.0
+h5py>=3.12.0
 pytest>=8.0
 scipp
 --index-url=https://pypi.anaconda.org/scipp-nightly-wheels/simple/
