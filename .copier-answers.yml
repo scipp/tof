@@ -1,8 +1,8 @@
 # Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
-_commit: 7e41523
+_commit: ab1d1aa
 _src_path: gh:scipp/copier_template
 description: A simple tool to create time-of-flight chopper cascade diagrams
-max_python: '3.13'
+max_python: '3.14'
 min_python: '3.11'
 namespace_package: ''
 nightly_deps: scipp,plopp

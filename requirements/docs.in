@@ -4,8 +4,8 @@ ipykernel
 ipympl
 ipywidgets
 nbsphinx
-scippneutron
-sphinx
+pydata-sphinx-theme>=0.14
+sphinx<9.0.0
 sphinx-autodoc-typehints
 sphinx-book-theme
 sphinx-copybutton
