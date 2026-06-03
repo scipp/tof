@@ -31,6 +31,22 @@ def test_ess_pulse_uppercase(facility):
     assert source.facility == 'ess'
 
 
+def test_ess_pulse_tmin_tmax():
+    tmin = sc.scalar(1000.0, unit='us')
+    tmax = sc.scalar(2500.0, unit='us')
+    source = tof.Source(facility='ess', neutrons=100_000, tmin=tmin, tmax=tmax)
+    assert sc.all(source.data['pulse', 0].coords['birth_time'] >= tmin)
+    assert sc.all(source.data['pulse', 0].coords['birth_time'] <= tmax)
+
+
+def test_ess_pulse_wmin_wmax():
+    wmin = sc.scalar(2.0, unit='angstrom')
+    wmax = sc.scalar(6.0, unit='angstrom')
+    source = tof.Source(facility='ess', neutrons=100_000, wmin=wmin, wmax=wmax)
+    assert sc.all(source.data['pulse', 0].coords['wavelength'] >= wmin)
+    assert sc.all(source.data['pulse', 0].coords['wavelength'] <= wmax)
+
+
 def test_creation_from_neutrons():
     birth_times = sc.array(dims=['event'], values=[1000.0, 1500.0, 2000.0], unit='us')
     wavelengths = sc.array(dims=['event'], values=[1.0, 5.0, 10.0], unit='angstrom')
@@ -148,7 +164,7 @@ def test_multiple_pulses_from_distribution():
     p_time = sc.DataArray(
         data=sc.array(dims=['birth_time'], values=v),
         coords={
-            'birth_time': sc.linspace('birth_time', 0.0, 8000.0, len(v), unit='us')
+            'birth_time': sc.linspace('birth_time', 1.0e3, 6.0e3, len(v), unit='us')
         },
     )
     p_wav = sc.DataArray(

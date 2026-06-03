@@ -63,8 +63,9 @@ sources
 components
 multiple-pulses
 wfm
-dashboard
+optimizations
 ess-instruments
+dashboard
 api-reference/index
 developer/index
 about/index
