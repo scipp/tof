@@ -35,6 +35,7 @@ dependencies = [
   "pooch>=1.5.0",
   "scipp>=25.08.0",
   "lazy-loader>=0.3",
+  "scipy>=1.14.0",
 ]
 
 dynamic = ["version"]
