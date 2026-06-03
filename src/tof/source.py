@@ -192,8 +192,8 @@ def _make_pulses(
     while n < ntot:
         # The first iteration, we sample all neutrons. Because some get discarded, we
         # will have to iterate at least twice. Instead of just sampling the missing
-        # number of neutrons, subsequent iterations over-sample (here we choose 50% of
-        # the total number requested) and then trim the excess.
+        # number of neutrons, subsequent iterations over-sample (here we choose a third
+        # of the total number requested) and then trim the excess.
         # This leads to less iterations overall, as we can have many iterations at the
         # end when we are missing just one or two neutrons and we keep sampling them
         # outside of the accepted regions.
