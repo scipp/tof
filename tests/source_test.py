@@ -237,7 +237,8 @@ def test_multiple_pulses_from_distribution_no_frequency_raises():
         },
     )
     with pytest.raises(
-        ValueError, match='If pulses is greater than one, a frequency must be supplied.'
+        ValueError,
+        match=r'If pulses is greater than one, a frequency must be supplied.',
     ):
         tof.Source.from_distribution(
             neutrons=22696,
@@ -255,7 +256,8 @@ def test_multiple_pulses_from_neutrons_no_frequency_raises():
         dims=['event'], values=[1.0, 5.0, 8.0, 10.0], unit='angstrom'
     )
     with pytest.raises(
-        ValueError, match='If pulses is greater than one, a frequency must be supplied.'
+        ValueError,
+        match=r'If pulses is greater than one, a frequency must be supplied.',
     ):
         tof.Source.from_neutrons(
             birth_times=birth_times,
@@ -341,7 +343,7 @@ def test_source_from_distrbution_all_zero_probability_raises():
 
     with pytest.raises(
         ValueError,
-        match='Time distribution must have at least one positive probability value.',
+        match=r'Time distribution must have at least one positive probability value.',
     ):
         tof.Source.from_distribution(neutrons=10, p_time=p_time, p_wav=p_wav)
 
@@ -375,6 +377,6 @@ def test_source_from_distrbution_all_zero_probability_raises():
 
     with pytest.raises(
         ValueError,
-        match='Distribution must have at least one positive probability value.',
+        match=r'Distribution must have at least one positive probability value.',
     ):
         tof.Source.from_distribution(neutrons=10, p=p_wav * p_time)
