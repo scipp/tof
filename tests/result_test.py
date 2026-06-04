@@ -363,5 +363,5 @@ def test_plot_reading_nothing_to_plot_raises():
     )
     model.components['skip'] = skip
     res = model.run()
-    with pytest.raises(RuntimeError, match="Nothing to plot."):
+    with pytest.raises(RuntimeError, match=r"Nothing to plot."):
         res.detectors['detector'].toa.plot()

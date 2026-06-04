@@ -694,7 +694,7 @@ def test_model_run_without_components_raises(dummy_source):
     source = dummy_source
     model = tof.Model(source=source)
     with pytest.raises(
-        ValueError, match="Cannot run model: no components have been defined."
+        ValueError, match=r"Cannot run model: no components have been defined."
     ):
         model.run()
 
