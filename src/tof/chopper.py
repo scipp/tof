@@ -175,6 +175,11 @@ class Chopper(Component):
         self.close = (close if close.dims else close.flatten(to='cutout')).to(
             dtype=float, copy=False
         )
+        if not all(self.open < self.close):
+            raise ValueError(
+                "Chopper open angles must be less than close angles, "
+                f"got open={self.open}, close={self.close}."
+            )
         self.distance = distance.to(dtype=float, copy=False)
         self.phase = phase.to(dtype=float, copy=False)
         self.name = name
@@ -217,24 +222,6 @@ class Chopper(Component):
                 sc.array(dims=['cutout'], values=[np.inf], unit=unit),
             )
 
-        # Predicting how many rotations are needed to reach the time limit:
-        # We find the smallest open or close angle (they may be negative and lower than
-        # -360 degrees), and compute how many rotations it would take for that angle to
-        # each the time limit.
-        # We always add one extra rotation for edge cases and coincidences.
-        smallest_angle = min(self.open.min(), self.close.min())
-        rotations = (
-            self.omega * time_limit.to(unit='s') - smallest_angle.to(unit='rad')
-        ) / two_pi
-        nrot = max(int(sc.ceil(rotations).value), 1) + 1
-        # We make a unique dim name that is different from self.open.dim and
-        # self.close.dim to make use of automatic broadcasting below.
-        # We also start at -1 to catch early openings in case the phase or opening
-        # angles are large
-        phases = sc.arange(
-            f"{self.open.dim}-{self.close.dim}", -1, nrot
-        ) * two_pi + self.phase.to(unit='rad')
-
         open_times = self.open.to(unit='rad', copy=False)
         close_times = self.close.to(unit='rad', copy=False)
         # If the chopper is rotating anti-clockwise, we mirror the openings because the
@@ -252,6 +239,36 @@ class Chopper(Component):
                     unit=open_times.unit,
                 ),
             )
+
+        phase = self.phase.to(unit='rad')
+
+        # Predicting how many rotations are needed to cover the time range between
+        # 0 and the time limit:
+        #
+        # Start: t=0
+        # We find the largest open or close angle (they may be negative or larger than
+        # 360 degrees), and compute how many backward rotations it would take for that
+        # angle to pass t=0.
+        #
+        # End:
+        # We find the smallest open or close angle (they may be negative and lower than
+        # -360 degrees), and compute how many rotations it would take for that angle to
+        # each the time limit.
+        largest_angle = max(open_times.max(), close_times.max()) + phase
+        rot_start = (largest_angle - self.omega * sc.scalar(0.0, unit='s')) / two_pi
+        rot_start = -max(int(sc.ceil(rot_start).value), 1)
+
+        smallest_angle = min(open_times.min(), close_times.min()) + phase
+        rot_end = (self.omega * time_limit.to(unit='s') - smallest_angle) / two_pi
+        # Need +1 for arange upper bound
+        rot_end = max(int(sc.ceil(rot_end).value), 1) + 1
+
+        # We make a unique dim name that is different from self.open.dim and
+        # self.close.dim to make use of automatic broadcasting below.
+        phases = sc.arange(
+            f"{self.open.dim}-{self.close.dim}", rot_start, rot_end
+        ) * two_pi + self.phase.to(unit='rad')
+
         # Note that the order is important here: we need (phases + open/close) to get
         # the correct dimension order when we flatten.
         open_times = (phases + open_times).flatten(to=self.open.dim)

@@ -372,6 +372,21 @@ def test_chopper_create_raises_when_both_edges_and_centers_are_supplied():
         )
 
 
+def test_chopper_create_raises_when_open_angles_are_larger_than_close_angles():
+    with pytest.raises(
+        ValueError,
+        match="Chopper open angles must be less than close angles",
+    ):
+        tof.Chopper(
+            frequency=10.0 * Hz,
+            open=sc.array(dims=['cutout'], values=[10.0, 50.0], unit='deg'),
+            close=sc.array(dims=['cutout'], values=[20.0, 40.0], unit='deg'),
+            phase=0.0 * deg,
+            distance=5.0 * meter,
+            name='chopper',
+        )
+
+
 def test_as_json():
     f = 10.0 * Hz
     chopper = tof.Chopper(
@@ -720,82 +735,82 @@ def test_chopper_zero_frequency():
 
 
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
-def test_chopper_performs_enough_rotations_to_cover_timescale(direction):
+@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
+def test_chopper_performs_enough_rotations_to_cover_timescale(direction, phase):
     chopper = tof.Chopper(
         frequency=14.0 * Hz,
         open=10.0 * deg,
         close=20.0 * deg,
-        phase=0.0 * deg,
+        phase=phase * deg,
         distance=5.0 * meter,
         name='chopper',
         direction=direction,
     )
     timescale = 2.0 * sec
+    zero = 0.0 * sec
     topen, tclose = chopper.open_close_times(timescale)
-    assert (topen[-1] >= timescale).value
-    assert (tclose[-1] >= timescale).value
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
 
 
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
+@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
 def test_chopper_with_negative_angles_performs_enough_rotations_to_cover_timescale(
-    direction,
+    direction, phase
 ):
     chopper = tof.Chopper(
         frequency=14.0 * Hz,
         open=sc.array(dims=['cutout'], values=[-350.0, -10.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[-340.0, 0.0], unit='deg'),
-        phase=0.0 * deg,
+        phase=phase * deg,
         distance=5.0 * meter,
         name='chopper',
         direction=direction,
     )
     timescale = 2.0 * sec
+    zero = 0.0 * sec
     topen, tclose = chopper.open_close_times(timescale)
-    assert (topen[-1] >= timescale).value
-    assert (tclose[-1] >= timescale).value
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
 
 
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
+@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
 def test_chopper_with_very_negative_angles_performs_enough_rotations_to_cover_timescale(
-    direction,
+    direction, phase
 ):
     chopper = tof.Chopper(
         frequency=14.0 * Hz,
         open=sc.array(dims=['cutout'], values=[-710.0, -370.0], unit='deg'),
         close=sc.array(dims=['cutout'], values=[-700.0, -360.0], unit='deg'),
-        phase=0.0 * deg,
+        phase=phase * deg,
         distance=5.0 * meter,
         name='chopper',
         direction=direction,
     )
     timescale = 1.5 * sec
+    zero = 0.0 * sec
     topen, tclose = chopper.open_close_times(timescale)
-    assert (topen[-1] >= timescale).value
-    assert (tclose[-1] >= timescale).value
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
 
 
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
-def test_chopper_with_more_negative_angles_perfoms_more_rotations(direction):
-    chop1 = tof.Chopper(
+@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
+def test_chopper_with_very_positive_angles_performs_enough_rotations_to_cover_timescale(
+    direction, phase
+):
+    chopper = tof.Chopper(
         frequency=14.0 * Hz,
-        open=sc.array(dims=['cutout'], values=[-450.0], unit='deg'),
-        close=sc.array(dims=['cutout'], values=[-440.0], unit='deg'),
-        phase=0.0 * deg,
+        open=sc.array(dims=['cutout'], values=[400.0, 620.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[410.0, 640.0], unit='deg'),
+        phase=phase * deg,
         distance=5.0 * meter,
-        name='chopper1',
-        direction=direction,
-    )
-    chop2 = tof.Chopper(
-        frequency=14.0 * Hz,
-        open=sc.array(dims=['cutout'], values=[-50.0], unit='deg'),
-        close=sc.array(dims=['cutout'], values=[-40.0], unit='deg'),
-        phase=0.0 * deg,
-        distance=5.0 * meter,
-        name='chopper2',
+        name='chopper',
         direction=direction,
     )
     timescale = 1.5 * sec
-    topen1, tclose1 = chop1.open_close_times(timescale)
-    topen2, tclose2 = chop2.open_close_times(timescale)
-    assert len(topen1) > len(topen2)
-    assert len(tclose1) > len(tclose2)
+    zero = 0.0 * sec
+    topen, tclose = chopper.open_close_times(timescale)
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
