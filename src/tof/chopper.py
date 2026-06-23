@@ -223,21 +223,10 @@ class Chopper(Component):
         # each the time limit.
         # We always add one extra rotation for edge cases and coincidences.
         smallest_angle = min(self.open.min(), self.close.min())
-        nrot = (
-            max(
-                int(
-                    sc.ceil(
-                        (
-                            self.omega * time_limit.to(unit='s')
-                            - smallest_angle.to(unit='rad')
-                        )
-                        / two_pi
-                    ).value
-                ),
-                1,
-            )
-            + 1
-        )
+        rotations = (
+            self.omega * time_limit.to(unit='s') - smallest_angle.to(unit='rad')
+        ) / two_pi
+        nrot = max(int(sc.ceil(rotations).value), 1) + 1
         # We make a unique dim name that is different from self.open.dim and
         # self.close.dim to make use of automatic broadcasting below.
         # We also start at -1 to catch early openings in case the phase or opening
