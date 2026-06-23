@@ -217,7 +217,27 @@ class Chopper(Component):
                 sc.array(dims=['cutout'], values=[np.inf], unit=unit),
             )
 
-        nrot = max(int(sc.ceil((time_limit * self.frequency).to(unit='')).value), 1)
+        # Predicting how many rotations are needed to reach the time limit:
+        # We find the smallest open or close angle (they may be negative and lower than
+        # -360 degrees), and compute how many rotations it would take for that angle to
+        # each the time limit.
+        # We always add one extra rotation for edge cases and coincidences.
+        smallest_angle = min(self.open.min(), self.close.min())
+        nrot = (
+            max(
+                int(
+                    sc.ceil(
+                        (
+                            self.omega * time_limit.to(unit='s')
+                            - smallest_angle.to(unit='rad')
+                        )
+                        / two_pi
+                    ).value
+                ),
+                1,
+            )
+            + 1
+        )
         # We make a unique dim name that is different from self.open.dim and
         # self.close.dim to make use of automatic broadcasting below.
         # We also start at -1 to catch early openings in case the phase or opening

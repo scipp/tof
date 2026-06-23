@@ -138,8 +138,6 @@ class Frame:
         frame = self.propagate_to(distance)
 
         timescale = max(sf.time.max() for sf in frame.subframes)
-        print("timescale", timescale, chopper.name)
-        timescale = sc.scalar(3.0, unit='s')
 
         # A chopper can have multiple openings, call _chop for each of them. The result
         # is the union of the resulting subframes.
@@ -147,8 +145,6 @@ class Frame:
         open_times, close_times = (
             t.to(unit='s') for t in chopper.open_close_times(timescale)
         )
-        print("open_times", open_times)
-        print("close_times", close_times)
         for subframe in frame.subframes:
             for open, close in zip(open_times, close_times, strict=True):
                 if (tmp := _chop(subframe, open, close_to_open=True)) is not None:
