@@ -246,7 +246,7 @@ def test_open_close_anticlockwise_multiple_rotations():
         name='chopper',
     )
 
-    # By default, the chopper perfoms 3 rotations: one before t=0, one at t=0, and one
+    # By default, the chopper performs 3 rotations: one before t=0, one at t=0, and one
     # after t=0. The number of rotations is determined by the time limit.
     three_rotations_open, three_rotations_close = chopper.open_close_times(0.0 * sec)
     four_rotations_open, four_rotations_close = chopper.open_close_times(0.2 * sec)
