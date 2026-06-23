@@ -254,6 +254,9 @@ class Chopper(Component):
         # We find the smallest open or close angle (they may be negative and lower than
         # -360 degrees), and compute how many rotations it would take for that angle to
         # each the time limit.
+        #
+        # Note: we do this AFTER we have mirrored the angles for anti-clockwise
+        # choppers, so that the phase is applied in the correct direction.
         largest_angle = max(open_times.max(), close_times.max()) + phase
         rot_start = (largest_angle - self.omega * sc.scalar(0.0, unit='s')) / two_pi
         rot_start = -max(int(sc.ceil(rot_start).value), 1)
