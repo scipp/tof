@@ -734,8 +734,11 @@ def test_chopper_zero_frequency():
     assert sc.identical(tclose[0], np.inf * sec)
 
 
+PHASES = [-500, -350, -270, -190, -30, 0, 30, 190, 270, 350, 500]
+
+
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
-@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
+@pytest.mark.parametrize("phase", PHASES)
 def test_chopper_performs_enough_rotations_to_cover_timescale(direction, phase):
     chopper = tof.Chopper(
         frequency=14.0 * Hz,
@@ -754,7 +757,7 @@ def test_chopper_performs_enough_rotations_to_cover_timescale(direction, phase):
 
 
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
-@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
+@pytest.mark.parametrize("phase", PHASES)
 def test_chopper_with_negative_angles_performs_enough_rotations_to_cover_timescale(
     direction, phase
 ):
@@ -775,7 +778,7 @@ def test_chopper_with_negative_angles_performs_enough_rotations_to_cover_timesca
 
 
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
-@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
+@pytest.mark.parametrize("phase", PHASES)
 def test_chopper_with_very_negative_angles_performs_enough_rotations_to_cover_timescale(
     direction, phase
 ):
@@ -796,7 +799,7 @@ def test_chopper_with_very_negative_angles_performs_enough_rotations_to_cover_ti
 
 
 @pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
-@pytest.mark.parametrize("phase", [-350, -270, -190, -30, 0, 30, 190, 270, 350])
+@pytest.mark.parametrize("phase", PHASES)
 def test_chopper_with_very_positive_angles_performs_enough_rotations_to_cover_timescale(
     direction, phase
 ):
