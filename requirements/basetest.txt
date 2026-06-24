@@ -31,7 +31,7 @@ lazy-loader==0.5
     # via
     #   plopp
     #   scippneutron
-matplotlib==3.10.9
+matplotlib==3.11.0
     # via
     #   mpltoolbox
     #   plopp
@@ -64,7 +64,7 @@ pygments==2.20.0
     # via pytest
 pyparsing==3.3.2
     # via matplotlib
-pytest==9.0.3
+pytest==9.1.1
     # via -r basetest.in
 python-dateutil==2.9.0.post0
     # via
@@ -75,7 +75,7 @@ scipp==26.3.1
     #   plopp
     #   scippneutron
     #   scippnexus
-scippneutron==26.5.0
+scippneutron==26.6.0
     # via -r basetest.in
 scippnexus==26.1.1
     # via scippneutron
