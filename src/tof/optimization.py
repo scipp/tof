@@ -137,10 +137,14 @@ class Frame:
             )
         frame = self.propagate_to(distance)
 
+        timescale = max(sf.time.max() for sf in frame.subframes)
+
         # A chopper can have multiple openings, call _chop for each of them. The result
         # is the union of the resulting subframes.
         chopped = Frame(distance=frame.distance, subframes=[])
-        open_times, close_times = (t.to(unit='s') for t in chopper.open_close_times())
+        open_times, close_times = (
+            t.to(unit='s') for t in chopper.open_close_times(timescale)
+        )
         for subframe in frame.subframes:
             for open, close in zip(open_times, close_times, strict=True):
                 if (tmp := _chop(subframe, open, close_to_open=True)) is not None:
