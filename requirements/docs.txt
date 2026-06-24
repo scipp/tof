@@ -24,11 +24,11 @@ babel==2.18.0
     # via
     #   pydata-sphinx-theme
     #   sphinx
-beautifulsoup4==4.14.3
+beautifulsoup4==4.15.0
     # via
     #   nbconvert
     #   pydata-sphinx-theme
-bleach[css]==6.3.0
+bleach[css]==6.4.0
     # via nbconvert
 comm==0.2.3
     # via
@@ -56,11 +56,11 @@ fastjsonschema==2.21.2
     # via nbformat
 imagesize==2.0.0
     # via sphinx
-ipykernel==7.2.0
+ipykernel==7.3.0
     # via -r docs.in
 ipympl==0.10.0
     # via -r docs.in
-ipython==9.14.0
+ipython==9.14.1
     # via
     #   ipykernel
     #   ipympl
@@ -83,7 +83,7 @@ jsonschema==4.26.0
     # via nbformat
 jsonschema-specifications==2025.9.1
     # via jsonschema
-jupyter-client==8.8.0
+jupyter-client==8.9.1
     # via
     #   ipykernel
     #   nbclient
@@ -114,13 +114,13 @@ mdit-py-plugins==0.6.1
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
-mistune==3.2.1
+mistune==3.3.2
     # via nbconvert
 mpltoolbox==26.2.0
     # via scippneutron
 myst-parser==5.1.0
     # via -r docs.in
-nbclient==0.10.4
+nbclient==0.11.0
     # via nbconvert
 nbconvert==7.17.1
     # via nbsphinx
@@ -131,7 +131,7 @@ nbformat==5.10.4
     #   nbsphinx
 nbsphinx==0.9.8
     # via -r docs.in
-nest-asyncio==1.6.0
+nest-asyncio2==1.7.2
     # via ipykernel
 pandocfilters==1.5.1
     # via nbconvert
@@ -156,7 +156,7 @@ pydantic==2.13.4
     #   scippneutron
 pydantic-core==2.46.4
     # via pydantic
-pydantic-settings==2.14.1
+pydantic-settings==2.14.2
     # via autodoc-pydantic
 pydata-sphinx-theme==0.16.1
     # via
@@ -190,7 +190,7 @@ rpds-py==2026.5.1
     # via
     #   jsonschema
     #   referencing
-scippneutron==26.5.0
+scippneutron==26.6.0
     # via -r docs.in
 scippnexus==26.1.1
     # via scippneutron
@@ -231,9 +231,9 @@ sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 stack-data==0.6.3
     # via ipython
-tinycss2==1.4.0
+tinycss2==1.5.1
     # via bleach
-tornado==6.5.6
+tornado==6.5.7
     # via
     #   ipykernel
     #   jupyter-client
@@ -254,6 +254,7 @@ typing-extensions==4.15.0
     # via
     #   beautifulsoup4
     #   ipython
+    #   jupyter-client
     #   pydantic
     #   pydantic-core
     #   pydata-sphinx-theme
@@ -263,7 +264,7 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-wcwidth==0.7.0
+wcwidth==0.8.1
     # via prompt-toolkit
 webencodings==0.5.1
     # via

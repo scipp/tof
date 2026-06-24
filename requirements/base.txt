@@ -5,7 +5,7 @@
 #
 #    requirements upgrade
 #
-certifi==2026.5.20
+certifi==2026.6.17
     # via requests
 charset-normalizer==3.4.7
     # via requests
@@ -25,7 +25,7 @@ lazy-loader==0.5
     # via
     #   -r base.in
     #   plopp
-matplotlib==3.10.9
+matplotlib==3.11.0
     # via plopp
 numpy==2.4.6
     # via

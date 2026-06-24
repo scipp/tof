@@ -11,3 +11,4 @@ scipp
 --extra-index-url=https://pypi.org/simple
 --pre
 plopp @ git+https://github.com/scipp/plopp@main
+scippneutron @ git+https://github.com/scipp/scippneutron@main
