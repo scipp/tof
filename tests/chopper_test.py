@@ -68,14 +68,27 @@ def test_open_close_times_three_rotations():
     assert sc.identical(
         topen,
         sc.concat(
-            [open0 - two_pi, open0, open0 + two_pi, open0 + 2 * two_pi], dim='cutout'
+            [
+                open0 - two_pi,  # rotation -1 (before t=0)
+                open0,  # rotation 0
+                open0 + two_pi,  # rotation 1
+                open0 + 2 * two_pi,  # rotation 2
+                open0 + 3 * two_pi,  # rotation 3 (one more rotation after t=0.21 s)
+            ],
+            dim='cutout',
         )
         / (two_pi * f),
     )
     assert sc.identical(
         tclose,
         sc.concat(
-            [close0 - two_pi, close0, close0 + two_pi, close0 + 2 * two_pi],
+            [
+                close0 - two_pi,  # rotation -1 (before t=0)
+                close0,  # rotation 0
+                close0 + two_pi,  # rotation 1
+                close0 + 2 * two_pi,  # rotation 2
+                close0 + 3 * two_pi,  # rotation 3 (one more rotation after t=0.21 s)
+            ],
             dim='cutout',
         )
         / (two_pi * f),
@@ -233,23 +246,25 @@ def test_open_close_anticlockwise_multiple_rotations():
         name='chopper',
     )
 
-    two_rotations_open, two_rotations_close = chopper.open_close_times(0.0 * sec)
-    three_rotations_open, three_rotations_close = chopper.open_close_times(0.2 * sec)
-    four_rotations_open, four_rotations_close = chopper.open_close_times(0.3 * sec)
+    # By default, the chopper performs 3 rotations: one before t=0, one at t=0, and one
+    # after t=0. The number of rotations is determined by the time limit.
+    three_rotations_open, three_rotations_close = chopper.open_close_times(0.0 * sec)
+    four_rotations_open, four_rotations_close = chopper.open_close_times(0.2 * sec)
+    five_rotations_open, five_rotations_close = chopper.open_close_times(0.3 * sec)
 
-    assert len(two_rotations_open) == 4
     assert len(three_rotations_open) == 6
     assert len(four_rotations_open) == 8
-    assert len(two_rotations_close) == 4
+    assert len(five_rotations_open) == 10
     assert len(three_rotations_close) == 6
     assert len(four_rotations_close) == 8
+    assert len(five_rotations_close) == 10
 
-    assert sc.allclose(two_rotations_open, three_rotations_open[:-2])
-    assert sc.allclose(two_rotations_close, three_rotations_close[:-2])
     assert sc.allclose(three_rotations_open, four_rotations_open[:-2])
     assert sc.allclose(three_rotations_close, four_rotations_close[:-2])
-    assert sc.allclose(two_rotations_open, four_rotations_open[:-4])
-    assert sc.allclose(two_rotations_close, four_rotations_close[:-4])
+    assert sc.allclose(three_rotations_open, four_rotations_open[:-2])
+    assert sc.allclose(three_rotations_close, four_rotations_close[:-2])
+    assert sc.allclose(three_rotations_open, five_rotations_open[:-4])
+    assert sc.allclose(three_rotations_close, five_rotations_close[:-4])
 
 
 def test_bad_direction_raises():
@@ -351,6 +366,21 @@ def test_chopper_create_raises_when_both_edges_and_centers_are_supplied():
             close=20.0 * deg,
             centers=15.0 * deg,
             widths=10.0 * deg,
+            phase=0.0 * deg,
+            distance=5.0 * meter,
+            name='chopper',
+        )
+
+
+def test_chopper_create_raises_when_open_angles_are_larger_than_close_angles():
+    with pytest.raises(
+        ValueError,
+        match="Chopper open angles must be less than close angles",
+    ):
+        tof.Chopper(
+            frequency=10.0 * Hz,
+            open=sc.array(dims=['cutout'], values=[10.0, 50.0], unit='deg'),
+            close=sc.array(dims=['cutout'], values=[20.0, 40.0], unit='deg'),
             phase=0.0 * deg,
             distance=5.0 * meter,
             name='chopper',
@@ -702,3 +732,88 @@ def test_chopper_zero_frequency():
     topen, tclose = chopper.open_close_times(0.0 * sec)
     assert sc.identical(topen[0], -np.inf * sec)
     assert sc.identical(tclose[0], np.inf * sec)
+
+
+PHASES = [-500, -350, -270, -190, -30, 0, 30, 190, 270, 350, 500]
+
+
+@pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
+@pytest.mark.parametrize("phase", PHASES)
+def test_chopper_performs_enough_rotations_to_cover_timescale(direction, phase):
+    chopper = tof.Chopper(
+        frequency=14.0 * Hz,
+        open=10.0 * deg,
+        close=20.0 * deg,
+        phase=phase * deg,
+        distance=5.0 * meter,
+        name='chopper',
+        direction=direction,
+    )
+    timescale = 2.0 * sec
+    zero = 0.0 * sec
+    topen, tclose = chopper.open_close_times(timescale)
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
+
+
+@pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
+@pytest.mark.parametrize("phase", PHASES)
+def test_chopper_with_negative_angles_performs_enough_rotations_to_cover_timescale(
+    direction, phase
+):
+    chopper = tof.Chopper(
+        frequency=14.0 * Hz,
+        open=sc.array(dims=['cutout'], values=[-350.0, -10.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[-340.0, 0.0], unit='deg'),
+        phase=phase * deg,
+        distance=5.0 * meter,
+        name='chopper',
+        direction=direction,
+    )
+    timescale = 2.0 * sec
+    zero = 0.0 * sec
+    topen, tclose = chopper.open_close_times(timescale)
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
+
+
+@pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
+@pytest.mark.parametrize("phase", PHASES)
+def test_chopper_with_very_negative_angles_performs_enough_rotations_to_cover_timescale(
+    direction, phase
+):
+    chopper = tof.Chopper(
+        frequency=14.0 * Hz,
+        open=sc.array(dims=['cutout'], values=[-710.0, -370.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[-700.0, -360.0], unit='deg'),
+        phase=phase * deg,
+        distance=5.0 * meter,
+        name='chopper',
+        direction=direction,
+    )
+    timescale = 1.5 * sec
+    zero = 0.0 * sec
+    topen, tclose = chopper.open_close_times(timescale)
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
+
+
+@pytest.mark.parametrize("direction", [tof.Clockwise, tof.AntiClockwise])
+@pytest.mark.parametrize("phase", PHASES)
+def test_chopper_with_very_positive_angles_performs_enough_rotations_to_cover_timescale(
+    direction, phase
+):
+    chopper = tof.Chopper(
+        frequency=14.0 * Hz,
+        open=sc.array(dims=['cutout'], values=[400.0, 620.0], unit='deg'),
+        close=sc.array(dims=['cutout'], values=[410.0, 640.0], unit='deg'),
+        phase=phase * deg,
+        distance=5.0 * meter,
+        name='chopper',
+        direction=direction,
+    )
+    timescale = 1.5 * sec
+    zero = 0.0 * sec
+    topen, tclose = chopper.open_close_times(timescale)
+    assert (topen.min() <= zero).value
+    assert (tclose.max() >= timescale).value
