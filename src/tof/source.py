@@ -275,12 +275,22 @@ def _optimize_source(
     time_edges = p.coords[f"{T_DIM}_edges"]
     wave_edges = p.coords[f"{W_DIM}_edges"]
 
+    if tmin is None:
+        tmin = time_edges.min()
+    if tmax is None:
+        tmax = time_edges.max()
+    if wmin is None:
+        wmin = wave_edges.min()
+    if wmax is None:
+        wmax = wave_edges.max()
+    tmin = tmin.to(dtype=float, unit=TIME_UNIT)
+    tmax = tmax.to(dtype=float, unit=TIME_UNIT)
+    wmin = wmin.to(dtype=float, unit=WAV_UNIT)
+    wmax = wmax.to(dtype=float, unit=WAV_UNIT)
+
     if choppers is not None:
         frames = FrameSequence.from_source_pulse(
-            time_min=time_edges.min(),
-            time_max=time_edges.max(),
-            wavelength_min=wave_edges.min(),
-            wavelength_max=wave_edges.max(),
+            time_min=tmin, time_max=tmax, wavelength_min=wmin, wavelength_max=wmax
         )
         frames = frames.chop(
             choppers.values() if hasattr(choppers, "items") else choppers
@@ -291,14 +301,6 @@ def _optimize_source(
         )
         polygons = frames[-1].subframes
     else:
-        if tmin is None:
-            tmin = time_edges[0]
-        if tmax is None:
-            tmax = time_edges[-1]
-        if wmin is None:
-            wmin = wave_edges[0]
-        if wmax is None:
-            wmax = wave_edges[-1]
         polygons = [
             Subframe(
                 time=sc.concat([tmin, tmax, tmax, tmin, tmin], dim='vertex'),
