@@ -290,7 +290,11 @@ def _optimize_source(
 
     if choppers is not None:
         frames = FrameSequence.from_source_pulse(
-            time_min=tmin, time_max=tmax, wavelength_min=wmin, wavelength_max=wmax
+            time_min=tmin,
+            time_max=tmax,
+            wavelength_min=wmin,
+            wavelength_max=wmax,
+            distance=p.coords['distance'],
         )
         frames = frames.chop(
             choppers.values() if hasattr(choppers, "items") else choppers
