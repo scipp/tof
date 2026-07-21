@@ -172,11 +172,12 @@ class FrameSequence:
         time_max: sc.Variable,
         wavelength_min: sc.Variable,
         wavelength_max: sc.Variable,
+        distance: sc.Variable | None = None,
     ):
         """
         Initialize a frame sequence from min/max time and wavelength of a pulse.
 
-        The distance is set to 0 m.
+        The distance is set to 0 m if not provided.
         """
         time = sc.concat([time_min, time_max, time_max, time_min], dim='vertex').to(
             unit='s'
@@ -187,7 +188,7 @@ class FrameSequence:
         ).to(unit='angstrom')
         frames = [
             Frame(
-                distance=sc.scalar(0, unit='m'),
+                distance=distance if distance is not None else sc.scalar(0, unit='m'),
                 subframes=[Subframe(time=time, wavelength=wavelength)],
             )
         ]

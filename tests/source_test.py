@@ -380,3 +380,55 @@ def test_source_from_distrbution_all_zero_probability_raises():
         match=r'Distribution must have at least one positive probability value.',
     ):
         tof.Source.from_distribution(neutrons=10, p=p_wav * p_time)
+
+
+def test_source_int_wmin():
+    wmin = sc.scalar(2, unit='angstrom')
+    source = tof.Source(facility='ess', neutrons=100_000, wmin=wmin)
+    assert sc.all(source.data['pulse', 0].coords['wavelength'] >= wmin)
+
+
+def test_source_int_wmax():
+    wmax = sc.scalar(6, unit='angstrom')
+    source = tof.Source(facility='ess', neutrons=100_000, wmax=wmax)
+    assert sc.all(source.data['pulse', 0].coords['wavelength'] <= wmax)
+
+
+def test_source_int_tmin():
+    tmin = sc.scalar(1, unit='ms')
+    source = tof.Source(facility='ess', neutrons=100_000, tmin=tmin)
+    assert sc.all(source.data['pulse', 0].coords['birth_time'] >= tmin.to(unit='us'))
+
+
+def test_source_int_tmax():
+    tmax = sc.scalar(2, unit='ms')
+    source = tof.Source(facility='ess', neutrons=100_000, tmax=tmax)
+    assert sc.all(source.data['pulse', 0].coords['birth_time'] <= tmax.to(unit='us'))
+
+
+def test_source_wmin_other_unit():
+    wmin = sc.scalar(0.2, unit='nm')
+    source = tof.Source(facility='ess', neutrons=100_000, wmin=wmin)
+    assert sc.all(
+        source.data['pulse', 0].coords['wavelength'] >= wmin.to(unit='angstrom')
+    )
+
+
+def test_source_wmax_other_unit():
+    wmax = sc.scalar(0.6, unit='nm')
+    source = tof.Source(facility='ess', neutrons=100_000, wmax=wmax)
+    assert sc.all(
+        source.data['pulse', 0].coords['wavelength'] <= wmax.to(unit='angstrom')
+    )
+
+
+def test_source_tmin_other_unit():
+    tmin = sc.scalar(1e-3, unit='s')
+    source = tof.Source(facility='ess', neutrons=100_000, tmin=tmin)
+    assert sc.all(source.data['pulse', 0].coords['birth_time'] >= tmin.to(unit='us'))
+
+
+def test_source_tmax_other_unit():
+    tmax = sc.scalar(2e-3, unit='s')
+    source = tof.Source(facility='ess', neutrons=100_000, tmax=tmax)
+    assert sc.all(source.data['pulse', 0].coords['birth_time'] <= tmax.to(unit='us'))
