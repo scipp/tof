@@ -47,6 +47,12 @@ def test_ess_pulse_wmin_wmax():
     assert sc.all(source.data['pulse', 0].coords['wavelength'] <= wmax)
 
 
+def test_ess_pulse_with_distance():
+    distance = sc.scalar(2.35, unit='m')
+    source = tof.Source(facility='ess-odin', neutrons=100_000, distance=distance)
+    assert sc.identical(source.distance, distance)
+
+
 def test_creation_from_neutrons():
     birth_times = sc.array(dims=['event'], values=[1000.0, 1500.0, 2000.0], unit='us')
     wavelengths = sc.array(dims=['event'], values=[1.0, 5.0, 10.0], unit='angstrom')
@@ -57,6 +63,18 @@ def test_creation_from_neutrons():
     assert source.neutrons == 3
     assert sc.identical(source.data['pulse', 0].coords['birth_time'], birth_times)
     assert sc.identical(source.data['pulse', 0].coords['wavelength'], wavelengths)
+
+
+def test_from_neutrons_with_distance():
+    distance = sc.scalar(2.35, unit='m')
+    birth_times = sc.array(dims=['event'], values=[1000.0, 1500.0, 2000.0], unit='us')
+    wavelengths = sc.array(dims=['event'], values=[1.0, 5.0, 10.0], unit='angstrom')
+    source = tof.Source.from_neutrons(
+        birth_times=birth_times,
+        wavelengths=wavelengths,
+        distance=distance,
+    )
+    assert sc.identical(source.distance, distance)
 
 
 def test_creation_from_distribution_flat():
@@ -86,6 +104,30 @@ def test_creation_from_distribution_flat():
         sc.full(value=N / 10.0, sizes={'birth_time': 10}, unit='counts'),
         rtol=sc.scalar(0.05),
     )
+
+
+def test_from_distribution_with_distance():
+    distance = sc.scalar(2.35, unit='m')
+    birth_time = sc.linspace('birth_time', 1.0, 3.0, 100, unit='ms')
+    p_time = sc.DataArray(
+        data=sc.ones(sizes=birth_time.sizes),
+        coords={'birth_time': birth_time},
+    )
+    wavelength = sc.linspace('wavelength', 1.0, 10.0, 100, unit='angstrom')
+    p_wav = sc.DataArray(
+        data=sc.ones(sizes=wavelength.sizes),
+        coords={'wavelength': wavelength},
+    )
+
+    N = 123456
+    source = tof.Source.from_distribution(
+        neutrons=N,
+        p_time=p_time,
+        p_wav=p_wav,
+        distance=distance,
+    )
+
+    assert sc.identical(source.distance, distance)
 
 
 @pytest.mark.parametrize('distribution_2d', [False, True])
