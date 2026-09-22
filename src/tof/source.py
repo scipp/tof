@@ -454,6 +454,8 @@ class Source:
         List of choppers to optimize the source for. A chopper acceptance diagram will
         be overlaid on the source distribution, and samples will be taken only from
         the regions where the chopper cascade is accepting neutrons.
+    distance:
+        Position of the source along the beamline.
 
         .. versionadded:: 26.4.0
     """  # noqa: E501
@@ -470,6 +472,7 @@ class Source:
         tmax: sc.Variable | None = None,
         seed: int | None = None,
         optimize_for: list[Chopper] | None = None,
+        distance: sc.Variable | None = None,
     ):
         self._facility = facility.lower() if facility is not None else None
         self._neutrons = int(neutrons)
@@ -485,7 +488,9 @@ class Source:
         if frequency is not None:
             facility_pulse = facility_pulse.assign_coords(frequency=frequency)
 
-        self._distance = facility_pulse.coords['distance']
+        self._distance = (
+            facility_pulse.coords['distance'] if distance is None else distance
+        )
         self._frequency = facility_pulse.coords['frequency']
         self._data = _sample_source_data_from_distribution(
             p=facility_pulse,
